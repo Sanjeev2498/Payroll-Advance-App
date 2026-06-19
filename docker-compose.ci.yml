@@ -1,0 +1,94 @@
+# Docker Compose configuration for CI/CD testing
+version: '3.8'
+
+services:
+  postgres-ci:
+    image: postgres:15
+    container_name: payroll-postgres-ci
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password_123
+      POSTGRES_DB: payroll_test_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_ci_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d payroll_test_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payroll-ci-network
+
+  redis-ci:
+    image: redis:7-alpine
+    container_name: payroll-redis-ci
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_ci_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payroll-ci-network
+
+  backend-ci:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: payroll-backend-ci
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://test_user:test_password_123@postgres-ci:5432/payroll_test_db
+      - REDIS_URL=redis://redis-ci:6379
+      - JWT_SECRET=test-jwt-secret-for-ci
+      - PORT=3001
+    ports:
+      - "3002:3001"
+    depends_on:
+      postgres-ci:
+        condition: service_healthy
+      redis-ci:
+        condition: service_healthy
+    networks:
+      - payroll-ci-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend-ci:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: payroll-frontend-ci
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend-ci:3001
+    ports:
+      - "3001:3000"
+    depends_on:
+      backend-ci:
+        condition: service_healthy
+    networks:
+      - payroll-ci-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_ci_data:
+  redis_ci_data:
+
+networks:
+  payroll-ci-network:
+    driver: bridge

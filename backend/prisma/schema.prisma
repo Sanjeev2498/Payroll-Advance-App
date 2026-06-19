@@ -1,0 +1,371 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE TENANT AND USER MANAGEMENT
+// ============================================================================
+
+model Company {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(100)
+  slug      String   @unique @db.VarChar(50)
+  settings  Json?    @db.JsonB
+  branding  Json?    @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  users       User[]
+  clients     Client[]
+  employees   Employee[]
+  payrollRuns PayrollRun[]
+
+  @@map("companies")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  companyId    String    @map("company_id") @db.Uuid
+  email        String    @unique @db.VarChar(255)
+  firstName    String    @map("first_name") @db.VarChar(50)
+  lastName     String    @map("last_name") @db.VarChar(50)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  role         UserRole  @default(EMPLOYEE)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  MANAGER
+  SUPERVISOR
+  EMPLOYEE
+}
+
+// ============================================================================
+// CLIENT AND SITE MANAGEMENT
+// ============================================================================
+
+model Client {
+  id                 String         @id @default(uuid()) @db.Uuid
+  companyId          String         @map("company_id") @db.Uuid
+  name               String         @db.VarChar(100)
+  contactEmail       String         @map("contact_email") @db.VarChar(255)
+  contactInfo        Json?          @map("contact_info") @db.JsonB
+  contractStatus     ContractStatus @default(ACTIVE) @map("contract_status")
+  contractStart      DateTime?      @map("contract_start") @db.Date
+  contractEnd        DateTime?      @map("contract_end") @db.Date
+  billingPreferences Json?          @map("billing_preferences") @db.JsonB
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sites    Site[]
+  invoices Invoice[]
+
+  @@index([companyId])
+  @@index([companyId, contractStatus])
+  @@map("clients")
+}
+
+enum ContractStatus {
+  ACTIVE
+  PENDING
+  EXPIRED
+  TERMINATED
+}
+
+model Site {
+  id                 String            @id @default(uuid()) @db.Uuid
+  clientId           String            @map("client_id") @db.Uuid
+  name               String            @db.VarChar(100)
+  address            Json              @db.JsonB
+  accessRequirements Json?             @map("access_requirements") @db.JsonB
+  safetyProtocols    Json?             @map("safety_protocols") @db.JsonB
+  operationalStatus  OperationalStatus @default(ACTIVE) @map("operational_status")
+  contactInfo        Json?             @map("contact_info") @db.JsonB
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+  shifts      Shift[]
+
+  @@index([clientId])
+  @@index([operationalStatus])
+  @@map("sites")
+}
+
+enum OperationalStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  SUSPENDED
+}
+
+// ============================================================================
+// EMPLOYEE AND WORKFORCE MANAGEMENT
+// ============================================================================
+
+model Employee {
+  id               String           @id @default(uuid()) @db.Uuid
+  companyId        String           @map("company_id") @db.Uuid
+  employeeNumber   String           @map("employee_number") @db.VarChar(20)
+  firstName        String           @map("first_name") @db.VarChar(50)
+  lastName         String           @map("last_name") @db.VarChar(50)
+  email            String?          @db.VarChar(255)
+  phone            String?          @db.VarChar(20)
+  address          Json?            @db.JsonB
+  certifications   Json?            @db.JsonB
+  skills           String[]         @db.VarChar(50)
+  employmentStatus EmploymentStatus @default(ACTIVE) @map("employment_status")
+  hireDate         DateTime         @map("hire_date") @db.Date
+  terminationDate  DateTime?        @map("termination_date") @db.Date
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignments       Assignment[]
+  attendanceRecords Attendance[]
+  payrollItems      PayrollItem[]
+
+  @@unique([companyId, employeeNumber])
+  @@index([companyId])
+  @@index([companyId, employmentStatus])
+  @@index([skills])
+  @@map("employees")
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  ON_LEAVE
+}
+
+model Assignment {
+  id               String           @id @default(uuid()) @db.Uuid
+  employeeId       String           @map("employee_id") @db.Uuid
+  siteId           String           @map("site_id") @db.Uuid
+  role             String           @db.VarChar(50)
+  responsibilities Json?            @db.JsonB
+  hourlyRate       Decimal          @map("hourly_rate") @db.Decimal(10, 2)
+  status           AssignmentStatus @default(ACTIVE)
+  startDate        DateTime         @map("start_date") @db.Date
+  endDate          DateTime?        @map("end_date") @db.Date
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  site     Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  shifts   Shift[]
+
+  @@index([employeeId])
+  @@index([siteId])
+  @@index([status])
+  @@map("assignments")
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================================================
+// SHIFT SCHEDULING AND ATTENDANCE
+// ============================================================================
+
+model Shift {
+  id           String      @id @default(uuid()) @db.Uuid
+  assignmentId String      @map("assignment_id") @db.Uuid
+  siteId       String      @map("site_id") @db.Uuid
+  shiftDate    DateTime    @map("shift_date") @db.Date
+  startTime    DateTime    @map("start_time") @db.Time
+  endTime      DateTime    @map("end_time") @db.Time
+  shiftType    ShiftType   @default(REGULAR) @map("shift_type")
+  status       ShiftStatus @default(SCHEDULED)
+  notes        Json?       @db.JsonB
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  assignment        Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  site              Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  attendanceRecords Attendance[]
+
+  @@index([assignmentId])
+  @@index([siteId])
+  @@index([shiftDate])
+  @@index([status])
+  @@map("shifts")
+}
+
+enum ShiftType {
+  REGULAR
+  OVERTIME
+  HOLIDAY
+  EMERGENCY
+}
+
+enum ShiftStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Attendance {
+  id               String           @id @default(uuid()) @db.Uuid
+  employeeId       String           @map("employee_id") @db.Uuid
+  shiftId          String           @map("shift_id") @db.Uuid
+  clockIn          DateTime?        @map("clock_in") @db.Timestamptz
+  clockOut         DateTime?        @map("clock_out") @db.Timestamptz
+  locationData     Json?            @map("location_data") @db.JsonB
+  status           AttendanceStatus @default(PENDING)
+  verificationData Json?            @map("verification_data") @db.JsonB
+  notes            String?          @db.Text
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([shiftId])
+  @@index([clockIn])
+  @@index([status])
+  @@map("attendance")
+}
+
+enum AttendanceStatus {
+  PENDING
+  PRESENT
+  ABSENT
+  LATE
+  EARLY_DEPARTURE
+  OVERTIME
+}
+
+// ============================================================================
+// PAYROLL AND BILLING
+// ============================================================================
+
+model PayrollRun {
+  id             String        @id @default(uuid()) @db.Uuid
+  companyId      String        @map("company_id") @db.Uuid
+  runNumber      String        @map("run_number") @db.VarChar(50)
+  payPeriodStart DateTime      @map("pay_period_start") @db.Date
+  payPeriodEnd   DateTime      @map("pay_period_end") @db.Date
+  status         PayrollStatus @default(DRAFT)
+  totalAmount    Decimal       @default(0) @map("total_amount") @db.Decimal(12, 2)
+  processedAt    DateTime?     @map("processed_at") @db.Timestamptz
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payrollItems PayrollItem[]
+
+  @@unique([companyId, runNumber])
+  @@index([companyId])
+  @@index([status])
+  @@map("payroll_runs")
+}
+
+enum PayrollStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+model PayrollItem {
+  id              String          @id @default(uuid()) @db.Uuid
+  payrollRunId    String          @map("payroll_run_id") @db.Uuid
+  employeeId      String          @map("employee_id") @db.Uuid
+  itemType        PayrollItemType @map("item_type")
+  description     String          @db.VarChar(255)
+  amount          Decimal         @db.Decimal(10, 2)
+  calculationData Json?           @map("calculation_data") @db.JsonB
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([payrollRunId])
+  @@index([employeeId])
+  @@index([itemType])
+  @@map("payroll_items")
+}
+
+enum PayrollItemType {
+  BASIC_PAY
+  OVERTIME
+  BONUS
+  ALLOWANCE
+  TAX_DEDUCTION
+  SOCIAL_SECURITY
+  HEALTH_INSURANCE
+  OTHER_DEDUCTION
+}
+
+model Invoice {
+  id                 String        @id @default(uuid()) @db.Uuid
+  clientId           String        @map("client_id") @db.Uuid
+  invoiceNumber      String        @map("invoice_number") @db.VarChar(50)
+  billingPeriodStart DateTime      @map("billing_period_start") @db.Date
+  billingPeriodEnd   DateTime      @map("billing_period_end") @db.Date
+  subtotal           Decimal       @db.Decimal(12, 2)
+  taxAmount          Decimal       @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  totalAmount        Decimal       @map("total_amount") @db.Decimal(12, 2)
+  status             InvoiceStatus @default(DRAFT)
+  dueDate            DateTime      @map("due_date") @db.Date
+  paidAt             DateTime?     @map("paid_at") @db.Timestamptz
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([invoiceNumber])
+  @@index([clientId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
