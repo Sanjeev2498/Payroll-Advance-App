@@ -1,0 +1,791 @@
+/**
+ * Enhanced RBAC Usage Examples
+ * 
+ * This file demonstrates the complete RBAC system capabilities including:
+ * - Basic permission-based access control
+ * - Resource-level authorization
+ * - Dynamic permission rules
+ * - Tenant-aware permission checking
+ * - Advanced authorization patterns
+ */
+
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Injectable,
+} from '@nestjs/common';
+import { UserRole } from '@prisma/client';
+
+// RBAC Core Components
+import { RbacService, ResourceAuthorizationService, RbacUtilitiesService } from '../index';
+import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { ResourceAuthorizationGuard, CompositeAuthorizationGuard } from '../../guards/resource-authorization.guard';
+import { TenantGuard } from '../../../common/tenant.guard';
+
+// Decorators
+import {
+  RequirePermissions,
+  RequireAnyPermission,
+  RequireAllPermissions,
+  AllowOwner,
+} from '../../decorators/permissions.decorator';
+import {
+  RequireResourceAuth,
+  RequireUserProfileAccess,
+  RequireEmployeeAccess,
+  RequireAttendanceAccess,
+  ResourceAuthContext,
+  ResourceId,
+  UserAuthCapabilities,
+} from '../../decorators/resource-authorization.decorator';
+import {
+  CurrentUserId,
+  CurrentUserRole,
+  CurrentTenantId,
+  CurrentUserContext,
+} from '../../decorators/resource-owner.decorator';
+
+// Permissions
+import {
+  UserPermissions,
+  EmployeePermissions,
+  AttendancePermissions,
+  PayrollPermissions,
+  ClientPermissions,
+} from '../../enums/permissions.enum';
+
+// Types
+import { AuthenticatedRequest } from '../tenant-permission.middleware';
+import { ResourceAuthConfigs, ResourceAuthConfig } from '../resource-authorization.service';
+import { DynamicPermissionRule } from '../rbac-utilities.service';
+
+// ============================================================================
+// Example 1: Basic Permission-Based Authorization
+// ============================================================================
+
+@Controller('api/v1/users')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+export class EnhancedUserController {
+  constructor(
+    private readonly rbacService: RbacService,
+    private readonly resourceAuthService: ResourceAuthorizationService,
+    private readonly rbacUtilities: RbacUtilitiesService,
+  ) {}
+
+  /**
+   * Example: Basic permission requirement
+   */
+  @Get()
+  @RequirePermissions([UserPermissions.READ_USER])
+  async getUsers(@Query() filters: any) {
+    return { message: 'Users retrieved with READ_USER permission' };
+  }
+
+  /**
+   * Example: Resource ownership pattern with fallback permissions
+   * Users can access their own profile OR have admin permissions
+   */
+  @Get(':id/profile')
+  @RequireUserProfileAccess()
+  async getUserProfile(
+    @Param('id') userId: string,
+    @CurrentUserId() currentUserId: string,
+    @UserAuthCapabilities() authCaps: any,
+  ) {
+    const isOwnProfile = userId === currentUserId;
+    
+    return {
+      message: 'Profile access granted',
+      profileId: userId,
+      isOwnProfile,
+      accessType: isOwnProfile ? 'owner' : 'admin',
+      userPermissions: authCaps?.permissions.length || 0,
+    };
+  }
+
+  /**
+   * Example: Multiple permission requirements
+   */
+  @Put(':id')
+  @RequireAllPermissions([UserPermissions.READ_USER, UserPermissions.UPDATE_USER])
+  async updateUser(
+    @Param('id') userId: string,
+    @Body() updateData: any,
+  ) {
+    return { message: 'User updated with both READ and UPDATE permissions' };
+  }
+
+  /**
+   * Example: Flexible permission requirements (any of the specified)
+   */
+  @Post('bulk-actions')
+  @RequireAnyPermission([UserPermissions.CREATE_USER, UserPermissions.UPDATE_USER])
+  async bulkUserActions(@Body() actions: any) {
+    return { message: 'Bulk action performed with CREATE or UPDATE permission' };
+  }
+
+  /**
+   * Example: Dynamic permission validation with detailed feedback
+   */
+  @Post(':id/permissions/validate')
+  @RequirePermissions([UserPermissions.READ_USER])
+  async validateUserPermissions(
+    @Param('id') userId: string,
+    @Body() requiredPermissions: string[],
+  ) {
+    const validation = await this.rbacUtilities.validatePermissions(
+      requiredPermissions as any[],
+      'validate_permissions',
+      { targetUserId: userId }
+    );
+
+    return {
+      validation,
+      alternatives: validation.alternativeActions,
+      userAnalysis: this.rbacUtilities.getPermissionAnalysis(),
+    };
+  }
+}
+
+// ============================================================================
+// Example 2: Resource-Level Authorization
+// ============================================================================
+
+@Controller('api/v1/employees')
+@UseGuards(JwtAuthGuard, TenantGuard, CompositeAuthorizationGuard)
+export class EnhancedEmployeeController {
+  constructor(
+    private readonly resourceAuthService: ResourceAuthorizationService,
+    private readonly rbacUtilities: RbacUtilitiesService,
+  ) {}
+
+  /**
+   * Example: Resource authorization with custom configuration
+   */
+  @Get(':id')
+  @RequireResourceAuth({
+    resourceType: 'employee_record',
+    allowOwner: true,
+    allowTenantAdmin: true,
+    requiredPermission: EmployeePermissions.READ_EMPLOYEE,
+  })
+  async getEmployee(
+    @ResourceId() employeeId: string,
+    @ResourceAuthContext() authContext: any,
+  ) {
+    return {
+      message: 'Employee record accessed',
+      employeeId,
+      authContext: authContext ? 'Available' : 'Not Available',
+    };
+  }
+
+  /**
+   * Example: Programmatic resource authorization
+   */
+  @Put(':id/salary')
+  @RequirePermissions([EmployeePermissions.UPDATE_EMPLOYEE])
+  async updateEmployeeSalary(
+    @Param('id') employeeId: string,
+    @Body() salaryData: any,
+    @CurrentUserId() currentUserId: string,
+  ) {
+    // Programmatic resource authorization check
+    await this.resourceAuthService.requireResourceAccess(
+      employeeId,
+      {
+        resourceType: 'employee_salary',
+        allowOwner: false, // Salary changes require admin permissions
+        allowTenantAdmin: true,
+        requiredPermission: EmployeePermissions.VIEW_EMPLOYEE_PAYROLL,
+      },
+      { employeeId, currentUserId },
+      'Salary modifications require payroll management permissions'
+    );
+
+    return { message: 'Salary updated with proper authorization' };
+  }
+
+  /**
+   * Example: Bulk authorization for multiple resources
+   */
+  @Post('bulk-update')
+  @RequirePermissions([EmployeePermissions.UPDATE_EMPLOYEE])
+  async bulkUpdateEmployees(@Body() updates: { employeeId: string; data: any }[]) {
+    const employeeIds = updates.map(u => u.employeeId);
+    
+    const authResult = await this.resourceAuthService.authorizeBulkAction(
+      'update',
+      'employee_record',
+      employeeIds,
+      {
+        allowTenantAdmin: true,
+        requiredPermission: EmployeePermissions.UPDATE_EMPLOYEE,
+      }
+    );
+
+    return {
+      message: 'Bulk update authorization completed',
+      authorized: authResult.authorized,
+      denied: authResult.denied,
+      summary: `${authResult.authorized.length} authorized, ${authResult.denied.length} denied`,
+    };
+  }
+
+  /**
+   * Example: Filtered resource list based on permissions
+   */
+  @Get()
+  @RequirePermissions([EmployeePermissions.READ_EMPLOYEE])
+  async getEmployees(@Query() filters: any) {
+    // Simulate employee data
+    const allEmployees = [
+      { id: 'emp-1', name: 'John Doe', departmentId: 'dept-1' },
+      { id: 'emp-2', name: 'Jane Smith', departmentId: 'dept-2' },
+      { id: 'emp-3', name: 'Bob Johnson', departmentId: 'dept-1' },
+    ];
+
+    // Filter based on user's authorization level
+    const authorizedEmployees = await this.resourceAuthService.filterAuthorizedResources(
+      allEmployees,
+      'employee_record',
+      'read',
+      {
+        allowTenantAdmin: true,
+        // Custom validator for department-based access
+        customValidator: async (context) => {
+          // Example: Supervisors can only see employees in their department
+          if (context.userRole === UserRole.SUPERVISOR) {
+            // In real implementation, check if user supervises this department
+            return context.resourceData?.departmentId === 'dept-1';
+          }
+          return true;
+        },
+      }
+    );
+
+    return {
+      message: 'Filtered employee list based on authorization',
+      totalEmployees: allEmployees.length,
+      authorizedEmployees: authorizedEmployees.length,
+      employees: authorizedEmployees,
+    };
+  }
+}
+
+// ============================================================================
+// Example 3: Advanced Dynamic Permission Rules
+// ============================================================================
+
+@Injectable()
+export class DynamicRulesService {
+  constructor(private readonly rbacUtilities: RbacUtilitiesService) {
+    this.initializeCustomRules();
+  }
+
+  /**
+   * Example: Register custom dynamic permission rules
+   */
+  private initializeCustomRules(): void {
+    // Rule: Allow overtime approval during payroll periods
+    const overtimeApprovalRule: DynamicPermissionRule = {
+      id: 'overtime_approval_window',
+      description: 'Allow overtime approval during payroll processing periods',
+      priority: 80,
+      condition: async (context) => {
+        const now = new Date();
+        const dayOfMonth = now.getDate();
+        
+        // Payroll period: last 5 days of the month
+        return dayOfMonth >= 26 && context.action === 'approve_overtime';
+      },
+      requiredPermissions: [AttendancePermissions.APPROVE_ATTENDANCE_CORRECTIONS],
+      validator: async (context) => {
+        // Additional validation: user must be supervisor or above
+        return [UserRole.SUPERVISOR, UserRole.MANAGER, UserRole.COMPANY_ADMIN].includes(
+          context.userRole as UserRole
+        );
+      },
+    };
+
+    // Rule: Emergency access for critical system functions
+    const emergencyAccessRule: DynamicPermissionRule = {
+      id: 'emergency_system_access',
+      description: 'Emergency access during system maintenance windows',
+      priority: 90,
+      condition: (context) => {
+        // Example: Emergency access during specified hours
+        const hour = context.timestamp.getHours();
+        return (hour >= 2 && hour <= 4) && context.action.includes('emergency');
+      },
+      validator: async (context) => {
+        // Require company admin or above for emergency access
+        return [UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN].includes(
+          context.userRole as UserRole
+        );
+      },
+    };
+
+    // Rule: Self-service during business hours
+    const businessHoursSelfServiceRule: DynamicPermissionRule = {
+      id: 'business_hours_self_service',
+      description: 'Extended self-service capabilities during business hours',
+      priority: 60,
+      condition: (context) => {
+        const hour = context.timestamp.getHours();
+        const isBusinessHours = hour >= 9 && hour <= 17;
+        const isWeekday = ![0, 6].includes(context.timestamp.getDay());
+        
+        return isBusinessHours && isWeekday && context.action.startsWith('self_');
+      },
+      validator: (context) => {
+        // Allow employees to perform self-service actions during business hours
+        return context.userId !== null;
+      },
+    };
+
+    // Rule: Department manager can access direct reports
+    const departmentManagerRule: DynamicPermissionRule = {
+      id: 'department_manager_access',
+      description: 'Department managers can access their direct reports',
+      priority: 70,
+      condition: (context) => 
+        context.userRole === UserRole.MANAGER && 
+        context.resourceType === 'employee_record',
+      validator: async (context) => {
+        // In real implementation, this would check organizational hierarchy
+        // For demo, we'll simulate department membership check
+        const userDepartment = context.requestData?.userDepartment;
+        const targetDepartment = context.resourceData?.departmentId;
+        
+        return userDepartment === targetDepartment;
+      },
+    };
+
+    // Register all rules
+    this.rbacUtilities.registerDynamicRule(overtimeApprovalRule);
+    this.rbacUtilities.registerDynamicRule(emergencyAccessRule);
+    this.rbacUtilities.registerDynamicRule(businessHoursSelfServiceRule);
+    this.rbacUtilities.registerDynamicRule(departmentManagerRule);
+  }
+
+  /**
+   * Example: Dynamic rule evaluation endpoint
+   */
+  async evaluateCustomAccess(
+    action: string,
+    resourceType: string,
+    resourceData?: any,
+    requestData?: any,
+  ) {
+    const result = await this.rbacUtilities.canPerformActionWithContext(
+      action,
+      resourceType,
+      resourceData?.id,
+      resourceData,
+      requestData
+    );
+
+    return {
+      allowed: result.allowed,
+      reason: result.reason,
+      evaluationTime: new Date(),
+      context: {
+        action,
+        resourceType,
+        hasResourceData: !!resourceData,
+        hasRequestData: !!requestData,
+      },
+    };
+  }
+}
+
+// ============================================================================
+// Example 4: Attendance System with Complex Authorization
+// ============================================================================
+
+@Controller('api/v1/attendance')
+@UseGuards(JwtAuthGuard, TenantGuard, CompositeAuthorizationGuard)
+export class EnhancedAttendanceController {
+  constructor(
+    private readonly rbacService: RbacService,
+    private readonly resourceAuthService: ResourceAuthorizationService,
+    private readonly dynamicRules: DynamicRulesService,
+  ) {}
+
+  /**
+   * Example: Self-service clock-in with ownership validation
+   */
+  @Post('clock-in')
+  @RequireAttendanceAccess()
+  async clockIn(
+    @Body() clockData: { employeeId?: string; location?: any },
+    @CurrentUserId() currentUserId: string,
+    @CurrentTenantId() tenantId: string,
+  ) {
+    const targetEmployeeId = clockData.employeeId || currentUserId;
+    
+    // Validate self-service or admin permission
+    if (targetEmployeeId !== currentUserId) {
+      await this.resourceAuthService.requireActionAuthorization(
+        'admin_clock_in',
+        'attendance_record',
+        { employeeId: targetEmployeeId, tenantId },
+        {
+          allowOwner: false,
+          allowTenantAdmin: true,
+          requiredPermission: AttendancePermissions.CREATE_ATTENDANCE,
+        },
+        'Only supervisors can clock in other employees'
+      );
+    }
+
+    return {
+      message: 'Clock-in successful',
+      employeeId: targetEmployeeId,
+      timestamp: new Date(),
+      isAdminAction: targetEmployeeId !== currentUserId,
+    };
+  }
+
+  /**
+   * Example: Dynamic overtime approval based on rules
+   */
+  @Post('overtime/:recordId/approve')
+  @RequirePermissions([AttendancePermissions.APPROVE_ATTENDANCE_CORRECTIONS])
+  async approveOvertime(
+    @Param('recordId') recordId: string,
+    @Body() approvalData: any,
+    @CurrentUserRole() userRole: UserRole,
+  ) {
+    // Check if dynamic rules allow overtime approval
+    const dynamicAccess = await this.dynamicRules.evaluateCustomAccess(
+      'approve_overtime',
+      'attendance_record',
+      { id: recordId, ...approvalData },
+      { userRole, approvalType: 'overtime' }
+    );
+
+    if (!dynamicAccess.allowed) {
+      return {
+        success: false,
+        message: 'Overtime approval not allowed at this time',
+        reason: dynamicAccess.reason,
+        nextAvailable: 'During payroll processing period (26th-31st of month)',
+      };
+    }
+
+    return {
+      message: 'Overtime approved via dynamic rule',
+      recordId,
+      approvedBy: userRole,
+      dynamicRuleReason: dynamicAccess.reason,
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * Example: Complex attendance report with filtered data
+   */
+  @Get('reports/team')
+  @RequirePermissions([AttendancePermissions.VIEW_ATTENDANCE_REPORTS])
+  async getTeamAttendanceReport(
+    @Query() filters: any,
+    @CurrentUserId() currentUserId: string,
+    @CurrentUserRole() userRole: UserRole,
+  ) {
+    // Simulate attendance records
+    const allRecords = [
+      { id: 'att-1', employeeId: 'emp-1', date: '2024-01-15', hours: 8 },
+      { id: 'att-2', employeeId: 'emp-2', date: '2024-01-15', hours: 7.5 },
+      { id: 'att-3', employeeId: currentUserId, date: '2024-01-15', hours: 8 },
+    ];
+
+    // Filter records based on authorization
+    const authorizedRecords = await this.resourceAuthService.filterAuthorizedResources(
+      allRecords,
+      'attendance_record',
+      'read',
+      {
+        allowOwner: true, // Users can see their own records
+        allowTenantAdmin: userRole !== UserRole.EMPLOYEE, // Non-employees can see team records
+        customValidator: async (context) => {
+          // Custom logic for department-based access
+          if (context.userRole === UserRole.SUPERVISOR) {
+            // Supervisors can only see records from their supervised employees
+            // In real implementation, this would check organizational hierarchy
+            return context.resourceData?.employeeId?.startsWith('emp-');
+          }
+          return true;
+        },
+      }
+    );
+
+    return {
+      message: 'Team attendance report',
+      totalRecords: allRecords.length,
+      visibleRecords: authorizedRecords.length,
+      records: authorizedRecords,
+      userRole,
+      accessLevel: authorizedRecords.length === allRecords.length ? 'full' : 'restricted',
+    };
+  }
+}
+
+// ============================================================================
+// Example 5: Payroll System with Strict Authorization
+// ============================================================================
+
+@Controller('api/v1/payroll')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard, ResourceAuthorizationGuard)
+export class EnhancedPayrollController {
+  constructor(
+    private readonly rbacService: RbacService,
+    private readonly rbacUtilities: RbacUtilitiesService,
+  ) {}
+
+  /**
+   * Example: Self-service payroll access with validation
+   */
+  @Get('my-payroll')
+  @AllowOwner([PayrollPermissions.READ_PAYROLL])
+  async getMyPayroll(
+    @CurrentUserId() userId: string,
+    @Query() period: string,
+  ) {
+    return {
+      message: 'Personal payroll information',
+      userId,
+      period,
+      accessType: 'self-service',
+    };
+  }
+
+  /**
+   * Example: Payroll processing with comprehensive validation
+   */
+  @Post('runs/:runId/process')
+  @RequireAllPermissions([
+    PayrollPermissions.PROCESS_PAYROLL,
+    PayrollPermissions.APPROVE_PAYROLL,
+  ])
+  async processPayrollRun(
+    @Param('runId') runId: string,
+    @Body() processData: any,
+    @CurrentUserId() processorId: string,
+  ) {
+    // Comprehensive permission validation
+    const validation = await this.rbacUtilities.validatePermissions(
+      [PayrollPermissions.PROCESS_PAYROLL, PayrollPermissions.APPROVE_PAYROLL],
+      'process_payroll_run',
+      { runId, processorId, ...processData }
+    );
+
+    if (!validation.allowed) {
+      return {
+        success: false,
+        message: 'Insufficient permissions for payroll processing',
+        required: validation.requiredPermissions,
+        missing: validation.missingPermissions,
+        alternatives: validation.alternativeActions,
+      };
+    }
+
+    return {
+      message: 'Payroll run processed successfully',
+      runId,
+      processorId,
+      timestamp: new Date(),
+      validationPassed: true,
+    };
+  }
+
+  /**
+   * Example: Permission analysis for payroll operations
+   */
+  @Get('permissions/analysis')
+  @RequirePermissions([PayrollPermissions.READ_PAYROLL])
+  async getPayrollPermissionAnalysis(@CurrentUserId() userId: string) {
+    const analysis = this.rbacUtilities.getPermissionAnalysis();
+    
+    const payrollPermissions = analysis.permissions.filter(p => 
+      p.includes('payroll')
+    );
+
+    const canProcess = analysis.permissions.includes(PayrollPermissions.PROCESS_PAYROLL);
+    const canApprove = analysis.permissions.includes(PayrollPermissions.APPROVE_PAYROLL);
+
+    return {
+      userAnalysis: analysis,
+      payrollSpecific: {
+        payrollPermissions,
+        canProcess,
+        canApprove,
+        canFullyManage: canProcess && canApprove,
+        recommendedRole: canProcess ? analysis.userRole : 'Upgrade needed for payroll processing',
+      },
+      systemCapabilities: {
+        totalPermissions: analysis.permissionCount,
+        hierarchyLevel: analysis.hierarchyLevel,
+        canManageRoles: analysis.canManageRoles,
+      },
+    };
+  }
+}
+
+// ============================================================================
+// Example 6: Integration Patterns and Middleware Usage
+// ============================================================================
+
+/**
+ * Example: Custom middleware integration
+ */
+export class CustomAuthMiddleware {
+  static enhanceRequest(req: AuthenticatedRequest): void {
+    if (req.permissionContext) {
+      // Add custom authorization helpers to request
+      req.permissionContext['canManagePayroll'] = () =>
+        req.permissionContext?.hasPermission('payroll:process') ||
+        req.permissionContext?.hasPermission('payroll:approve');
+
+      req.permissionContext['getAccessLevel'] = () => {
+        if (!req.permissionContext?.userRole) return 'none';
+        
+        const role = req.permissionContext.userRole;
+        switch (role) {
+          case 'SUPER_ADMIN': return 'system';
+          case 'COMPANY_ADMIN': return 'company';
+          case 'MANAGER': return 'department';
+          case 'SUPERVISOR': return 'team';
+          case 'EMPLOYEE': return 'self';
+          default: return 'none';
+        }
+      };
+
+      req.permissionContext['isDuringBusinessHours'] = () => {
+        const hour = new Date().getHours();
+        return hour >= 9 && hour <= 17;
+      };
+    }
+  }
+}
+
+/**
+ * Example: Service integration patterns
+ */
+@Injectable()
+export class IntegratedBusinessService {
+  constructor(
+    private readonly rbacService: RbacService,
+    private readonly resourceAuthService: ResourceAuthorizationService,
+    private readonly rbacUtilities: RbacUtilitiesService,
+  ) {}
+
+  /**
+   * Example: Business logic with integrated authorization
+   */
+  async transferEmployee(
+    fromDepartment: string,
+    toDepartment: string,
+    employeeId: string,
+    requesterId: string,
+  ) {
+    // Multi-level authorization check
+    const authChecks = await Promise.all([
+      // Check basic permission
+      this.rbacService.hasPermission(EmployeePermissions.UPDATE_EMPLOYEE),
+      
+      // Check resource access
+      this.resourceAuthService.authorizeAction(
+        'transfer',
+        'employee_record',
+        { employeeId, fromDepartment, toDepartment },
+        { allowTenantAdmin: true }
+      ),
+      
+      // Check dynamic rules
+      this.rbacUtilities.canPerformActionWithContext(
+        'employee_transfer',
+        'employee_record',
+        employeeId,
+        { fromDepartment, toDepartment, requesterId }
+      ),
+    ]);
+
+    const [hasPermission, hasResourceAccess, dynamicRuleResult] = authChecks;
+
+    if (!hasPermission) {
+      throw new Error('Insufficient permissions for employee transfers');
+    }
+
+    if (!hasResourceAccess) {
+      throw new Error('Cannot access employee record for transfer');
+    }
+
+    if (!dynamicRuleResult.allowed) {
+      throw new Error(`Transfer denied: ${dynamicRuleResult.reason}`);
+    }
+
+    return {
+      success: true,
+      message: 'Employee transfer authorized',
+      fromDepartment,
+      toDepartment,
+      employeeId,
+      authorizedBy: requesterId,
+      authorizationChecks: {
+        basicPermission: hasPermission,
+        resourceAccess: hasResourceAccess,
+        dynamicRules: dynamicRuleResult.allowed,
+      },
+    };
+  }
+
+  /**
+   * Example: Batch operation with authorization filtering
+   */
+  async batchUpdateEmployees(updates: Array<{ id: string; data: any }>) {
+    // Get user's permission analysis
+    const analysis = this.rbacUtilities.getPermissionAnalysis();
+    
+    // Filter updates based on authorization
+    const authorizedUpdates = [];
+    const deniedUpdates = [];
+
+    for (const update of updates) {
+      const canUpdate = await this.resourceAuthService.authorizeAction(
+        'update',
+        'employee_record',
+        { employeeId: update.id, ...update.data },
+        {
+          allowTenantAdmin: analysis.hierarchyLevel >= 3, // Manager or above
+          customValidator: async (context) => {
+            // Custom business logic validation
+            return !update.data.salary || analysis.permissions.includes('employee:view_payroll');
+          },
+        }
+      );
+
+      if (canUpdate) {
+        authorizedUpdates.push(update);
+      } else {
+        deniedUpdates.push(update);
+      }
+    }
+
+    return {
+      summary: `${authorizedUpdates.length} authorized, ${deniedUpdates.length} denied`,
+      authorized: authorizedUpdates,
+      denied: deniedUpdates.map(u => ({ id: u.id, reason: 'Insufficient permissions' })),
+      userAnalysis: analysis,
+    };
+  }
+}

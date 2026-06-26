@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { ContractStatus } from '../clients/dto/create-client.dto';
 import { TenantContextService } from './tenant-context.service';
 import { TenantContextMiddleware, AuthenticatedRequest } from './tenant-context.middleware';
 import { TenantGuard } from './tenant.guard';
@@ -64,8 +65,8 @@ describe('Tenant Context Management System', () => {
     }).compile();
 
     prismaService = module.get<PrismaService>(PrismaService);
-    tenantContextService = module.get<TenantContextService>(TenantContextService);
-    tenantContextMiddleware = module.get<TenantContextMiddleware>(TenantContextMiddleware);
+    tenantContextService = await module.resolve<TenantContextService>(TenantContextService);
+    tenantContextMiddleware = await module.resolve<TenantContextMiddleware>(TenantContextMiddleware);
     tenantGuard = module.get<TenantGuard>(TenantGuard);
     employeeRepository = module.get<EmployeeRepository>(EmployeeRepository);
     clientRepository = module.get<ClientRepository>(ClientRepository);
@@ -247,7 +248,7 @@ describe('Tenant Context Management System', () => {
       const clientData = {
         name: 'ABC Corporation',
         contactEmail: 'contact@abccorp.com',
-        contractStatus: 'ACTIVE',
+        contractStatus: ContractStatus.ACTIVE,
       };
 
       const client = await clientRepository.create(clientData);

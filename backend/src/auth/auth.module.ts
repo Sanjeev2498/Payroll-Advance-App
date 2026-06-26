@@ -4,14 +4,19 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { UserManagementController } from './controllers/user-management.controller';
+import { UserManagementService } from './services/user-management.service';
+import { UserRepository } from './repositories/user.repository';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
+import { CommonModule } from '../common/common.module';
 import { RbacModule } from './rbac/rbac.module';
 
 @Module({
   imports: [
     PrismaModule,
+    CommonModule, // For TenantContextService
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -25,8 +30,21 @@ import { RbacModule } from './rbac/rbac.module';
     }),
     RbacModule, // Add RBAC module
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy],
-  exports: [AuthService, JwtModule, PassportModule, RbacModule],
+  controllers: [AuthController, UserManagementController],
+  providers: [
+    AuthService,
+    UserManagementService,
+    UserRepository,
+    JwtStrategy,
+    LocalStrategy,
+  ],
+  exports: [
+    AuthService,
+    UserManagementService,
+    UserRepository,
+    JwtModule,
+    PassportModule,
+    RbacModule,
+  ],
 })
 export class AuthModule {}

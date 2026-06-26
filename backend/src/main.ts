@@ -1,14 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import helmet from 'helmet';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import helmet from '@fastify/helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter(),
+  );
   
-  // Security middleware
-  app.use(helmet());
+  // Security middleware (Fastify version)
+  await app.register(helmet);
   
   // Enable CORS with appropriate configuration
   app.enableCors({
@@ -31,8 +35,9 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get('PORT') || 4000;
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   console.log(`🚀 Application is running on: http://localhost:${port}/api/v1`);
+  console.log(`🔒 Security Enhanced: Using Fastify platform (no multer vulnerabilities)`);
 }
 
 bootstrap();

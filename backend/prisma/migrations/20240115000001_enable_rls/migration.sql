@@ -188,24 +188,24 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO payroll_u
 -- These complement the existing indexes from the main migration
 
 -- Optimize tenant context lookups
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_clients_company_id_rls" ON "clients"("company_id") 
+CREATE INDEX IF NOT EXISTS "idx_clients_company_id_rls" ON "clients"("company_id") 
 WHERE company_id IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_employees_company_id_rls" ON "employees"("company_id") 
+CREATE INDEX IF NOT EXISTS "idx_employees_company_id_rls" ON "employees"("company_id") 
 WHERE company_id IS NOT NULL;
 
 -- Optimize cross-table RLS policy queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_sites_client_id_rls" ON "sites"("client_id") 
+CREATE INDEX IF NOT EXISTS "idx_sites_client_id_rls" ON "sites"("client_id") 
 WHERE client_id IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_assignments_employee_site_rls" 
+CREATE INDEX IF NOT EXISTS "idx_assignments_employee_site_rls" 
 ON "assignments"("employee_id", "site_id") 
 WHERE employee_id IS NOT NULL AND site_id IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_shifts_assignment_id_rls" ON "shifts"("assignment_id") 
+CREATE INDEX IF NOT EXISTS "idx_shifts_assignment_id_rls" ON "shifts"("assignment_id") 
 WHERE assignment_id IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_payroll_items_payroll_run_id_rls" 
+CREATE INDEX IF NOT EXISTS "idx_payroll_items_payroll_run_id_rls" 
 ON "payroll_items"("payroll_run_id") 
 WHERE payroll_run_id IS NOT NULL;
 
@@ -217,7 +217,7 @@ WHERE payroll_run_id IS NOT NULL;
 CREATE OR REPLACE FUNCTION validate_rls_isolation()
 RETURNS TABLE(table_name TEXT, policy_count INTEGER, rls_enabled BOOLEAN) AS $$
 SELECT 
-    schemaname::TEXT || '.' || tablename::TEXT as table_name,
+    t.schemaname::TEXT || '.' || t.tablename::TEXT as table_name,
     COUNT(pol.policyname)::INTEGER as policy_count,
     relrowsecurity as rls_enabled
 FROM pg_tables t

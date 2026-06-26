@@ -1,0 +1,599 @@
+/**
+ * RBAC Controller Examples
+ * 
+ * This file demonstrates how to use the RBAC system in NestJS controllers.
+ * These examples show best practices for implementing permission-based access control.
+ */
+
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ForbiddenException,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { PermissionsGuard } from '../guards/permissions.guard';
+import { TenantGuard } from '../../common/tenant.guard';
+import {
+  RequirePermissions,
+  RequireAnyPermission,
+  RequireAllPermissions,
+  AllowOwner,
+  RequireUserRead,
+  RequireUserManage,
+  RequireEmployeeRead,
+  RequireEmployeeManage,
+  RequirePayrollRead,
+  RequirePayrollManage,
+} from '../decorators/permissions.decorator';
+import {
+  CurrentUser,
+  CurrentUserId,
+  CurrentUserRole,
+  CurrentTenantId,
+} from '../decorators/current-user.decorator';
+import {
+  UserPermissions,
+  EmployeePermissions,
+  PayrollPermissions,
+  ClientPermissions,
+  AttendancePermissions,
+} from '../enums/permissions.enum';
+import { UserRole } from '@prisma/client';
+
+// ============================================================================
+// Example 1: Basic Permission Protection
+// ============================================================================
+
+@Controller('users')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+export class UserControllerExample {
+  /**
+   * Example: Simple read permission
+   * Only users with READ_USER permission can access
+   */
+  @Get()
+  @RequireUserRead() // Convenience decorator
+  async getUsers() {
+    return { message: 'User list (requires READ_USER permission)' };
+  }
+
+  /**
+   * Example: Explicit permission requirement
+   * Same as above but using explicit permission
+   */
+  @Get('explicit')
+  @RequirePermissions([UserPermissions.READ_USER])
+  async getUsersExplicit() {
+    return { message: 'User list (explicit permission)' };
+  }
+
+  /**
+   * Example: Create operation with specific permission
+   */
+  @Post()
+  @RequirePermissions([UserPermissions.CREATE_USER])
+  async createUser(@Body() userData: any) {
+    return { message: 'User created (requires CREATE_USER permission)' };
+  }
+
+  /**
+   * Example: Resource ownership pattern
+   * Users can access their own profile OR have READ permission for others
+   */
+  @Get('profile/:id')
+  @AllowOwner([UserPermissions.READ_USER])
+  async getProfile(
+    @Param('id') userId: string,
+    @CurrentUserId() currentUserId: string,
+  ) {
+    const isOwnProfile = userId === currentUserId;
+    return {
+      message: `Profile access ${isOwnProfile ? '(own profile)' : '(admin access)'}`,
+      userId,
+      currentUserId,
+    };
+  }
+
+  /**
+   * Example: Multiple permission options (any)
+   * User needs either CREATE_USER OR UPDATE_USER permission
+   */
+  @Put('bulk-update')
+  @RequireAnyPermission([UserPermissions.CREATE_USER, UserPermissions.UPDATE_USER])
+  async bulkUpdateUsers(@Body() updates: any) {
+    return { message: 'Bulk update (requires CREATE or UPDATE permission)' };
+  }
+
+  /**
+   * Example: Multiple permission requirements (all)
+   * User needs both READ_USER AND UPDATE_USER permissions
+   */
+  @Put(':id')
+  @RequireAllPermissions([UserPermissions.READ_USER, UserPermissions.UPDATE_USER])
+  async updateUser(@Param('id') id: string, @Body() updates: any) {
+    return { message: 'User updated (requires READ and UPDATE permissions)' };
+  }
+
+  /**
+   * Example: Admin-only operation
+   */
+  @Delete(':id')
+  @RequirePermissions([UserPermissions.DELETE_USER])
+  async deleteUser(@Param('id') id: string) {
+    return { message: 'User deleted (admin only)' };
+  }
+}
+
+// ============================================================================
+// Example 2: Employee Management with Complex Permissions
+// ============================================================================
+
+@Controller('employees')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+export class EmployeeControllerExample {
+  /**
+   * Example: Basic employee list with pagination
+   */
+  @Get()
+  @RequireEmployeeRead()
+  async getEmployees(@Query() query: any) {
+    return {
+      message: 'Employee list',
+      query,
+      note: 'Supervisors+ can access this',
+    };
+  }
+
+  /**
+   * Example: Own employee data access
+   * Employees can see their own data, managers can see all
+   */
+  @Get(':id')
+  @AllowOwner([EmployeePermissions.READ_EMPLOYEE])
+  async getEmployee(
+    @Param('id') employeeId: string,
+    @CurrentUserId() currentUserId: string,
+    @CurrentUserRole() userRole: string,
+  ) {
+    return {
+      message: 'Employee details',
+      employeeId,
+      currentUserId,
+      userRole,
+      accessType: employeeId === currentUserId ? 'self' : 'admin',
+    };
+  }
+
+  /**
+   * Example: Creating employees (managers and above)
+   */
+  @Post()
+  @RequirePermissions([EmployeePermissions.CREATE_EMPLOYEE])
+  async createEmployee(@Body() employeeData: any) {
+    return {
+      message: 'Employee created',
+      note: 'Requires manager role or above',
+    };
+  }
+
+  /**
+   * Example: Updating employee status (restricted operation)
+   */
+  @Put(':id/status')
+  @RequirePermissions([EmployeePermissions.UPDATE_EMPLOYEE_STATUS])
+  async updateEmployeeStatus(
+    @Param('id') id: string,
+    @Body() statusUpdate: any,
+  ) {
+    return {
+      message: 'Employee status updated',
+      note: 'Only managers+ can change employee status',
+    };
+  }
+
+  /**
+   * Example: Document management (sensitive operation)
+   */
+  @Post(':id/documents')
+  @RequirePermissions([EmployeePermissions.MANAGE_EMPLOYEE_DOCUMENTS])
+  async uploadDocument(
+    @Param('id') employeeId: string,
+    @Body() documentData: any,
+  ) {
+    return {
+      message: 'Document uploaded',
+      note: 'HR managers can manage employee documents',
+    };
+  }
+}
+
+// ============================================================================
+// Example 3: Attendance with Self-Service and Admin Access
+// ============================================================================
+
+@Controller('attendance')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+export class AttendanceControllerExample {
+  /**
+   * Example: Clock in - employees can clock themselves in
+   */
+  @Post('clock-in')
+  @RequirePermissions([AttendancePermissions.CREATE_ATTENDANCE])
+  async clockIn(
+    @Body() clockInData: any,
+    @CurrentUserId() userId: string,
+    @CurrentTenantId() tenantId: string,
+  ) {
+    return {
+      message: 'Clocked in successfully',
+      userId,
+      tenantId,
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * Example: View own attendance records
+   */
+  @Get('my-records')
+  @RequirePermissions([AttendancePermissions.READ_ATTENDANCE])
+  async getMyAttendance(
+    @CurrentUserId() userId: string,
+    @Query() dateRange: any,
+  ) {
+    return {
+      message: 'Personal attendance records',
+      userId,
+      dateRange,
+      note: 'All employees can view their own records',
+    };
+  }
+
+  /**
+   * Example: View team attendance (supervisors+)
+   */
+  @Get('team/:teamId')
+  @RequirePermissions([AttendancePermissions.VIEW_ATTENDANCE_REPORTS])
+  async getTeamAttendance(
+    @Param('teamId') teamId: string,
+    @Query() filters: any,
+  ) {
+    return {
+      message: 'Team attendance report',
+      teamId,
+      filters,
+      note: 'Supervisors can view their team attendance',
+    };
+  }
+
+  /**
+   * Example: Approve attendance corrections (managers+)
+   */
+  @Put('corrections/:id/approve')
+  @RequirePermissions([AttendancePermissions.APPROVE_ATTENDANCE_CORRECTIONS])
+  async approveCorrection(
+    @Param('id') correctionId: string,
+    @CurrentUserId() approverId: string,
+  ) {
+    return {
+      message: 'Attendance correction approved',
+      correctionId,
+      approverId,
+      note: 'Only managers can approve corrections',
+    };
+  }
+
+  /**
+   * Example: Bulk attendance adjustments (admin operation)
+   */
+  @Put('bulk-adjust')
+  @RequirePermissions([AttendancePermissions.MANAGE_CLOCK_ADJUSTMENTS])
+  async bulkAdjustAttendance(@Body() adjustments: any) {
+    return {
+      message: 'Bulk attendance adjustments processed',
+      count: adjustments.length,
+      note: 'HR admins only',
+    };
+  }
+}
+
+// ============================================================================
+// Example 4: Payroll with Hierarchical Access
+// ============================================================================
+
+@Controller('payroll')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+export class PayrollControllerExample {
+  /**
+   * Example: View own payroll (all employees)
+   */
+  @Get('my-payroll')
+  @RequirePayrollRead()
+  async getMyPayroll(
+    @CurrentUserId() userId: string,
+    @Query() period: any,
+  ) {
+    return {
+      message: 'Personal payroll information',
+      userId,
+      period,
+      note: 'All employees can view their own payroll',
+    };
+  }
+
+  /**
+   * Example: Payroll reports (managers+)
+   */
+  @Get('reports')
+  @RequirePermissions([PayrollPermissions.VIEW_PAYROLL_REPORTS])
+  async getPayrollReports(@Query() filters: any) {
+    return {
+      message: 'Payroll reports',
+      filters,
+      note: 'Managers can view payroll reports',
+    };
+  }
+
+  /**
+   * Example: Create payroll run (company admins+)
+   */
+  @Post('runs')
+  @RequirePermissions([PayrollPermissions.CREATE_PAYROLL_RUN])
+  async createPayrollRun(@Body() runData: any) {
+    return {
+      message: 'Payroll run created',
+      runData,
+      note: 'Only company admins can create payroll runs',
+    };
+  }
+
+  /**
+   * Example: Process payroll (highest privilege operation)
+   */
+  @Post('runs/:id/process')
+  @RequirePermissions([PayrollPermissions.PROCESS_PAYROLL])
+  async processPayroll(@Param('id') runId: string) {
+    return {
+      message: 'Payroll processing initiated',
+      runId,
+      note: 'Company admins only - involves financial operations',
+    };
+  }
+
+  /**
+   * Example: Multiple permission check for payroll approval
+   * Requires both process and approve permissions
+   */
+  @Post('runs/:id/approve')
+  @RequireAllPermissions([
+    PayrollPermissions.PROCESS_PAYROLL,
+    PayrollPermissions.APPROVE_PAYROLL,
+  ])
+  async approvePayroll(@Param('id') runId: string) {
+    return {
+      message: 'Payroll approved and finalized',
+      runId,
+      note: 'Requires both process and approve permissions',
+    };
+  }
+}
+
+// ============================================================================
+// Example 5: Client Management (External Facing Operations)
+// ============================================================================
+
+@Controller('clients')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+export class ClientControllerExample {
+  /**
+   * Example: View clients (sales team and above)
+   */
+  @Get()
+  @RequirePermissions([ClientPermissions.READ_CLIENT])
+  async getClients(@Query() filters: any) {
+    return {
+      message: 'Client list',
+      filters,
+      note: 'Sales team, managers, and admins can view clients',
+    };
+  }
+
+  /**
+   * Example: Create new client (managers+)
+   */
+  @Post()
+  @RequirePermissions([ClientPermissions.CREATE_CLIENT])
+  async createClient(@Body() clientData: any) {
+    return {
+      message: 'Client created',
+      clientData,
+      note: 'Managers can onboard new clients',
+    };
+  }
+
+  /**
+   * Example: Manage client contracts (admin operation)
+   */
+  @Put(':id/contracts')
+  @RequirePermissions([ClientPermissions.MANAGE_CLIENT_CONTRACTS])
+  async updateContract(
+    @Param('id') clientId: string,
+    @Body() contractData: any,
+  ) {
+    return {
+      message: 'Client contract updated',
+      clientId,
+      note: 'Company admins can manage contracts',
+    };
+  }
+
+  /**
+   * Example: View billing information (finance team)
+   */
+  @Get(':id/billing')
+  @RequirePermissions([ClientPermissions.VIEW_CLIENT_BILLING])
+  async getClientBilling(@Param('id') clientId: string) {
+    return {
+      message: 'Client billing information',
+      clientId,
+      note: 'Finance team can view client billing',
+    };
+  }
+}
+
+// ============================================================================
+// Example 6: Using RBAC Service Directly in Controllers
+// ============================================================================
+
+@Controller('rbac-examples')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+export class RbacServiceExampleController {
+  constructor(private readonly rbacService: any) {} // RbacService - type omitted for example
+
+  /**
+   * Example: Programmatic permission checking
+   */
+  @Get('check-permissions')
+  async checkPermissions(@CurrentUserRole() userRole: UserRole) {
+    const permissions = this.rbacService.getUserPermissions();
+    const canManageUsers = this.rbacService.hasPermission(UserPermissions.CREATE_USER);
+    const canProcessPayroll = this.rbacService.hasPermission(PayrollPermissions.PROCESS_PAYROLL);
+
+    return {
+      userRole,
+      totalPermissions: permissions.length,
+      canManageUsers,
+      canProcessPayroll,
+      samplePermissions: permissions.slice(0, 5), // First 5 permissions
+    };
+  }
+
+  /**
+   * Example: Dynamic authorization based on business logic
+   */
+  @Get('dynamic-auth/:resourceId')
+  async dynamicAuth(
+    @Param('resourceId') resourceId: string,
+    @CurrentUserId() userId: string,
+  ) {
+    // Example: Check if user can access a specific resource
+    const canAccess = this.rbacService.canAccessResource(
+      resourceId, // resource owner ID
+      undefined, // resource tenant (will use current tenant)
+      EmployeePermissions.READ_EMPLOYEE, // required permission if not owner
+    );
+
+    if (!canAccess) {
+      throw new ForbiddenException('Access denied to this resource');
+    }
+
+    return {
+      message: 'Access granted',
+      resourceId,
+      userId,
+      accessGranted: true,
+    };
+  }
+
+  /**
+   * Example: Role hierarchy demonstration
+   */
+  @Get('role-hierarchy')
+  async getRoleHierarchy(@CurrentUserRole() userRole: UserRole) {
+    const assignableRoles = this.rbacService.getAssignableRoles();
+    const permissionContext = this.rbacService.getPermissionContext();
+
+    return {
+      currentRole: userRole,
+      assignableRoles,
+      canManageOthers: assignableRoles.length > 0,
+      permissionContext,
+    };
+  }
+
+  /**
+   * Example: Tenant access validation
+   */
+  @Get('tenant-access/:targetTenantId')
+  async checkTenantAccess(
+    @Param('targetTenantId') targetTenantId: string,
+    @CurrentTenantId() currentTenantId: string,
+  ) {
+    const canAccess = this.rbacService.canAccessTenant(targetTenantId);
+
+    return {
+      currentTenantId,
+      targetTenantId,
+      canAccess,
+      isCrossTenant: currentTenantId !== targetTenantId,
+      message: canAccess ? 'Access granted' : 'Access denied',
+    };
+  }
+}
+
+// ============================================================================
+// Example 7: Error Handling and Custom Messages
+// ============================================================================
+
+@Controller('rbac-error-examples')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+export class RbacErrorExampleController {
+  /**
+   * Example: Custom error message for permission denial
+   */
+  @Delete('sensitive-operation')
+  @RequirePermissions([UserPermissions.DELETE_USER], {
+    errorMessage: 'This operation requires administrator privileges. Contact your manager if you need access.',
+  })
+  async sensitiveOperation() {
+    return { message: 'Sensitive operation completed' };
+  }
+
+  /**
+   * Example: Complex permission requirement with descriptive error
+   */
+  @Post('complex-operation')
+  @RequirePermissions(
+    [PayrollPermissions.PROCESS_PAYROLL, PayrollPermissions.APPROVE_PAYROLL],
+    {
+      requireAll: true,
+      errorMessage: 'This operation requires both payroll processing and approval permissions.',
+    },
+  )
+  async complexOperation() {
+    return { message: 'Complex operation completed' };
+  }
+
+  /**
+   * Example: Owner-based access with fallback permission
+   */
+  @Get('user-data/:userId')
+  @RequirePermissions([UserPermissions.READ_USER], {
+    allowOwner: true,
+    errorMessage: 'You can only access your own data unless you have user management permissions.',
+  })
+  async getUserData(
+    @Param('userId') userId: string,
+    @CurrentUserId() currentUserId: string,
+  ) {
+    return {
+      message: 'User data retrieved',
+      isOwnData: userId === currentUserId,
+    };
+  }
+}
+
+// Note: These examples demonstrate the comprehensive RBAC system capabilities.
+// In real implementation, you would:
+// 1. Replace 'any' types with proper DTOs
+// 2. Implement actual business logic
+// 3. Add proper error handling
+// 4. Include input validation
+// 5. Add appropriate response types

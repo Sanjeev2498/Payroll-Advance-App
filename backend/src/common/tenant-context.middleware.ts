@@ -26,7 +26,9 @@ export class TenantContextMiddleware implements NestMiddleware {
   async use(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       // Skip tenant context for health checks and public endpoints
-      if (this.isPublicEndpoint(req.path)) {
+      // Handle both Express and Fastify request objects
+      const requestPath = req.path || req.url || '';
+      if (this.isPublicEndpoint(requestPath)) {
         return next();
       }
 
@@ -77,6 +79,8 @@ export class TenantContextMiddleware implements NestMiddleware {
   }
 
   private isPublicEndpoint(path: string): boolean {
+    if (!path) return false;
+    
     const publicPaths = [
       '/health',
       '/api/health',

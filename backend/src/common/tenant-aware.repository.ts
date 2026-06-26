@@ -88,7 +88,7 @@ export abstract class TenantAwareRepository {
     sortOrder?: 'asc' | 'desc'
   ): Record<string, 'asc' | 'desc'> | undefined {
     if (!sortBy) {
-      return { created_at: 'desc' }; // Default sort by creation date
+      return { createdAt: 'desc' }; // Default sort by creation date
     }
 
     return { [sortBy as string]: sortOrder || 'asc' };

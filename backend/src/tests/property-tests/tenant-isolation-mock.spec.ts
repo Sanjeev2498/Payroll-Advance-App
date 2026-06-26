@@ -28,7 +28,7 @@ describe('Property Test: Multi-tenant Data Isolation (Mock)', () => {
           // Create mixed data for different tenants
           const mixedData = [
             ...data.map(item => ({ ...item, companyId: tenantId })),
-            ...data.map(item => ({ ...item, companyId: otherTenantId, id: fc.uuid().generate() }))
+            ...data.map(item => ({ ...item, companyId: otherTenantId, id: fc.sample(fc.uuid(), 1)[0] }))
           ];
 
           // Test: Filter for tenant1

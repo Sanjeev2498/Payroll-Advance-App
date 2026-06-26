@@ -11,6 +11,9 @@ export enum UserPermissions {
   DELETE_USER = 'user:delete',
   MANAGE_USER_ROLES = 'user:manage_roles',
   RESET_USER_PASSWORD = 'user:reset_password',
+  ACTIVATE_USER = 'user:activate',
+  DEACTIVATE_USER = 'user:deactivate',
+  READ_USER_STATS = 'user:read_stats',
 }
 
 // Company Management Permissions

@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as fc from 'fast-check';
-import { v4 as uuidv4 } from 'uuid';
+// Use CommonJS require for uuid to avoid ESM issues in Jest
+const { v4: uuidv4 } = require('uuid');
 
 describe('Property Test: Multi-tenant Data Isolation', () => {
   let prismaService: PrismaService;

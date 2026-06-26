@@ -46,7 +46,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Set tenant context for RLS
-    await this.prisma.$executeRaw`SET app.tenant_id = ${user.companyId}`;
+    await this.prisma.setTenantContext(user.companyId, user.role);
 
     return {
       id: user.id,

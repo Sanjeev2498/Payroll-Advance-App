@@ -11,16 +11,10 @@ import { TenantContextService } from './tenant-context.service';
 import { AuthenticatedRequest } from './tenant-context.middleware';
 
 // Decorator to mark routes as requiring tenant access
-export const RequireTenant = (allowedRoles?: string[]) => {
-  return (target: any, propertyName?: string, descriptor?: PropertyDescriptor) => {
-    Reflector.createDecorator<string[]>()([...(allowedRoles || [])])(target, propertyName, descriptor);
-  };
-};
+export const RequireTenant = Reflector.createDecorator<string[]>();
 
-// Decorator to mark routes as system-only (bypass tenant checks)
-export const SystemOnly = () => {
-  return Reflector.createDecorator<boolean>()(true);
-};
+// Decorator to mark routes as system-only (bypass tenant checks)  
+export const SystemOnly = Reflector.createDecorator<boolean>();
 
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -35,8 +29,8 @@ export class TenantGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     // Check if this is a system-only endpoint
-    const isSystemOnly = this.reflector.get<boolean>('SystemOnly', context.getHandler()) ||
-                        this.reflector.get<boolean>('SystemOnly', context.getClass());
+    const isSystemOnly = this.reflector.get(SystemOnly, context.getHandler()) ||
+                        this.reflector.get(SystemOnly, context.getClass());
 
     if (isSystemOnly) {
       this.logger.debug('System-only endpoint - bypassing tenant checks');
@@ -44,8 +38,8 @@ export class TenantGuard implements CanActivate {
     }
 
     // Check if tenant context is required
-    const requiredRoles = this.reflector.get<string[]>('RequireTenant', context.getHandler()) ||
-                         this.reflector.get<string[]>('RequireTenant', context.getClass());
+    const requiredRoles = this.reflector.get(RequireTenant, context.getHandler()) ||
+                         this.reflector.get(RequireTenant, context.getClass());
 
     // If no specific tenant requirements, allow access
     if (!requiredRoles) {
@@ -62,7 +56,10 @@ export class TenantGuard implements CanActivate {
     if (requiredRoles.length > 0) {
       const userRole = this.tenantContextService.getUserRole();
       
-      if (!userRole || !requiredRoles.includes(userRole)) {
+      // Super admins bypass all role restrictions
+      if (userRole === 'SUPER_ADMIN') {
+        this.logger.debug('Super admin access granted - bypassing role checks');
+      } else if (!userRole || !requiredRoles.includes(userRole)) {
         const tenantId = this.tenantContextService.getTenantId();
         this.logger.warn(
           `Access denied - User role ${userRole} not in required roles [${requiredRoles.join(', ')}] for tenant ${tenantId}`
@@ -73,13 +70,16 @@ export class TenantGuard implements CanActivate {
 
     // Additional validation: ensure user can access their claimed tenant
     const user = request.user;
-    const contextTenantId = this.tenantContextService.getTenantId();
     
-    if (user && user.tenantId !== contextTenantId) {
-      this.logger.error(
-        `Tenant mismatch - User claims tenant ${user.tenantId} but context has ${contextTenantId}`
-      );
-      throw new ForbiddenException('Tenant access violation detected');
+    if (user && this.tenantContextService.hasContext()) {
+      const contextTenantId = this.tenantContextService.getTenantId();
+      
+      if (user.tenantId !== contextTenantId) {
+        this.logger.error(
+          `Tenant mismatch - User claims tenant ${user.tenantId} but context has ${contextTenantId}`
+        );
+        throw new ForbiddenException('Tenant access violation detected');
+      }
     }
 
     this.logger.debug(
