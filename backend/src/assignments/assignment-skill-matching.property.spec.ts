@@ -133,8 +133,8 @@ describe('Assignment Logic Property Tests', () => {
     employeeId: fc.uuid(),
     siteId: fc.uuid(),
     role: fc.constantFrom('Security Guard', 'Supervisor', 'Manager', 'Patrol Officer'),
-    startDate: fc.date({ min: new Date(), max: new Date('2025-06-01') }),
-    endDate: fc.option(fc.date({ min: new Date('2025-06-01'), max: new Date('2025-12-31') })),
+    startDate: fc.date({ min: new Date('2026-07-01'), max: new Date('2026-12-01') }),
+    endDate: fc.option(fc.date({ min: new Date('2026-12-01'), max: new Date('2026-12-31') })),
     status: fc.constantFrom('ACTIVE', 'PENDING', 'COMPLETED'),
     hourlyRate: fc.float({ min: 18, max: 45 }),
     shiftPatterns: fc.array(fc.record({
@@ -151,8 +151,8 @@ describe('Assignment Logic Property Tests', () => {
     newAssignment: fc.record({
       siteId: fc.uuid(),
       role: fc.constantFrom('Security Guard', 'Supervisor'),
-      startDate: fc.date({ min: new Date(), max: new Date('2025-06-01') }),
-      endDate: fc.option(fc.date({ min: new Date('2025-06-01'), max: new Date('2025-12-31') })),
+      startDate: fc.date({ min: new Date('2026-07-01'), max: new Date('2026-12-01') }),
+      endDate: fc.option(fc.date({ min: new Date('2026-12-01'), max: new Date('2026-12-31') })),
       requiredSkills: fc.array(skillGenerator, { minLength: 1, maxLength: 3 }).map(skills => [...new Set(skills)]),
       requiredCertifications: fc.array(fc.string(), { minLength: 0, maxLength: 2 }),
       hourlyRate: fc.float({ min: 18, max: 45 }),

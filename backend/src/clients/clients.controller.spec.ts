@@ -147,6 +147,7 @@ describe('ClientsController', () => {
         total: 10,
         active: 8,
         suspended: 1,
+        expired: 0,
         terminated: 1,
         expiringThisMonth: 2,
       };

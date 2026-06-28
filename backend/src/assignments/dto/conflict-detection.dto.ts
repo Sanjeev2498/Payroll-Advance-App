@@ -1,6 +1,5 @@
 import { IsUUID, IsOptional, IsArray, IsDateString, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AssignmentResponseDto } from './assignment-response.dto';
 
 export enum ConflictType {
   EMPLOYEE_DOUBLE_BOOKING = 'EMPLOYEE_DOUBLE_BOOKING',
@@ -125,7 +124,7 @@ export class ConflictDetailsDto {
   };
 
   @ApiPropertyOptional({ description: 'Conflicting assignment details' })
-  conflictingAssignment?: AssignmentResponseDto;
+  conflictingAssignment?: any;
 
   @ApiPropertyOptional({ description: 'Suggested resolution steps' })
   suggestions?: string[];

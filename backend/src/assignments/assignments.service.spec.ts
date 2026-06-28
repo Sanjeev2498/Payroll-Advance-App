@@ -100,8 +100,8 @@ describe('AssignmentsService', () => {
       siteId: 'site-1',
       role: 'Security Guard',
       hourlyRate: 25.50,
-      startDate: '2024-02-01',
-      endDate: '2024-12-31',
+      startDate: '2026-07-01',
+      endDate: '2026-12-31',
     };
 
     it('should create an assignment successfully', async () => {
