@@ -23,7 +23,9 @@ export class UserManagementService {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async createUser(createUserDto: CreateUserDto): Promise<{ user: UserResponseDto; temporaryPassword?: string }> {
+  async createUser(
+    createUserDto: CreateUserDto,
+  ): Promise<{ user: UserResponseDto; temporaryPassword?: string }> {
     // Validate permissions
     this.validateUserCreationPermissions(createUserDto.role);
 
@@ -39,7 +41,9 @@ export class UserManagementService {
     return { user: userResponse };
   }
 
-  async createUserWithTempPassword(createUserDto: Omit<CreateUserDto, 'password'>): Promise<{ user: UserResponseDto; temporaryPassword: string }> {
+  async createUserWithTempPassword(
+    createUserDto: Omit<CreateUserDto, 'password'>,
+  ): Promise<{ user: UserResponseDto; temporaryPassword: string }> {
     // Validate permissions
     this.validateUserCreationPermissions(createUserDto.role);
 
@@ -50,7 +54,7 @@ export class UserManagementService {
     // Create user with temporary password
     const user = await this.userRepository.create(
       { ...createUserDto, password: temporaryPassword },
-      passwordHash
+      passwordHash,
     );
 
     // Convert to response DTO
@@ -73,14 +77,14 @@ export class UserManagementService {
     const { users, total } = await this.userRepository.findAll(filters);
 
     return {
-      users: users.map(user => this.mapToResponseDto(user)),
+      users: users.map((user) => this.mapToResponseDto(user)),
       total,
     };
   }
 
   async findUserById(id: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findById(id);
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -90,7 +94,7 @@ export class UserManagementService {
 
   async findUserByEmail(email: string): Promise<UserResponseDto | null> {
     const user = await this.userRepository.findByEmail(email);
-    
+
     if (!user) {
       return null;
     }
@@ -107,13 +111,16 @@ export class UserManagementService {
     return this.mapToResponseDto(user);
   }
 
-  async updateUserProfile(userId: string, updateProfileDto: UpdateUserProfileDto): Promise<UserResponseDto> {
+  async updateUserProfile(
+    userId: string,
+    updateProfileDto: UpdateUserProfileDto,
+  ): Promise<UserResponseDto> {
     // Users can update their own profile, or admins can update any profile
     const currentUserId = this.tenantContext.getUserId();
     const currentUserRole = this.tenantContext.getUserRole() as UserRole;
-    
+
     if (userId !== currentUserId && !this.isAdminRole(currentUserRole)) {
-      throw new ForbiddenException('Cannot update another user\'s profile');
+      throw new ForbiddenException("Cannot update another user's profile");
     }
 
     // Convert profile DTO to user DTO
@@ -128,13 +135,16 @@ export class UserManagementService {
     return this.mapToResponseDto(user);
   }
 
-  async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<{ success: boolean; message: string }> {
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<{ success: boolean; message: string }> {
     // Users can change their own password, or admins can reset any password
     const currentUserId = this.tenantContext.getUserId();
     const currentUserRole = this.tenantContext.getUserRole() as UserRole;
-    
+
     if (userId !== currentUserId && !this.isAdminRole(currentUserRole)) {
-      throw new ForbiddenException('Cannot change another user\'s password');
+      throw new ForbiddenException("Cannot change another user's password");
     }
 
     // Get current user to validate current password
@@ -147,9 +157,9 @@ export class UserManagementService {
     if (userId === currentUserId) {
       const isCurrentPasswordValid = await bcrypt.compare(
         changePasswordDto.currentPassword,
-        user.passwordHash
+        user.passwordHash,
       );
-      
+
       if (!isCurrentPasswordValid) {
         throw new UnauthorizedException('Current password is incorrect');
       }
@@ -269,7 +279,7 @@ export class UserManagementService {
 
     if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
       throw new BadRequestException(
-        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
       );
     }
   }
@@ -279,25 +289,28 @@ export class UserManagementService {
     const length = 12;
     const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@$!%*?&';
     let password = '';
-    
+
     // Ensure at least one of each required character type
     password += 'A'; // Uppercase
     password += 'a'; // Lowercase
     password += '1'; // Number
     password += '@'; // Special char
-    
+
     // Fill the rest randomly
     for (let i = 4; i < length; i++) {
       password += charset.charAt(crypto.randomInt(0, charset.length));
     }
-    
+
     // Shuffle the password
-    return password.split('').sort(() => crypto.randomInt(-1, 2)).join('');
+    return password
+      .split('')
+      .sort(() => crypto.randomInt(-1, 2))
+      .join('');
   }
 
   private validateUserCreationPermissions(role: UserRole): void {
     const currentUserRole = this.tenantContext.getUserRole() as UserRole;
-    
+
     // Only admins can create users
     if (!this.isAdminRole(currentUserRole)) {
       throw new ForbiddenException('Insufficient permissions to create users');
@@ -311,7 +324,7 @@ export class UserManagementService {
 
   private validateUserUpdatePermissions(updateUserDto: UpdateUserDto): void {
     const currentUserRole = this.tenantContext.getUserRole() as UserRole;
-    
+
     // Only admins can update users
     if (!this.isAdminRole(currentUserRole)) {
       throw new ForbiddenException('Insufficient permissions to update users');

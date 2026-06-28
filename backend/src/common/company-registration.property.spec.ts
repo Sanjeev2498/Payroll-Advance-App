@@ -5,9 +5,9 @@ import * as fc from 'fast-check';
 
 // Simple UUID generator for tests
 function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c == 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -60,23 +60,23 @@ class MockPrismaService {
   get company() {
     return {
       create: async (args: any) => {
-        const company = { 
-          ...args.data, 
+        const company = {
+          ...args.data,
           id: args.data.id || generateUUID(),
-          createdAt: new Date(), 
-          updatedAt: new Date() 
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
         this.mockData.companies.push(company);
         return company;
       },
       findUnique: async (args: any) => {
-        return this.mockData.companies.find(c => c.id === args.where.id);
+        return this.mockData.companies.find((c) => c.id === args.where.id);
       },
       findMany: async () => {
         if (this.currentTenantId === null) {
           return this.mockData.companies;
         }
-        return this.mockData.companies.filter(c => c.id === this.currentTenantId);
+        return this.mockData.companies.filter((c) => c.id === this.currentTenantId);
       },
       deleteMany: async () => {
         this.mockData.companies = [];
@@ -88,11 +88,11 @@ class MockPrismaService {
   get user() {
     return {
       create: async (args: any) => {
-        const user = { 
-          ...args.data, 
+        const user = {
+          ...args.data,
           id: args.data.id || generateUUID(),
-          createdAt: new Date(), 
-          updatedAt: new Date() 
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
         this.mockData.users.push(user);
         return user;
@@ -100,14 +100,14 @@ class MockPrismaService {
       findMany: async (args?: any) => {
         let users = this.mockData.users;
         if (args?.where?.companyId && this.currentTenantId !== null) {
-          users = users.filter(u => u.companyId === this.currentTenantId);
+          users = users.filter((u) => u.companyId === this.currentTenantId);
         }
         return users;
       },
       count: async (args?: any) => {
         let users = this.mockData.users;
         if (args?.where?.companyId && this.currentTenantId !== null) {
-          users = users.filter(u => u.companyId === this.currentTenantId);
+          users = users.filter((u) => u.companyId === this.currentTenantId);
         }
         return users.length;
       },
@@ -123,14 +123,14 @@ class MockPrismaService {
       findMany: async (args?: any) => {
         let clients = this.mockData.clients;
         if (args?.where?.companyId && this.currentTenantId !== null) {
-          clients = clients.filter(c => c.companyId === this.currentTenantId);
+          clients = clients.filter((c) => c.companyId === this.currentTenantId);
         }
         return clients;
       },
       count: async (args?: any) => {
         let clients = this.mockData.clients;
         if (args?.where?.companyId && this.currentTenantId !== null) {
-          clients = clients.filter(c => c.companyId === this.currentTenantId);
+          clients = clients.filter((c) => c.companyId === this.currentTenantId);
         }
         return clients.length;
       },
@@ -146,14 +146,14 @@ class MockPrismaService {
       findMany: async (args?: any) => {
         let employees = this.mockData.employees;
         if (args?.where?.companyId && this.currentTenantId !== null) {
-          employees = employees.filter(e => e.companyId === this.currentTenantId);
+          employees = employees.filter((e) => e.companyId === this.currentTenantId);
         }
         return employees;
       },
       count: async (args?: any) => {
         let employees = this.mockData.employees;
         if (args?.where?.companyId && this.currentTenantId !== null) {
-          employees = employees.filter(e => e.companyId === this.currentTenantId);
+          employees = employees.filter((e) => e.companyId === this.currentTenantId);
         }
         return employees.length;
       },
@@ -169,14 +169,14 @@ class MockPrismaService {
       findMany: async (args?: any) => {
         let payrollRuns = this.mockData.payrollRuns;
         if (args?.where?.companyId && this.currentTenantId !== null) {
-          payrollRuns = payrollRuns.filter(pr => pr.companyId === this.currentTenantId);
+          payrollRuns = payrollRuns.filter((pr) => pr.companyId === this.currentTenantId);
         }
         return payrollRuns;
       },
       count: async (args?: any) => {
         let payrollRuns = this.mockData.payrollRuns;
         if (args?.where?.companyId && this.currentTenantId !== null) {
-          payrollRuns = payrollRuns.filter(pr => pr.companyId === this.currentTenantId);
+          payrollRuns = payrollRuns.filter((pr) => pr.companyId === this.currentTenantId);
         }
         return payrollRuns.length;
       },
@@ -368,45 +368,39 @@ describe('Company Registration Completeness Property Tests', () => {
   describe('Property 2: Company Registration Completeness', () => {
     it('should create a complete isolated workspace with default configurations for any valid company registration', async () => {
       await fc.assert(
-        fc.asyncProperty(
-          companyRegistrationGenerator(),
-          async (registrationData) => {
-            try {
-              // Act: Register company with the generated data
-              const registrationResult = await companyRegistrationService.registerCompany(registrationData);
+        fc.asyncProperty(companyRegistrationGenerator(), async (registrationData) => {
+          try {
+            // Act: Register company with the generated data
+            const registrationResult =
+              await companyRegistrationService.registerCompany(registrationData);
 
-              // Verify: Company registration completeness
-              await verifyCompleteWorkspaceCreation(registrationResult, registrationData);
-
-            } catch (error) {
-              console.error('Company registration property test error:', error);
-              throw error;
-            }
+            // Verify: Company registration completeness
+            await verifyCompleteWorkspaceCreation(registrationResult, registrationData);
+          } catch (error) {
+            console.error('Company registration property test error:', error);
+            throw error;
           }
-        ),
-        PROPERTY_TEST_CONFIG
+        }),
+        PROPERTY_TEST_CONFIG,
       );
     });
 
     it('should create default configurations that are non-empty and well-structured for any company', async () => {
       await fc.assert(
-        fc.asyncProperty(
-          companyRegistrationGenerator(),
-          async (registrationData) => {
-            try {
-              // Act: Register company
-              const registrationResult = await companyRegistrationService.registerCompany(registrationData);
+        fc.asyncProperty(companyRegistrationGenerator(), async (registrationData) => {
+          try {
+            // Act: Register company
+            const registrationResult =
+              await companyRegistrationService.registerCompany(registrationData);
 
-              // Verify: Default configurations are properly structured
-              await verifyDefaultConfigurationStructure(registrationResult);
-
-            } catch (error) {
-              console.error('Default configuration structure test error:', error);
-              throw error;
-            }
+            // Verify: Default configurations are properly structured
+            await verifyDefaultConfigurationStructure(registrationResult);
+          } catch (error) {
+            console.error('Default configuration structure test error:', error);
+            throw error;
           }
-        ),
-        PROPERTY_TEST_CONFIG
+        }),
+        PROPERTY_TEST_CONFIG,
       );
     });
 
@@ -416,28 +410,30 @@ describe('Company Registration Completeness Property Tests', () => {
           fc.array(companyRegistrationGenerator(), { minLength: 2, maxLength: 5 }),
           async (registrationDataArray) => {
             // Ensure all companies have unique slugs and emails
-            const uniqueSlugs = new Set(registrationDataArray.map(r => r.slug));
-            const uniqueEmails = new Set(registrationDataArray.map(r => r.adminUser.email));
+            const uniqueSlugs = new Set(registrationDataArray.map((r) => r.slug));
+            const uniqueEmails = new Set(registrationDataArray.map((r) => r.adminUser.email));
             fc.pre(uniqueSlugs.size === registrationDataArray.length);
             fc.pre(uniqueEmails.size === registrationDataArray.length);
 
             try {
               // Act: Register companies concurrently
-              const registrationPromises = registrationDataArray.map(data =>
-                companyRegistrationService.registerCompany(data)
+              const registrationPromises = registrationDataArray.map((data) =>
+                companyRegistrationService.registerCompany(data),
               );
               const registrationResults = await Promise.all(registrationPromises);
 
               // Verify: All registrations are complete and isolated
-              await verifyConcurrentRegistrationIntegrity(registrationResults, registrationDataArray);
-
+              await verifyConcurrentRegistrationIntegrity(
+                registrationResults,
+                registrationDataArray,
+              );
             } catch (error) {
               console.error('Concurrent registration test error:', error);
               throw error;
             }
-          }
+          },
         ),
-        PROPERTY_TEST_CONFIG
+        PROPERTY_TEST_CONFIG,
       );
     });
 
@@ -458,14 +454,13 @@ describe('Company Registration Completeness Property Tests', () => {
 
               // Verify: Both have consistent default structures
               await verifyConsistentDefaultStructure(result1, result2);
-
             } catch (error) {
               console.error('Consistent structure test error:', error);
               throw error;
             }
-          }
+          },
         ),
-        PROPERTY_TEST_CONFIG
+        PROPERTY_TEST_CONFIG,
       );
     });
   });
@@ -473,14 +468,20 @@ describe('Company Registration Completeness Property Tests', () => {
   // Data Generators
   function companyRegistrationGenerator() {
     return fc.record({
-      name: fc.string({ minLength: 3, maxLength: 50 }).map(s => s.trim()),
-      slug: fc.string({ minLength: 3, maxLength: 20 })
-        .map(s => s.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 20))
-        .filter(s => s.length >= 3),
+      name: fc.string({ minLength: 3, maxLength: 50 }).map((s) => s.trim()),
+      slug: fc
+        .string({ minLength: 3, maxLength: 20 })
+        .map((s) =>
+          s
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .slice(0, 20),
+        )
+        .filter((s) => s.length >= 3),
       adminUser: fc.record({
         email: fc.emailAddress(),
-        firstName: fc.string({ minLength: 2, maxLength: 20 }).map(s => s.trim()),
-        lastName: fc.string({ minLength: 2, maxLength: 20 }).map(s => s.trim()),
+        firstName: fc.string({ minLength: 2, maxLength: 20 }).map((s) => s.trim()),
+        lastName: fc.string({ minLength: 2, maxLength: 20 }).map((s) => s.trim()),
         password: fc.string({ minLength: 8, maxLength: 50 }),
       }),
       settings: fc.option(fc.object(), { nil: undefined }),
@@ -491,7 +492,7 @@ describe('Company Registration Completeness Property Tests', () => {
   // Verification Functions
   async function verifyCompleteWorkspaceCreation(
     registrationResult: any,
-    originalRegistrationData: any
+    originalRegistrationData: any,
   ) {
     const { company, adminUser } = registrationResult;
 
@@ -590,22 +591,22 @@ describe('Company Registration Completeness Property Tests', () => {
 
   async function verifyConcurrentRegistrationIntegrity(
     registrationResults: any[],
-    originalRegistrationData: any[]
+    originalRegistrationData: any[],
   ) {
     // Verify all registrations succeeded
     expect(registrationResults).toHaveLength(originalRegistrationData.length);
-    registrationResults.forEach(result => {
+    registrationResults.forEach((result) => {
       expect(result.company).toBeDefined();
       expect(result.adminUser).toBeDefined();
     });
 
     // Verify each company has unique identifiers
-    const companyIds = registrationResults.map(r => r.company.id);
+    const companyIds = registrationResults.map((r) => r.company.id);
     const uniqueCompanyIds = new Set(companyIds);
     expect(uniqueCompanyIds.size).toBe(companyIds.length);
 
     // Verify each admin user has unique identifiers
-    const userIds = registrationResults.map(r => r.adminUser.id);
+    const userIds = registrationResults.map((r) => r.adminUser.id);
     const uniqueUserIds = new Set(userIds);
     expect(uniqueUserIds.size).toBe(userIds.length);
 
@@ -630,7 +631,9 @@ describe('Company Registration Completeness Property Tests', () => {
     expect(settings1.dateFormat).toBe(settings2.dateFormat);
     expect(settings1.currency).toBe(settings2.currency);
     expect(settings1.payrollSettings.payFrequency).toBe(settings2.payrollSettings.payFrequency);
-    expect(settings1.payrollSettings.overtimeThreshold).toBe(settings2.payrollSettings.overtimeThreshold);
+    expect(settings1.payrollSettings.overtimeThreshold).toBe(
+      settings2.payrollSettings.overtimeThreshold,
+    );
     expect(settings1.payrollSettings.overtimeRate).toBe(settings2.payrollSettings.overtimeRate);
 
     // Both should have the same default branding structure

@@ -138,6 +138,7 @@ model Employee {
   address          Json?            @db.JsonB
   certifications   Json?            @db.JsonB
   skills           String[]         @db.VarChar(50)
+  metadata         Json?            @db.JsonB
   employmentStatus EmploymentStatus @default(ACTIVE) @map("employment_status")
   hireDate         DateTime         @map("hire_date") @db.Date
   terminationDate  DateTime?        @map("termination_date") @db.Date

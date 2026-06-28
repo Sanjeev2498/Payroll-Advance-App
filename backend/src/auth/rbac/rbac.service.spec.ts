@@ -2,11 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
 import { RbacService } from './rbac.service';
 import { TenantContextService } from '../../common/tenant-context.service';
-import { 
-  UserPermissions, 
-  EmployeePermissions, 
+import {
+  UserPermissions,
+  EmployeePermissions,
   PayrollPermissions,
-  SystemPermissions 
+  SystemPermissions,
 } from '../enums/permissions.enum';
 
 describe('RbacService', () => {
@@ -200,7 +200,7 @@ describe('RbacService', () => {
 
       const result = service.canPerformActionInTenant(
         PayrollPermissions.VIEW_PAYROLL_REPORTS,
-        'tenant-1'
+        'tenant-1',
       );
 
       expect(result).toBe(true);
@@ -211,7 +211,7 @@ describe('RbacService', () => {
 
       const result = service.canPerformActionInTenant(
         PayrollPermissions.PROCESS_PAYROLL,
-        'tenant-1'
+        'tenant-1',
       );
 
       expect(result).toBe(false);
@@ -222,7 +222,7 @@ describe('RbacService', () => {
 
       const result = service.canPerformActionInTenant(
         PayrollPermissions.VIEW_PAYROLL_REPORTS,
-        'tenant-2'
+        'tenant-2',
       );
 
       expect(result).toBe(false);
@@ -271,8 +271,8 @@ describe('RbacService', () => {
 
       const result = service.canAccessResource(
         'user-2',
-        'tenant-1', 
-        EmployeePermissions.READ_EMPLOYEE
+        'tenant-1',
+        EmployeePermissions.READ_EMPLOYEE,
       );
 
       expect(result).toBe(true);
@@ -284,7 +284,7 @@ describe('RbacService', () => {
       const result = service.canAccessResource(
         'user-2',
         'tenant-1',
-        EmployeePermissions.UPDATE_EMPLOYEE
+        EmployeePermissions.UPDATE_EMPLOYEE,
       );
 
       expect(result).toBe(false);

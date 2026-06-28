@@ -27,24 +27,24 @@ export abstract class TenantAwareRepository {
    * Execute a database operation with automatic tenant context
    * This ensures RLS policies are properly applied
    */
-  protected async executeWithTenant<T>(
-    operation: (prisma: any) => Promise<T>
-  ): Promise<T> {
+  protected async executeWithTenant<T>(operation: (prisma: any) => Promise<T>): Promise<T> {
     const tenantId = this.tenantContext.getTenantId();
     const userRole = this.tenantContext.getUserRole();
 
-    return this.prisma.withTenant(tenantId, async (prisma) => {
-      return operation(prisma);
-    }, userRole || undefined);
+    return this.prisma.withTenant(
+      tenantId,
+      async (prisma) => {
+        return operation(prisma);
+      },
+      userRole || undefined,
+    );
   }
 
   /**
    * Execute a system operation that bypasses tenant restrictions
    * Use this sparingly and only for legitimate system operations
    */
-  protected async executeWithSystemContext<T>(
-    operation: (prisma: any) => Promise<T>
-  ): Promise<T> {
+  protected async executeWithSystemContext<T>(operation: (prisma: any) => Promise<T>): Promise<T> {
     this.logger.warn('Executing operation with system context - bypassing RLS');
     return this.prisma.withSystemContext(async (prisma) => {
       return operation(prisma);
@@ -56,10 +56,10 @@ export abstract class TenantAwareRepository {
    */
   protected validateTenantOwnership(entityTenantId: string): void {
     const currentTenantId = this.tenantContext.getTenantId();
-    
+
     if (entityTenantId !== currentTenantId) {
       throw new Error(
-        `Entity belongs to tenant ${entityTenantId} but current context is ${currentTenantId}`
+        `Entity belongs to tenant ${entityTenantId} but current context is ${currentTenantId}`,
       );
     }
   }
@@ -67,13 +67,16 @@ export abstract class TenantAwareRepository {
   /**
    * Get pagination parameters with safe defaults
    */
-  protected getPaginationParams(page?: number, limit?: number): {
+  protected getPaginationParams(
+    page?: number,
+    limit?: number,
+  ): {
     skip: number;
     take: number;
   } {
     const safeLimit = Math.min(limit || 20, 100); // Max 100 items per page
     const safePage = Math.max(page || 1, 1); // Min page 1
-    
+
     return {
       skip: (safePage - 1) * safeLimit,
       take: safeLimit,
@@ -85,7 +88,7 @@ export abstract class TenantAwareRepository {
    */
   protected getSortingParams<T extends Record<string, any>>(
     sortBy?: keyof T,
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: 'asc' | 'desc',
   ): Record<string, 'asc' | 'desc'> | undefined {
     if (!sortBy) {
       return { createdAt: 'desc' }; // Default sort by creation date
@@ -97,18 +100,13 @@ export abstract class TenantAwareRepository {
   /**
    * Execute a find operation with automatic tenant context and error handling
    */
-  protected async findWithTenant<T>(
-    modelOperation: () => Promise<T>
-  ): Promise<T> {
+  protected async findWithTenant<T>(modelOperation: () => Promise<T>): Promise<T> {
     try {
       return await this.executeWithTenant(async () => {
         return modelOperation();
       });
     } catch (error) {
-      this.logger.error(
-        `Database operation failed: ${error.message}`,
-        error.stack
-      );
+      this.logger.error(`Database operation failed: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -116,18 +114,13 @@ export abstract class TenantAwareRepository {
   /**
    * Execute a write operation with automatic tenant context and error handling
    */
-  protected async writeWithTenant<T>(
-    modelOperation: () => Promise<T>
-  ): Promise<T> {
+  protected async writeWithTenant<T>(modelOperation: () => Promise<T>): Promise<T> {
     try {
       return await this.executeWithTenant(async () => {
         return modelOperation();
       });
     } catch (error) {
-      this.logger.error(
-        `Database write operation failed: ${error.message}`,
-        error.stack
-      );
+      this.logger.error(`Database write operation failed: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -140,25 +133,20 @@ export abstract class TenantAwareRepository {
       return {};
     }
 
-    const searchConditions = fields.map(field => ({
+    const searchConditions = fields.map((field) => ({
       [field]: {
         contains: searchTerm,
         mode: 'insensitive' as const,
       },
     }));
 
-    return searchConditions.length === 1 
-      ? searchConditions[0]
-      : { OR: searchConditions };
+    return searchConditions.length === 1 ? searchConditions[0] : { OR: searchConditions };
   }
 
   /**
    * Build date range filter
    */
-  protected buildDateRangeFilter(
-    startDate?: Date | string,
-    endDate?: Date | string
-  ): any {
+  protected buildDateRangeFilter(startDate?: Date | string, endDate?: Date | string): any {
     const filter: any = {};
 
     if (startDate) {
@@ -177,8 +165,6 @@ export abstract class TenantAwareRepository {
    */
   protected logOperation(operation: string, entityType: string, entityId?: string): void {
     const context = this.tenantContext.getContextSnapshot();
-    this.logger.debug(
-      `${operation} ${entityType}${entityId ? ` [${entityId}]` : ''} - ${context}`
-    );
+    this.logger.debug(`${operation} ${entityType}${entityId ? ` [${entityId}]` : ''} - ${context}`);
   }
 }

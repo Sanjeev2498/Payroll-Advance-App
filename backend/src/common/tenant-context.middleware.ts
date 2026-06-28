@@ -37,50 +37,43 @@ export class TenantContextMiddleware implements NestMiddleware {
 
       // Extract tenant information from authenticated user
       const user = req.user;
-      
+
       if (user && (user.tenantId || user.companyId)) {
         // Use companyId as tenantId if tenantId is not present (for compatibility)
         const tenantId = user.tenantId || user.companyId;
-        
+
         // Set application-level tenant context
-        this.tenantContextService.setContext(
-          tenantId,
-          user.id,
-          user.role
-        );
+        this.tenantContextService.setContext(tenantId, user.id, user.role);
 
         // Set database-level tenant context for RLS
         await this.prismaService.setTenantContext(tenantId, user.role);
 
         this.logger.debug(
-          `Tenant context established: ${this.tenantContextService.getContextSnapshot()}`
+          `Tenant context established: ${this.tenantContextService.getContextSnapshot()}`,
         );
       } else {
         // For requests without authentication, clear any existing context
         this.tenantContextService.clearContext();
         await this.prismaService.clearTenantContext();
-        
+
         this.logger.debug('No tenant context - public or unauthenticated request');
       }
 
       next();
     } catch (error) {
-      this.logger.error(
-        `Failed to set tenant context: ${error.message}`,
-        error.stack
-      );
-      
+      this.logger.error(`Failed to set tenant context: ${error.message}`, error.stack);
+
       // Clear context on error to prevent potential security issues
       this.tenantContextService.clearContext();
       await this.prismaService.clearTenantContext();
-      
+
       next(error);
     }
   }
 
   private isPublicEndpoint(path: string): boolean {
     if (!path) return false;
-    
+
     const publicPaths = [
       '/health',
       '/api/health',
@@ -89,9 +82,9 @@ export class TenantContextMiddleware implements NestMiddleware {
       '/api/public',
       '/metrics',
       '/favicon.ico',
-      '/.well-known'
+      '/.well-known',
     ];
 
-    return publicPaths.some(publicPath => path.startsWith(publicPath));
+    return publicPaths.some((publicPath) => path.startsWith(publicPath));
   }
 }

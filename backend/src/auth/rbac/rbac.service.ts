@@ -25,9 +25,9 @@ export class RbacService {
     }
 
     const hasPermission = RolePermissionsConfig.hasPermission(userRole, permission);
-    
+
     this.logger.debug(
-      `Permission check - Role: ${userRole}, Permission: ${permission}, Result: ${hasPermission}`
+      `Permission check - Role: ${userRole}, Permission: ${permission}, Result: ${hasPermission}`,
     );
 
     return hasPermission;
@@ -89,10 +89,10 @@ export class RbacService {
 
     // Regular users can only access their own tenant
     const canAccess = currentTenantId === targetTenantId;
-    
+
     if (!canAccess) {
       this.logger.warn(
-        `Tenant access denied - User tenant: ${currentTenantId}, Requested tenant: ${targetTenantId}, Role: ${userRole}`
+        `Tenant access denied - User tenant: ${currentTenantId}, Requested tenant: ${targetTenantId}, Role: ${userRole}`,
       );
     }
 
@@ -110,7 +110,7 @@ export class RbacService {
 
     // Check role hierarchy
     const canManageRole = RolePermissionsConfig.canManageRole(currentUserRole, targetUserRole);
-    
+
     // If target user is in a different tenant, ensure current user can access it
     if (targetUserTenantId && !this.canAccessTenant(targetUserTenantId)) {
       return false;
@@ -154,7 +154,7 @@ export class RbacService {
   canAccessResource(
     resourceOwnerId?: string,
     resourceTenantId?: string,
-    requiredPermission?: Permission
+    requiredPermission?: Permission,
   ): boolean {
     const currentUserId = this.tenantContextService.getUserId();
     const userRole = this.getCurrentUserRole();
@@ -193,7 +193,7 @@ export class RbacService {
     timestamp: Date;
   } {
     const userRole = this.getCurrentUserRole();
-    
+
     return {
       userId: this.tenantContextService.getUserId(),
       userRole,
@@ -210,10 +210,10 @@ export class RbacService {
     action: string,
     resource: string,
     allowed: boolean,
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ): void {
     const context = this.getPermissionContext();
-    
+
     this.logger.log({
       event: 'authorization_check',
       action,

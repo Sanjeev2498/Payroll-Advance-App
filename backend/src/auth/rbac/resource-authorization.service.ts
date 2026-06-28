@@ -53,7 +53,7 @@ export class ResourceAuthorizationService {
   async authorizeResourceAccess(
     resourceId: string,
     config: ResourceAuthConfig,
-    resourceData?: any
+    resourceData?: any,
   ): Promise<boolean> {
     const context: ResourceAuthContext = {
       userId: this.tenantContextService.getUserId(),
@@ -76,7 +76,7 @@ export class ResourceAuthorizationService {
     action: string,
     resourceType: string,
     resourceData?: any,
-    customConfig?: Partial<ResourceAuthConfig>
+    customConfig?: Partial<ResourceAuthConfig>,
   ): Promise<boolean> {
     const config: ResourceAuthConfig = {
       resourceType,
@@ -105,10 +105,10 @@ export class ResourceAuthorizationService {
     resourceId: string,
     config: ResourceAuthConfig,
     resourceData?: any,
-    errorMessage?: string
+    errorMessage?: string,
   ): Promise<void> {
     const isAuthorized = await this.authorizeResourceAccess(resourceId, config, resourceData);
-    
+
     if (!isAuthorized) {
       const defaultMessage = `Access denied to ${config.resourceType} resource`;
       this.logAuthorizationFailure(resourceId, config, errorMessage || defaultMessage);
@@ -124,13 +124,22 @@ export class ResourceAuthorizationService {
     resourceType: string,
     resourceData?: any,
     customConfig?: Partial<ResourceAuthConfig>,
-    errorMessage?: string
+    errorMessage?: string,
   ): Promise<void> {
-    const isAuthorized = await this.authorizeAction(action, resourceType, resourceData, customConfig);
-    
+    const isAuthorized = await this.authorizeAction(
+      action,
+      resourceType,
+      resourceData,
+      customConfig,
+    );
+
     if (!isAuthorized) {
       const defaultMessage = `Action '${action}' denied on ${resourceType} resource`;
-      this.logAuthorizationFailure(`${action}:${resourceType}`, { resourceType, ...customConfig }, errorMessage || defaultMessage);
+      this.logAuthorizationFailure(
+        `${action}:${resourceType}`,
+        { resourceType, ...customConfig },
+        errorMessage || defaultMessage,
+      );
       throw new ForbiddenException(errorMessage || defaultMessage);
     }
   }
@@ -142,8 +151,8 @@ export class ResourceAuthorizationService {
     action: string,
     resourceType: string,
     resourceIds: string[],
-    customConfig?: Partial<ResourceAuthConfig>
-  ): Promise<{ authorized: string[], denied: string[] }> {
+    customConfig?: Partial<ResourceAuthConfig>,
+  ): Promise<{ authorized: string[]; denied: string[] }> {
     const results = {
       authorized: [] as string[],
       denied: [] as string[],
@@ -151,7 +160,12 @@ export class ResourceAuthorizationService {
 
     for (const resourceId of resourceIds) {
       try {
-        const isAuthorized = await this.authorizeAction(action, resourceType, { id: resourceId }, customConfig);
+        const isAuthorized = await this.authorizeAction(
+          action,
+          resourceType,
+          { id: resourceId },
+          customConfig,
+        );
         if (isAuthorized) {
           results.authorized.push(resourceId);
         } else {
@@ -172,13 +186,18 @@ export class ResourceAuthorizationService {
     resources: T[],
     resourceType: string,
     action: string = 'read',
-    customConfig?: Partial<ResourceAuthConfig>
+    customConfig?: Partial<ResourceAuthConfig>,
   ): Promise<T[]> {
     const authorizedResources: T[] = [];
 
     for (const resource of resources) {
       try {
-        const isAuthorized = await this.authorizeAction(action, resourceType, resource, customConfig);
+        const isAuthorized = await this.authorizeAction(
+          action,
+          resourceType,
+          resource,
+          customConfig,
+        );
         if (isAuthorized) {
           authorizedResources.push(resource);
         }
@@ -196,7 +215,7 @@ export class ResourceAuthorizationService {
    */
   private async evaluateAuthorization(
     context: ResourceAuthContext,
-    config: ResourceAuthConfig
+    config: ResourceAuthConfig,
   ): Promise<boolean> {
     // Ensure we have user context
     if (!context.userId || !context.userRole) {
@@ -212,12 +231,20 @@ export class ResourceAuthorizationService {
 
     // Check tenant access if resource belongs to a specific tenant
     if (context.resourceTenantId && !this.rbacService.canAccessTenant(context.resourceTenantId)) {
-      this.logAuthorizationFailure(context.resourceId || 'unknown', config, 'cross_tenant_access_denied');
+      this.logAuthorizationFailure(
+        context.resourceId || 'unknown',
+        config,
+        'cross_tenant_access_denied',
+      );
       return false;
     }
 
     // Check resource ownership if enabled
-    if (config.allowOwner && context.resourceOwnerId && context.resourceOwnerId === context.userId) {
+    if (
+      config.allowOwner &&
+      context.resourceOwnerId &&
+      context.resourceOwnerId === context.userId
+    ) {
       this.logAuthorizationSuccess(context, config, 'resource_owner_access');
       return true;
     }
@@ -230,7 +257,11 @@ export class ResourceAuthorizationService {
 
     // Check required permission
     if (config.requiredPermission && !this.rbacService.hasPermission(config.requiredPermission)) {
-      this.logAuthorizationFailure(context.resourceId || 'unknown', config, 'insufficient_permissions');
+      this.logAuthorizationFailure(
+        context.resourceId || 'unknown',
+        config,
+        'insufficient_permissions',
+      );
       return false;
     }
 
@@ -239,7 +270,11 @@ export class ResourceAuthorizationService {
       try {
         const customResult = await config.customValidator(context);
         if (!customResult) {
-          this.logAuthorizationFailure(context.resourceId || 'unknown', config, 'custom_validation_failed');
+          this.logAuthorizationFailure(
+            context.resourceId || 'unknown',
+            config,
+            'custom_validation_failed',
+          );
           return false;
         }
       } catch (error) {
@@ -266,7 +301,7 @@ export class ResourceAuthorizationService {
   private logAuthorizationSuccess(
     context: ResourceAuthContext,
     config: ResourceAuthConfig,
-    reason: string
+    reason: string,
   ): void {
     this.logger.debug({
       event: 'resource_authorization_success',
@@ -284,10 +319,10 @@ export class ResourceAuthorizationService {
   private logAuthorizationFailure(
     resourceId: string,
     config: ResourceAuthConfig | Partial<ResourceAuthConfig>,
-    reason: string
+    reason: string,
   ): void {
     const context = this.rbacService.getPermissionContext();
-    
+
     this.logger.warn({
       event: 'resource_authorization_failure',
       userId: context.userId,

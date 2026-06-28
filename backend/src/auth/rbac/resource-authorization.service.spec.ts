@@ -47,7 +47,7 @@ describe('ResourceAuthorizationService', () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Default mock values
     tenantContextService.getUserId.mockReturnValue('user-1');
     tenantContextService.getUserRole.mockReturnValue(UserRole.EMPLOYEE);
@@ -207,9 +207,7 @@ describe('ResourceAuthorizationService', () => {
         resourceType: 'user_profile',
       };
 
-      await expect(
-        service.requireResourceAccess('resource-1', config)
-      ).resolves.not.toThrow();
+      await expect(service.requireResourceAccess('resource-1', config)).resolves.not.toThrow();
     });
 
     it('should throw ForbiddenException when access is denied', async () => {
@@ -220,9 +218,9 @@ describe('ResourceAuthorizationService', () => {
         requiredPermission: UserPermissions.READ_USER,
       };
 
-      await expect(
-        service.requireResourceAccess('resource-1', config)
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.requireResourceAccess('resource-1', config)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should use custom error message when provided', async () => {
@@ -236,7 +234,7 @@ describe('ResourceAuthorizationService', () => {
       const customMessage = 'Custom access denied message';
 
       await expect(
-        service.requireResourceAccess('resource-1', config, undefined, customMessage)
+        service.requireResourceAccess('resource-1', config, undefined, customMessage),
       ).rejects.toThrow(customMessage);
     });
   });
@@ -245,7 +243,8 @@ describe('ResourceAuthorizationService', () => {
     it('should return authorized and denied resource IDs', async () => {
       // Mock alternating authorization results
       tenantContextService.getUserRole.mockReturnValue(UserRole.MANAGER);
-      rbacService.hasPermission.mockReturnValueOnce(true)
+      rbacService.hasPermission
+        .mockReturnValueOnce(true)
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(true);
 
@@ -257,7 +256,7 @@ describe('ResourceAuthorizationService', () => {
         'read',
         'employee',
         ['emp-1', 'emp-2', 'emp-3'],
-        config
+        config,
       );
 
       expect(result.authorized).toHaveLength(2);
@@ -265,12 +264,7 @@ describe('ResourceAuthorizationService', () => {
     });
 
     it('should handle empty resource list', async () => {
-      const result = await service.authorizeBulkAction(
-        'read',
-        'employee',
-        [],
-        {}
-      );
+      const result = await service.authorizeBulkAction('read', 'employee', [], {});
 
       expect(result.authorized).toHaveLength(0);
       expect(result.denied).toHaveLength(0);
@@ -296,34 +290,22 @@ describe('ResourceAuthorizationService', () => {
         customValidator: mockCustomValidator,
       };
 
-      const result = await service.filterAuthorizedResources(
-        resources,
-        'test',
-        'read',
-        config
-      );
+      const result = await service.filterAuthorizedResources(resources, 'test', 'read', config);
 
       expect(result).toHaveLength(2);
-      expect(result.map(r => r.id)).toEqual(['resource-1', 'resource-3']);
+      expect(result.map((r) => r.id)).toEqual(['resource-1', 'resource-3']);
     });
 
     it('should return empty array when no resources are authorized', async () => {
       rbacService.hasPermission.mockReturnValue(false);
 
-      const resources = [
-        { id: 'resource-1', name: 'Resource 1' },
-      ];
+      const resources = [{ id: 'resource-1', name: 'Resource 1' }];
 
       const config = {
         requiredPermission: UserPermissions.DELETE_USER,
       };
 
-      const result = await service.filterAuthorizedResources(
-        resources,
-        'user',
-        'delete',
-        config
-      );
+      const result = await service.filterAuthorizedResources(resources, 'user', 'delete', config);
 
       expect(result).toHaveLength(0);
     });

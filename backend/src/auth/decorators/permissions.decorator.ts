@@ -17,13 +17,13 @@ export interface PermissionOptions {
    * Default: false (require any)
    */
   requireAll?: boolean;
-  
+
   /**
    * Allow resource owners to access regardless of permissions
    * Default: false
    */
   allowOwner?: boolean;
-  
+
   /**
    * Custom error message for permission denial
    */
@@ -32,23 +32,23 @@ export interface PermissionOptions {
 
 /**
  * Decorator to require specific permissions for an endpoint
- * 
+ *
  * @param permissions - Array of permissions required
  * @param options - Additional permission check options
- * 
+ *
  * @example
  * ```typescript
  * @RequirePermissions([UserPermissions.CREATE_USER])
  * async createUser() { ... }
- * 
+ *
  * @RequirePermissions(
- *   [EmployeePermissions.READ_EMPLOYEE, EmployeePermissions.UPDATE_EMPLOYEE], 
+ *   [EmployeePermissions.READ_EMPLOYEE, EmployeePermissions.UPDATE_EMPLOYEE],
  *   { requireAll: true }
  * )
  * async updateEmployee() { ... }
- * 
+ *
  * @RequirePermissions(
- *   [AttendancePermissions.UPDATE_ATTENDANCE], 
+ *   [AttendancePermissions.UPDATE_ATTENDANCE],
  *   { allowOwner: true }
  * )
  * async updateAttendance() { ... }
@@ -56,10 +56,10 @@ export interface PermissionOptions {
  */
 export const RequirePermissions = (
   permissions: Permission | Permission[],
-  options: PermissionOptions = {}
+  options: PermissionOptions = {},
 ) => {
   const permissionArray = Array.isArray(permissions) ? permissions : [permissions];
-  
+
   return (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) => {
     SetMetadata(PERMISSIONS_KEY, permissionArray)(target, propertyKey, descriptor);
     SetMetadata(PERMISSION_OPTIONS_KEY, options)(target, propertyKey, descriptor);
@@ -87,10 +87,12 @@ export const RequireAllPermissions = (permissions: Permission[]) => {
  * Useful for endpoints where users should be able to access their own data
  */
 export const AllowOwner = (permissions?: Permission | Permission[]) => {
-  const permissionArray = permissions 
-    ? (Array.isArray(permissions) ? permissions : [permissions])
+  const permissionArray = permissions
+    ? Array.isArray(permissions)
+      ? permissions
+      : [permissions]
     : [];
-  
+
   return RequirePermissions(permissionArray, { allowOwner: true });
 };
 
@@ -118,34 +120,75 @@ export class PermissionSets {
   // User management
   static readonly USER_READ = [UserPermissions.READ_USER];
   static readonly USER_WRITE = [UserPermissions.CREATE_USER, UserPermissions.UPDATE_USER];
-  static readonly USER_MANAGE = [UserPermissions.CREATE_USER, UserPermissions.READ_USER, UserPermissions.UPDATE_USER, UserPermissions.DELETE_USER];
-  
+  static readonly USER_MANAGE = [
+    UserPermissions.CREATE_USER,
+    UserPermissions.READ_USER,
+    UserPermissions.UPDATE_USER,
+    UserPermissions.DELETE_USER,
+  ];
+
   // Employee management
   static readonly EMPLOYEE_READ = [EmployeePermissions.READ_EMPLOYEE];
-  static readonly EMPLOYEE_WRITE = [EmployeePermissions.CREATE_EMPLOYEE, EmployeePermissions.UPDATE_EMPLOYEE];
-  static readonly EMPLOYEE_MANAGE = [EmployeePermissions.CREATE_EMPLOYEE, EmployeePermissions.READ_EMPLOYEE, EmployeePermissions.UPDATE_EMPLOYEE, EmployeePermissions.DELETE_EMPLOYEE];
-  
+  static readonly EMPLOYEE_WRITE = [
+    EmployeePermissions.CREATE_EMPLOYEE,
+    EmployeePermissions.UPDATE_EMPLOYEE,
+  ];
+  static readonly EMPLOYEE_MANAGE = [
+    EmployeePermissions.CREATE_EMPLOYEE,
+    EmployeePermissions.READ_EMPLOYEE,
+    EmployeePermissions.UPDATE_EMPLOYEE,
+    EmployeePermissions.DELETE_EMPLOYEE,
+  ];
+
   // Client management
   static readonly CLIENT_READ = [ClientPermissions.READ_CLIENT];
   static readonly CLIENT_WRITE = [ClientPermissions.CREATE_CLIENT, ClientPermissions.UPDATE_CLIENT];
-  static readonly CLIENT_MANAGE = [ClientPermissions.CREATE_CLIENT, ClientPermissions.READ_CLIENT, ClientPermissions.UPDATE_CLIENT, ClientPermissions.DELETE_CLIENT];
-  
+  static readonly CLIENT_MANAGE = [
+    ClientPermissions.CREATE_CLIENT,
+    ClientPermissions.READ_CLIENT,
+    ClientPermissions.UPDATE_CLIENT,
+    ClientPermissions.DELETE_CLIENT,
+  ];
+
   // Attendance management
   static readonly ATTENDANCE_READ = [AttendancePermissions.READ_ATTENDANCE];
-  static readonly ATTENDANCE_WRITE = [AttendancePermissions.CREATE_ATTENDANCE, AttendancePermissions.UPDATE_ATTENDANCE];
-  static readonly ATTENDANCE_MANAGE = [AttendancePermissions.CREATE_ATTENDANCE, AttendancePermissions.READ_ATTENDANCE, AttendancePermissions.UPDATE_ATTENDANCE, AttendancePermissions.DELETE_ATTENDANCE];
-  
+  static readonly ATTENDANCE_WRITE = [
+    AttendancePermissions.CREATE_ATTENDANCE,
+    AttendancePermissions.UPDATE_ATTENDANCE,
+  ];
+  static readonly ATTENDANCE_MANAGE = [
+    AttendancePermissions.CREATE_ATTENDANCE,
+    AttendancePermissions.READ_ATTENDANCE,
+    AttendancePermissions.UPDATE_ATTENDANCE,
+    AttendancePermissions.DELETE_ATTENDANCE,
+  ];
+
   // Payroll management
   static readonly PAYROLL_READ = [PayrollPermissions.READ_PAYROLL];
-  static readonly PAYROLL_PROCESS = [PayrollPermissions.CREATE_PAYROLL_RUN, PayrollPermissions.PROCESS_PAYROLL];
-  static readonly PAYROLL_MANAGE = [PayrollPermissions.CREATE_PAYROLL_RUN, PayrollPermissions.READ_PAYROLL, PayrollPermissions.UPDATE_PAYROLL, PayrollPermissions.PROCESS_PAYROLL];
-  
+  static readonly PAYROLL_PROCESS = [
+    PayrollPermissions.CREATE_PAYROLL_RUN,
+    PayrollPermissions.PROCESS_PAYROLL,
+  ];
+  static readonly PAYROLL_MANAGE = [
+    PayrollPermissions.CREATE_PAYROLL_RUN,
+    PayrollPermissions.READ_PAYROLL,
+    PayrollPermissions.UPDATE_PAYROLL,
+    PayrollPermissions.PROCESS_PAYROLL,
+  ];
+
   // Reporting
   static readonly BASIC_REPORTS = [ReportingPermissions.VIEW_OPERATIONAL_REPORTS];
-  static readonly ADVANCED_REPORTS = [ReportingPermissions.VIEW_OPERATIONAL_REPORTS, ReportingPermissions.VIEW_FINANCIAL_REPORTS, ReportingPermissions.VIEW_COMPLIANCE_REPORTS];
-  
+  static readonly ADVANCED_REPORTS = [
+    ReportingPermissions.VIEW_OPERATIONAL_REPORTS,
+    ReportingPermissions.VIEW_FINANCIAL_REPORTS,
+    ReportingPermissions.VIEW_COMPLIANCE_REPORTS,
+  ];
+
   // System administration
-  static readonly SYSTEM_ADMIN = [SystemPermissions.MANAGE_SYSTEM_SETTINGS, SystemPermissions.VIEW_AUDIT_LOGS];
+  static readonly SYSTEM_ADMIN = [
+    SystemPermissions.MANAGE_SYSTEM_SETTINGS,
+    SystemPermissions.VIEW_AUDIT_LOGS,
+  ];
 }
 
 /**

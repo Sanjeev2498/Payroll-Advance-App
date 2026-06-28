@@ -2,7 +2,10 @@ import { Module, Global } from '@nestjs/common';
 import { RbacService } from './rbac.service';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { ResourceAuthorizationService } from './resource-authorization.service';
-import { ResourceAuthorizationGuard, CompositeAuthorizationGuard } from '../guards/resource-authorization.guard';
+import {
+  ResourceAuthorizationGuard,
+  CompositeAuthorizationGuard,
+} from '../guards/resource-authorization.guard';
 import { RbacUtilitiesService } from './rbac-utilities.service';
 import { TenantPermissionMiddleware } from './tenant-permission.middleware';
 import { CommonModule } from '../../common/common.module';
@@ -19,12 +22,12 @@ import { CommonModule } from '../../common/common.module';
     RbacService,
     ResourceAuthorizationService,
     RbacUtilitiesService,
-    
+
     // Guards
     PermissionsGuard,
     ResourceAuthorizationGuard,
     CompositeAuthorizationGuard,
-    
+
     // Middleware
     TenantPermissionMiddleware,
   ],
@@ -33,12 +36,12 @@ import { CommonModule } from '../../common/common.module';
     RbacService,
     ResourceAuthorizationService,
     RbacUtilitiesService,
-    
+
     // Guards
     PermissionsGuard,
     ResourceAuthorizationGuard,
     CompositeAuthorizationGuard,
-    
+
     // Middleware
     TenantPermissionMiddleware,
   ],

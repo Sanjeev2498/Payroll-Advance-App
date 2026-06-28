@@ -6,14 +6,11 @@ import helmet from '@fastify/helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter(),
-  );
-  
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
+
   // Security middleware (Fastify version)
   await app.register(helmet);
-  
+
   // Enable CORS with appropriate configuration
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',

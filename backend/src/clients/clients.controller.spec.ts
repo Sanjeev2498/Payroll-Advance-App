@@ -52,13 +52,13 @@ describe('ClientsController', () => {
         },
       ],
     })
-    .overrideGuard(JwtAuthGuard)
-    .useValue(mockGuard)
-    .overrideGuard(TenantGuard)
-    .useValue(mockGuard)
-    .overrideGuard(PermissionsGuard)
-    .useValue(mockGuard)
-    .compile();
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(TenantGuard)
+      .useValue(mockGuard)
+      .overrideGuard(PermissionsGuard)
+      .useValue(mockGuard)
+      .compile();
 
     controller = module.get<ClientsController>(ClientsController);
     service = module.get(ClientsService);
@@ -91,7 +91,7 @@ describe('ClientsController', () => {
         contractEnd: mockClient.contractEnd,
         billingPreferences: mockClient.billingPreferences,
         createdAt: mockClient.createdAt,
-        updatedAt: mockClient.updatedAt
+        updatedAt: mockClient.updatedAt,
       });
     });
   });
@@ -99,10 +99,12 @@ describe('ClientsController', () => {
   describe('findAll', () => {
     it('should return paginated clients list', async () => {
       const mockListResult = {
-        clients: [{
-          ...mockClient,
-          _count: { sites: 0 },
-        }],
+        clients: [
+          {
+            ...mockClient,
+            _count: { sites: 0 },
+          },
+        ],
         total: 1,
         page: 1,
         limit: 20,
@@ -116,23 +118,25 @@ describe('ClientsController', () => {
 
       expect(service.findAll).toHaveBeenCalledWith(queryDto);
       expect(result).toEqual({
-        clients: [{
-          id: mockClient.id,
-          name: mockClient.name,
-          contactEmail: mockClient.contactEmail,
-          contactInfo: mockClient.contactInfo,
-          contractStatus: mockClient.contractStatus,
-          contractStart: mockClient.contractStart,
-          contractEnd: mockClient.contractEnd,
-          billingPreferences: mockClient.billingPreferences,
-          createdAt: mockClient.createdAt,
-          updatedAt: mockClient.updatedAt,
-          _count: { sites: 0 }
-        }],
+        clients: [
+          {
+            id: mockClient.id,
+            name: mockClient.name,
+            contactEmail: mockClient.contactEmail,
+            contactInfo: mockClient.contactInfo,
+            contractStatus: mockClient.contractStatus,
+            contractStart: mockClient.contractStart,
+            contractEnd: mockClient.contractEnd,
+            billingPreferences: mockClient.billingPreferences,
+            createdAt: mockClient.createdAt,
+            updatedAt: mockClient.updatedAt,
+            _count: { sites: 0 },
+          },
+        ],
         total: 1,
         page: 1,
         limit: 20,
-        totalPages: 1
+        totalPages: 1,
       });
     });
   });
@@ -164,18 +168,20 @@ describe('ClientsController', () => {
       const result = await controller.findExpiringContracts();
 
       expect(service.findExpiringContracts).toHaveBeenCalledWith(30);
-      expect(result).toEqual([{
-        id: mockClient.id,
-        name: mockClient.name,
-        contactEmail: mockClient.contactEmail,
-        contactInfo: mockClient.contactInfo,
-        contractStatus: mockClient.contractStatus,
-        contractStart: mockClient.contractStart,
-        contractEnd: mockClient.contractEnd,
-        billingPreferences: mockClient.billingPreferences,
-        createdAt: mockClient.createdAt,
-        updatedAt: mockClient.updatedAt
-      }]);
+      expect(result).toEqual([
+        {
+          id: mockClient.id,
+          name: mockClient.name,
+          contactEmail: mockClient.contactEmail,
+          contactInfo: mockClient.contactInfo,
+          contractStatus: mockClient.contractStatus,
+          contractStart: mockClient.contractStart,
+          contractEnd: mockClient.contractEnd,
+          billingPreferences: mockClient.billingPreferences,
+          createdAt: mockClient.createdAt,
+          updatedAt: mockClient.updatedAt,
+        },
+      ]);
     });
 
     it('should return expiring contracts with custom days', async () => {
@@ -185,18 +191,20 @@ describe('ClientsController', () => {
       const result = await controller.findExpiringContracts(60);
 
       expect(service.findExpiringContracts).toHaveBeenCalledWith(60);
-      expect(result).toEqual([{
-        id: mockClient.id,
-        name: mockClient.name,
-        contactEmail: mockClient.contactEmail,
-        contactInfo: mockClient.contactInfo,
-        contractStatus: mockClient.contractStatus,
-        contractStart: mockClient.contractStart,
-        contractEnd: mockClient.contractEnd,
-        billingPreferences: mockClient.billingPreferences,
-        createdAt: mockClient.createdAt,
-        updatedAt: mockClient.updatedAt
-      }]);
+      expect(result).toEqual([
+        {
+          id: mockClient.id,
+          name: mockClient.name,
+          contactEmail: mockClient.contactEmail,
+          contactInfo: mockClient.contactInfo,
+          contractStatus: mockClient.contractStatus,
+          contractStart: mockClient.contractStart,
+          contractEnd: mockClient.contractEnd,
+          billingPreferences: mockClient.billingPreferences,
+          createdAt: mockClient.createdAt,
+          updatedAt: mockClient.updatedAt,
+        },
+      ]);
     });
   });
 
@@ -208,18 +216,20 @@ describe('ClientsController', () => {
       const result = await controller.findByStatus(ContractStatus.ACTIVE);
 
       expect(service.findByContractStatus).toHaveBeenCalledWith(ContractStatus.ACTIVE);
-      expect(result).toEqual([{
-        id: mockClient.id,
-        name: mockClient.name,
-        contactEmail: mockClient.contactEmail,
-        contactInfo: mockClient.contactInfo,
-        contractStatus: mockClient.contractStatus,
-        contractStart: mockClient.contractStart,
-        contractEnd: mockClient.contractEnd,
-        billingPreferences: mockClient.billingPreferences,
-        createdAt: mockClient.createdAt,
-        updatedAt: mockClient.updatedAt
-      }]);
+      expect(result).toEqual([
+        {
+          id: mockClient.id,
+          name: mockClient.name,
+          contactEmail: mockClient.contactEmail,
+          contactInfo: mockClient.contactInfo,
+          contractStatus: mockClient.contractStatus,
+          contractStart: mockClient.contractStart,
+          contractEnd: mockClient.contractEnd,
+          billingPreferences: mockClient.billingPreferences,
+          createdAt: mockClient.createdAt,
+          updatedAt: mockClient.updatedAt,
+        },
+      ]);
     });
   });
 
@@ -240,7 +250,7 @@ describe('ClientsController', () => {
         contractEnd: mockClient.contractEnd,
         billingPreferences: mockClient.billingPreferences,
         createdAt: mockClient.createdAt,
-        updatedAt: mockClient.updatedAt
+        updatedAt: mockClient.updatedAt,
       });
     });
   });
@@ -268,7 +278,7 @@ describe('ClientsController', () => {
         contractEnd: updatedClient.contractEnd,
         billingPreferences: updatedClient.billingPreferences,
         createdAt: updatedClient.createdAt,
-        updatedAt: updatedClient.updatedAt
+        updatedAt: updatedClient.updatedAt,
       });
     });
   });
@@ -291,7 +301,7 @@ describe('ClientsController', () => {
         contractEnd: deletedClient.contractEnd,
         billingPreferences: deletedClient.billingPreferences,
         createdAt: deletedClient.createdAt,
-        updatedAt: deletedClient.updatedAt
+        updatedAt: deletedClient.updatedAt,
       });
     });
   });

@@ -71,7 +71,7 @@ export class RbacUtilitiesService {
   async validatePermissions(
     requiredPermissions: Permission[],
     action: string,
-    resourceData?: any
+    resourceData?: any,
   ): Promise<PermissionValidationResult> {
     const context: PermissionRuleContext = {
       userId: this.tenantContextService.getUserId(),
@@ -85,7 +85,7 @@ export class RbacUtilitiesService {
     // Check if user has all required permissions
     const userPermissions = this.rbacService.getUserPermissions();
     const missingPermissions = requiredPermissions.filter(
-      permission => !userPermissions.includes(permission)
+      (permission) => !userPermissions.includes(permission),
     );
 
     if (missingPermissions.length === 0) {
@@ -98,7 +98,7 @@ export class RbacUtilitiesService {
 
     // Check for dynamic rules that might allow access
     const applicableRules = await this.getApplicableRules(context);
-    
+
     for (const rule of applicableRules) {
       if (rule.validator) {
         try {
@@ -137,7 +137,7 @@ export class RbacUtilitiesService {
     resourceType?: string,
     resourceId?: string,
     resourceData?: any,
-    requestData?: any
+    requestData?: any,
   ): Promise<PermissionValidationResult> {
     const context: PermissionRuleContext = {
       userId: this.tenantContextService.getUserId(),
@@ -153,7 +153,7 @@ export class RbacUtilitiesService {
 
     // Get applicable dynamic rules
     const applicableRules = await this.getApplicableRules(context);
-    
+
     // Evaluate rules by priority
     for (const rule of applicableRules.sort((a, b) => (b.priority || 0) - (a.priority || 0))) {
       try {
@@ -216,7 +216,7 @@ export class RbacUtilitiesService {
   } {
     const userRole = this.tenantContextService.getUserRole() as UserRole;
     const permissions = this.rbacService.getUserPermissions();
-    
+
     return {
       userRole,
       permissions,
@@ -235,7 +235,7 @@ export class RbacUtilitiesService {
    */
   generatePermissionRequirements(
     action: string,
-    resourceType: string
+    resourceType: string,
   ): {
     minimumRole: UserRole | null;
     requiredPermissions: Permission[];
@@ -243,21 +243,21 @@ export class RbacUtilitiesService {
   } {
     // This would typically be configured based on business logic
     // For now, provide basic mapping based on action and resource type
-    
+
     const actionPermissionMap: Record<string, Permission[]> = {
-      'create_user': ['user:create' as Permission],
-      'read_user': ['user:read' as Permission],
-      'update_user': ['user:update' as Permission],
-      'delete_user': ['user:delete' as Permission],
-      'create_employee': ['employee:create' as Permission],
-      'read_employee': ['employee:read' as Permission],
-      'update_employee': ['employee:update' as Permission],
-      'process_payroll': ['payroll:process' as Permission],
+      create_user: ['user:create' as Permission],
+      read_user: ['user:read' as Permission],
+      update_user: ['user:update' as Permission],
+      delete_user: ['user:delete' as Permission],
+      create_employee: ['employee:create' as Permission],
+      read_employee: ['employee:read' as Permission],
+      update_employee: ['employee:update' as Permission],
+      process_payroll: ['payroll:process' as Permission],
     };
 
     const key = `${action}_${resourceType}`.toLowerCase();
     const requiredPermissions = actionPermissionMap[key] || [];
-    
+
     // Find minimum role that has these permissions
     let minimumRole: UserRole | null = null;
     for (const role of Object.values(UserRole)) {
@@ -277,7 +277,9 @@ export class RbacUtilitiesService {
   /**
    * Get applicable dynamic rules for given context
    */
-  private async getApplicableRules(context: PermissionRuleContext): Promise<DynamicPermissionRule[]> {
+  private async getApplicableRules(
+    context: PermissionRuleContext,
+  ): Promise<DynamicPermissionRule[]> {
     const applicableRules: DynamicPermissionRule[] = [];
 
     for (const rule of this.dynamicRules.values()) {
@@ -299,20 +301,20 @@ export class RbacUtilitiesService {
    */
   private generateAlternativeActions(
     context: PermissionRuleContext,
-    missingPermissions: Permission[]
+    missingPermissions: Permission[],
   ): string[] {
     const alternatives: string[] = [];
 
     // Add generic alternatives based on missing permissions
-    if (missingPermissions.some(p => p.includes('create'))) {
+    if (missingPermissions.some((p) => p.includes('create'))) {
       alternatives.push('Request creation permissions from your administrator');
     }
-    
-    if (missingPermissions.some(p => p.includes('update'))) {
+
+    if (missingPermissions.some((p) => p.includes('update'))) {
       alternatives.push('Request edit permissions from your supervisor');
     }
-    
-    if (missingPermissions.some(p => p.includes('delete'))) {
+
+    if (missingPermissions.some((p) => p.includes('delete'))) {
       alternatives.push('Contact administrator for deletion requests');
     }
 
@@ -333,8 +335,8 @@ export class RbacUtilitiesService {
       id: 'self_profile_access',
       description: 'Users can access their own profile data',
       priority: 100,
-      condition: (context) => 
-        context.action === 'read' && 
+      condition: (context) =>
+        context.action === 'read' &&
         context.resourceType === 'user' &&
         context.resourceId === context.userId,
       validator: () => true,
@@ -361,8 +363,7 @@ export class RbacUtilitiesService {
       description: 'Managers can access their direct reports',
       priority: 75,
       condition: (context) =>
-        context.userRole === UserRole.MANAGER || 
-        context.userRole === UserRole.SUPERVISOR,
+        context.userRole === UserRole.MANAGER || context.userRole === UserRole.SUPERVISOR,
       validator: async (context) => {
         // In a real implementation, this would check if the resource
         // belongs to a direct report of the current user

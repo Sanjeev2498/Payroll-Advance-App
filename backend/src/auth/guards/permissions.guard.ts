@@ -7,10 +7,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { 
-  PERMISSIONS_KEY, 
-  PERMISSION_OPTIONS_KEY, 
-  PermissionOptions 
+import {
+  PERMISSIONS_KEY,
+  PERMISSION_OPTIONS_KEY,
+  PermissionOptions,
 } from '../decorators/permissions.decorator';
 import { Permission } from '../enums/permissions.enum';
 import { RbacService } from '../rbac/rbac.service';
@@ -32,10 +32,10 @@ export class PermissionsGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Get required permissions from decorator metadata
-    const requiredPermissions = this.reflector.getAllAndOverride<Permission[]>(
-      PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredPermissions = this.reflector.getAllAndOverride<Permission[]>(PERMISSIONS_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     // If no permissions are required, allow access
     if (!requiredPermissions || requiredPermissions.length === 0) {
@@ -43,13 +43,14 @@ export class PermissionsGuard implements CanActivate {
     }
 
     // Get permission options
-    const options = this.reflector.getAllAndOverride<PermissionOptions>(
-      PERMISSION_OPTIONS_KEY,
-      [context.getHandler(), context.getClass()],
-    ) || {};
+    const options =
+      this.reflector.getAllAndOverride<PermissionOptions>(PERMISSION_OPTIONS_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]) || {};
 
     const request = context.switchToHttp().getRequest();
-    
+
     // Ensure user is authenticated and context is set
     if (!this.tenantContextService.hasContext()) {
       this.logger.warn('Permission check attempted without tenant context');
@@ -61,7 +62,7 @@ export class PermissionsGuard implements CanActivate {
     const tenantId = this.tenantContextService.getTenantId();
 
     this.logger.debug(
-      `Permission check - User: ${userId}, Role: ${userRole}, Tenant: ${tenantId}, Required: [${requiredPermissions.join(', ')}]`
+      `Permission check - User: ${userId}, Role: ${userRole}, Tenant: ${tenantId}, Required: [${requiredPermissions.join(', ')}]`,
     );
 
     try {
@@ -77,11 +78,12 @@ export class PermissionsGuard implements CanActivate {
         : this.rbacService.hasAnyPermission(requiredPermissions);
 
       if (!hasRequiredPermissions) {
-        const errorMessage = options.errorMessage || 
+        const errorMessage =
+          options.errorMessage ||
           `Insufficient privileges. Required permissions: ${requiredPermissions.join(', ')}`;
-        
+
         this.logger.warn(
-          `Permission denied - User: ${userId}, Role: ${userRole}, Missing: [${requiredPermissions.join(', ')}]`
+          `Permission denied - User: ${userId}, Role: ${userRole}, Missing: [${requiredPermissions.join(', ')}]`,
         );
 
         // Log authorization event for audit
@@ -89,11 +91,11 @@ export class PermissionsGuard implements CanActivate {
           context.getHandler().name,
           this.getResourceFromRequest(request),
           false,
-          { 
-            requiredPermissions, 
+          {
+            requiredPermissions,
             options,
-            reason: 'insufficient_permissions' 
-          }
+            reason: 'insufficient_permissions',
+          },
         );
 
         throw new ForbiddenException(errorMessage);
@@ -101,19 +103,17 @@ export class PermissionsGuard implements CanActivate {
 
       // Validate tenant-aware permissions for specific resources
       if (!this.validateTenantAwareAccess(request)) {
-        this.logger.warn(
-          `Tenant access violation - User: ${userId}, Tenant: ${tenantId}`
-        );
+        this.logger.warn(`Tenant access violation - User: ${userId}, Tenant: ${tenantId}`);
 
         this.rbacService.logAuthorizationEvent(
           context.getHandler().name,
           this.getResourceFromRequest(request),
           false,
-          { 
-            requiredPermissions, 
+          {
+            requiredPermissions,
             options,
-            reason: 'tenant_access_violation' 
-          }
+            reason: 'tenant_access_violation',
+          },
         );
 
         throw new ForbiddenException('Access denied to the requested resource');
@@ -124,12 +124,11 @@ export class PermissionsGuard implements CanActivate {
         context.getHandler().name,
         this.getResourceFromRequest(request),
         true,
-        { requiredPermissions, options }
+        { requiredPermissions, options },
       );
 
       this.logger.debug('Permission check passed');
       return true;
-
     } catch (error) {
       if (error instanceof ForbiddenException || error instanceof UnauthorizedException) {
         throw error;
@@ -150,7 +149,7 @@ export class PermissionsGuard implements CanActivate {
 
     // Check common patterns for resource ownership
     const resourceId = request.params?.id || request.params?.userId || request.body?.userId;
-    
+
     if (resourceId === userId) {
       return true;
     }
@@ -173,10 +172,11 @@ export class PermissionsGuard implements CanActivate {
    */
   private validateTenantAwareAccess(request: any): boolean {
     // Extract tenant information from request parameters or body
-    const resourceTenantId = request.params?.tenantId || 
-                            request.body?.tenantId || 
-                            request.body?.companyId ||
-                            request.params?.companyId;
+    const resourceTenantId =
+      request.params?.tenantId ||
+      request.body?.tenantId ||
+      request.body?.companyId ||
+      request.params?.companyId;
 
     // If no resource tenant is specified, allow access (will be handled by other guards)
     if (!resourceTenantId) {
@@ -194,11 +194,11 @@ export class PermissionsGuard implements CanActivate {
     const method = request.method;
     const url = request.url;
     const resourceId = request.params?.id;
-    
+
     if (resourceId) {
       return `${method} ${url} (${resourceId})`;
     }
-    
+
     return `${method} ${url}`;
   }
 }

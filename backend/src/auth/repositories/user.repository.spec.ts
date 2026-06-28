@@ -58,7 +58,10 @@ describe('UserRepository', () => {
       getTenantId: jest.fn(() => mockTenantId),
       getUserId: jest.fn(() => mockUserId),
       getUserRole: jest.fn(() => UserRole.COMPANY_ADMIN),
-      getContextSnapshot: jest.fn(() => `Context[tenant:${mockTenantId},user:${mockUserId},role:${UserRole.COMPANY_ADMIN},set:true]`),
+      getContextSnapshot: jest.fn(
+        () =>
+          `Context[tenant:${mockTenantId},user:${mockUserId},role:${UserRole.COMPANY_ADMIN},set:true]`,
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -136,24 +139,31 @@ describe('UserRepository', () => {
     it('should throw ConflictException if email already exists', async () => {
       mockPrismaUser.findUnique.mockResolvedValue(mockUser);
 
-      await expect(repository.create(createUserDto, 'hashed-password')).rejects.toThrow(ConflictException);
+      await expect(repository.create(createUserDto, 'hashed-password')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should throw NotFoundException if company does not exist', async () => {
       mockPrismaUser.findUnique.mockResolvedValue(null);
       mockPrismaCompany.findUnique.mockResolvedValue(null);
 
-      await expect(repository.create(createUserDto, 'hashed-password')).rejects.toThrow(NotFoundException);
+      await expect(repository.create(createUserDto, 'hashed-password')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ConflictException if trying to create user for different company without SUPER_ADMIN role', async () => {
       const differentCompanyId = 'other-company-123';
       tenantContext.getUserRole.mockReturnValue(UserRole.COMPANY_ADMIN);
       mockPrismaUser.findUnique.mockResolvedValue(null);
-      mockPrismaCompany.findUnique.mockResolvedValue({ id: differentCompanyId, name: 'Other Company' });
+      mockPrismaCompany.findUnique.mockResolvedValue({
+        id: differentCompanyId,
+        name: 'Other Company',
+      });
 
       await expect(
-        repository.create({ ...createUserDto, companyId: differentCompanyId }, 'hashed-password')
+        repository.create({ ...createUserDto, companyId: differentCompanyId }, 'hashed-password'),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -344,7 +354,9 @@ describe('UserRepository', () => {
     it('should throw NotFoundException if user not found', async () => {
       mockPrismaUser.findFirst.mockResolvedValue(null);
 
-      await expect(repository.update('non-existent-id', updateUserDto)).rejects.toThrow(NotFoundException);
+      await expect(repository.update('non-existent-id', updateUserDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ConflictException if email already taken by another user', async () => {

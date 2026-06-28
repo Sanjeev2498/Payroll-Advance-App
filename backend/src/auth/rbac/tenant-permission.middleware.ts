@@ -26,10 +26,12 @@ export class TenantPermissionMiddleware implements NestMiddleware {
       // Ensure tenant context is properly set
       if (!this.tenantContextService.hasContext()) {
         const { id: userId, role, companyId: tenantId } = req.user;
-        
+
         if (tenantId && userId && role) {
           this.tenantContextService.setContext(tenantId, userId, role);
-          this.logger.debug(`Tenant permission context set for user ${userId} in tenant ${tenantId}`);
+          this.logger.debug(
+            `Tenant permission context set for user ${userId} in tenant ${tenantId}`,
+          );
         }
       }
 
@@ -40,12 +42,21 @@ export class TenantPermissionMiddleware implements NestMiddleware {
           userRole: this.tenantContextService.getUserRole(),
           tenantId: this.tenantContextService.getTenantId(),
           permissions: this.rbacService.getUserPermissions(),
-          
+
           // Utility methods for controllers
           hasPermission: (permission: string) => this.rbacService.hasPermission(permission as any),
-          canAccessTenant: (targetTenantId: string) => this.rbacService.canAccessTenant(targetTenantId),
-          canAccessResource: (resourceOwnerId?: string, resourceTenantId?: string, requiredPermission?: any) => 
-            this.rbacService.canAccessResource(resourceOwnerId, resourceTenantId, requiredPermission),
+          canAccessTenant: (targetTenantId: string) =>
+            this.rbacService.canAccessTenant(targetTenantId),
+          canAccessResource: (
+            resourceOwnerId?: string,
+            resourceTenantId?: string,
+            requiredPermission?: any,
+          ) =>
+            this.rbacService.canAccessResource(
+              resourceOwnerId,
+              resourceTenantId,
+              requiredPermission,
+            ),
         };
       }
 
@@ -74,6 +85,10 @@ export interface AuthenticatedRequest extends Request {
     permissions: string[];
     hasPermission: (permission: string) => boolean;
     canAccessTenant: (targetTenantId: string) => boolean;
-    canAccessResource: (resourceOwnerId?: string, resourceTenantId?: string, requiredPermission?: any) => boolean;
+    canAccessResource: (
+      resourceOwnerId?: string,
+      resourceTenantId?: string,
+      requiredPermission?: any,
+    ) => boolean;
   };
 }

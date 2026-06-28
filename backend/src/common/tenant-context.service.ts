@@ -16,8 +16,10 @@ export class TenantContextService {
     this.userId = userId;
     this.userRole = userRole;
     this.isContextSet = true;
-    
-    this.logger.debug(`Tenant context set - Tenant: ${tenantId}, User: ${userId}, Role: ${userRole}`);
+
+    this.logger.debug(
+      `Tenant context set - Tenant: ${tenantId}, User: ${userId}, Role: ${userRole}`,
+    );
   }
 
   /**
@@ -25,7 +27,9 @@ export class TenantContextService {
    */
   getTenantId(): string {
     if (!this.tenantId || !this.isContextSet) {
-      throw new Error('Tenant context not set. Ensure authentication middleware is properly configured.');
+      throw new Error(
+        'Tenant context not set. Ensure authentication middleware is properly configured.',
+      );
     }
     return this.tenantId;
   }
@@ -114,7 +118,7 @@ export class TenantContextService {
     this.userId = null;
     this.userRole = null;
     this.isContextSet = false;
-    
+
     this.logger.debug('Tenant context cleared');
   }
 

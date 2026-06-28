@@ -8,13 +8,7 @@ import { CommonModule } from '../common/common.module';
 @Module({
   imports: [PrismaModule, CommonModule],
   controllers: [ClientsController],
-  providers: [
-    ClientsService,
-    ClientRepository,
-  ],
-  exports: [
-    ClientsService,
-    ClientRepository,
-  ],
+  providers: [ClientsService, ClientRepository],
+  exports: [ClientsService, ClientRepository],
 })
 export class ClientsModule {}

@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { UserManagementService } from './user-management.service';
 import { UserRepository } from '../repositories/user.repository';
@@ -84,16 +89,18 @@ describe('UserManagementService', () => {
 
       expect(userRepository.create).toHaveBeenCalledWith(
         createUserDto,
-        expect.any(String) // hashed password
+        expect.any(String), // hashed password
       );
-      expect(result.user).toEqual(expect.objectContaining({
-        id: mockUser.id,
-        email: mockUser.email,
-        firstName: mockUser.firstName,
-        lastName: mockUser.lastName,
-        role: mockUser.role,
-        companyId: mockUser.companyId,
-      }));
+      expect(result.user).toEqual(
+        expect.objectContaining({
+          id: mockUser.id,
+          email: mockUser.email,
+          firstName: mockUser.firstName,
+          lastName: mockUser.lastName,
+          role: mockUser.role,
+          companyId: mockUser.companyId,
+        }),
+      );
     });
 
     it('should throw ForbiddenException if user lacks permissions', async () => {
@@ -127,13 +134,15 @@ describe('UserManagementService', () => {
 
       expect(userRepository.register).toHaveBeenCalledWith(
         registerUserDto,
-        expect.any(String) // hashed password
+        expect.any(String), // hashed password
       );
-      expect(result).toEqual(expect.objectContaining({
-        id: registeredUser.id,
-        email: registeredUser.email,
-        role: UserRole.EMPLOYEE, // Always EMPLOYEE for registration
-      }));
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: registeredUser.id,
+          email: registeredUser.email,
+          role: UserRole.EMPLOYEE, // Always EMPLOYEE for registration
+        }),
+      );
     });
   });
 
@@ -190,7 +199,9 @@ describe('UserManagementService', () => {
     it('should throw ForbiddenException if user lacks permissions', async () => {
       tenantContext.getUserRole.mockReturnValue(UserRole.EMPLOYEE);
 
-      await expect(service.updateUser(mockUserId, updateUserDto)).rejects.toThrow(ForbiddenException);
+      await expect(service.updateUser(mockUserId, updateUserDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -230,7 +241,9 @@ describe('UserManagementService', () => {
       const otherUserId = 'other-user-123';
       tenantContext.getUserRole.mockReturnValue(UserRole.EMPLOYEE);
 
-      await expect(service.updateUserProfile(otherUserId, updateProfileDto)).rejects.toThrow(ForbiddenException);
+      await expect(service.updateUserProfile(otherUserId, updateProfileDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -321,7 +334,7 @@ describe('UserManagementService', () => {
       const weakPasswords = [
         'short', // too short
         'nouppercase123!', // no uppercase
-        'NOLOWERCASE123!', // no lowercase  
+        'NOLOWERCASE123!', // no lowercase
         'NoNumbers!', // no numbers
         'NoSpecialChars123', // no special chars
       ];

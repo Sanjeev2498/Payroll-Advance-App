@@ -119,10 +119,12 @@ describe('ClientsService', () => {
 
   describe('findAll', () => {
     const mockListResult = {
-      clients: [{
-        ...mockClient,
-        _count: { sites: 0 },
-      }],
+      clients: [
+        {
+          ...mockClient,
+          _count: { sites: 0 },
+        },
+      ],
       total: 1,
       page: 1,
       limit: 20,
@@ -297,7 +299,9 @@ describe('ClientsService', () => {
       const error = new Error('Database error');
       clientRepository.findByContractStatus.mockRejectedValue(error);
 
-      await expect(service.findByContractStatus(ContractStatus.ACTIVE)).rejects.toThrow(BadRequestException);
+      await expect(service.findByContractStatus(ContractStatus.ACTIVE)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

@@ -31,13 +31,7 @@ import { RbacModule } from './rbac/rbac.module';
     RbacModule, // Add RBAC module
   ],
   controllers: [AuthController, UserManagementController],
-  providers: [
-    AuthService,
-    UserManagementService,
-    UserRepository,
-    JwtStrategy,
-    LocalStrategy,
-  ],
+  providers: [AuthService, UserManagementService, UserRepository, JwtStrategy, LocalStrategy],
   exports: [
     AuthService,
     UserManagementService,

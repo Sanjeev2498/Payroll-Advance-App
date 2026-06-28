@@ -12,67 +12,73 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ContractStatus } from './create-client.dto';
 
 export class ClientQueryDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Search term for client name or email',
-    example: 'Acme'
+    example: 'Acme',
   })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by contract status',
-    enum: ContractStatus
+    enum: ContractStatus,
   })
   @IsOptional()
   @IsEnum(ContractStatus)
   contractStatus?: ContractStatus;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Find contracts expiring before this date',
-    example: '2024-12-31'
+    example: '2024-12-31',
   })
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : null)
+  @Transform(({ value }) => (value ? new Date(value) : null))
   contractExpiringBefore?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Page number for pagination',
     example: 1,
-    minimum: 1
+    minimum: 1,
   })
   @IsOptional()
   @IsNumberString()
-  @Transform(({ value }) => value ? parseInt(value, 10) : 1)
+  @Transform(({ value }) => (value ? parseInt(value, 10) : 1))
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Number of items per page',
     example: 20,
     minimum: 1,
-    maximum: 100
+    maximum: 100,
   })
   @IsOptional()
   @IsNumberString()
-  @Transform(({ value }) => value ? parseInt(value, 10) : 20)
+  @Transform(({ value }) => (value ? parseInt(value, 10) : 20))
   @Min(1)
   @Max(100)
   limit?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Field to sort by',
-    example: 'name'
+    example: 'name',
   })
   @IsOptional()
   @IsString()
-  sortBy?: 'name' | 'contactEmail' | 'contractStatus' | 'contractStart' | 'contractEnd' | 'createdAt';
+  sortBy?:
+    | 'name'
+    | 'contactEmail'
+    | 'contractStatus'
+    | 'contractStart'
+    | 'contractEnd'
+    | 'createdAt';
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Sort order',
     example: 'asc',
-    enum: ['asc', 'desc']
+    enum: ['asc', 'desc'],
   })
   @IsOptional()
   @IsEnum(['asc', 'desc'])

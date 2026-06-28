@@ -79,7 +79,9 @@ describe('AuthController', () => {
     it('should throw UnauthorizedException when login fails', async () => {
       // Arrange
       const loginDto = { email: 'test@example.com', password: 'wrongpassword' };
-      (authService.login as jest.Mock).mockRejectedValue(new UnauthorizedException('Invalid credentials'));
+      (authService.login as jest.Mock).mockRejectedValue(
+        new UnauthorizedException('Invalid credentials'),
+      );
 
       // Act & Assert
       await expect(controller.login(loginDto)).rejects.toThrow(UnauthorizedException);
@@ -137,7 +139,11 @@ describe('AuthController', () => {
 
       // Assert
       expect(result).toEqual(successResponse);
-      expect(authService.changePassword).toHaveBeenCalledWith(mockUser.id, 'oldpassword', 'newpassword123');
+      expect(authService.changePassword).toHaveBeenCalledWith(
+        mockUser.id,
+        'oldpassword',
+        'newpassword123',
+      );
     });
   });
 

@@ -12,25 +12,59 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Delegate all PrismaClient methods
-  get $connect() { return this.prismaClient.$connect.bind(this.prismaClient); }
-  get $disconnect() { return this.prismaClient.$disconnect.bind(this.prismaClient); }
-  get $executeRaw() { return this.prismaClient.$executeRaw.bind(this.prismaClient); }
-  get $executeRawUnsafe() { return this.prismaClient.$executeRawUnsafe.bind(this.prismaClient); }
-  get $queryRaw() { return this.prismaClient.$queryRaw.bind(this.prismaClient); }
-  get $transaction() { return this.prismaClient.$transaction.bind(this.prismaClient); }
-  
+  get $connect() {
+    return this.prismaClient.$connect.bind(this.prismaClient);
+  }
+  get $disconnect() {
+    return this.prismaClient.$disconnect.bind(this.prismaClient);
+  }
+  get $executeRaw() {
+    return this.prismaClient.$executeRaw.bind(this.prismaClient);
+  }
+  get $executeRawUnsafe() {
+    return this.prismaClient.$executeRawUnsafe.bind(this.prismaClient);
+  }
+  get $queryRaw() {
+    return this.prismaClient.$queryRaw.bind(this.prismaClient);
+  }
+  get $transaction() {
+    return this.prismaClient.$transaction.bind(this.prismaClient);
+  }
+
   // Model delegates
-  get company() { return this.prismaClient.company; }
-  get client() { return this.prismaClient.client; }
-  get employee() { return this.prismaClient.employee; }
-  get site() { return this.prismaClient.site; }
-  get assignment() { return this.prismaClient.assignment; }
-  get shift() { return this.prismaClient.shift; }
-  get attendance() { return this.prismaClient.attendance; }
-  get payrollRun() { return this.prismaClient.payrollRun; }
-  get payrollItem() { return this.prismaClient.payrollItem; }
-  get invoice() { return this.prismaClient.invoice; }
-  get user() { return this.prismaClient.user; }
+  get company() {
+    return this.prismaClient.company;
+  }
+  get client() {
+    return this.prismaClient.client;
+  }
+  get employee() {
+    return this.prismaClient.employee;
+  }
+  get site() {
+    return this.prismaClient.site;
+  }
+  get assignment() {
+    return this.prismaClient.assignment;
+  }
+  get shift() {
+    return this.prismaClient.shift;
+  }
+  get attendance() {
+    return this.prismaClient.attendance;
+  }
+  get payrollRun() {
+    return this.prismaClient.payrollRun;
+  }
+  get payrollItem() {
+    return this.prismaClient.payrollItem;
+  }
+  get invoice() {
+    return this.prismaClient.invoice;
+  }
+  get user() {
+    return this.prismaClient.user;
+  }
 
   async onModuleInit() {
     await this.$connect();
@@ -48,7 +82,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   async setTenantContext(tenantId: string, userRole?: string): Promise<void> {
     try {
       await this.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
-      
+
       if (userRole) {
         await this.$executeRaw`SELECT set_config('app.user_role', ${userRole}, true)`;
       }
@@ -75,18 +109,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    * This ensures all operations within the transaction respect RLS policies
    */
   async withTenant<T>(
-    tenantId: string, 
+    tenantId: string,
     operation: (prisma: any) => Promise<T>,
-    userRole?: string
+    userRole?: string,
   ): Promise<T> {
     return this.$transaction(async (prisma) => {
       // Set tenant context within the transaction
       await prisma.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
-      
+
       if (userRole) {
         await prisma.$executeRaw`SELECT set_config('app.user_role', ${userRole}, true)`;
       }
-      
+
       return operation(prisma);
     });
   }
@@ -100,7 +134,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       // Clear tenant context to allow system operations
       await prisma.$executeRaw`SELECT set_config('app.tenant_id', '', true)`;
       await prisma.$executeRaw`SELECT set_config('app.user_role', 'SUPER_ADMIN', true)`;
-      
+
       return operation(prisma);
     });
   }
@@ -109,19 +143,23 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    * Validate that RLS is properly configured
    * Returns information about RLS status for all tables
    */
-  async validateRLSConfiguration(): Promise<Array<{
-    tableName: string;
-    policyCount: number;
-    rlsEnabled: boolean;
-  }>> {
+  async validateRLSConfiguration(): Promise<
+    Array<{
+      tableName: string;
+      policyCount: number;
+      rlsEnabled: boolean;
+    }>
+  > {
     try {
-      const result = await this.$queryRaw<Array<{
-        table_name: string;
-        policy_count: number;
-        rls_enabled: boolean;
-      }>>`SELECT * FROM validate_rls_isolation()`;
+      const result = await this.$queryRaw<
+        Array<{
+          table_name: string;
+          policy_count: number;
+          rls_enabled: boolean;
+        }>
+      >`SELECT * FROM validate_rls_isolation()`;
 
-      return result.map(row => ({
+      return result.map((row) => ({
         tableName: row.table_name,
         policyCount: row.policy_count,
         rlsEnabled: row.rls_enabled,
@@ -143,7 +181,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       const tenantResult = await this.$queryRaw<Array<{ current_setting: string }>>`
         SELECT current_setting('app.tenant_id', true) as current_setting
       `;
-      
+
       const roleResult = await this.$queryRaw<Array<{ current_setting: string }>>`
         SELECT current_setting('app.user_role', true) as current_setting
       `;
@@ -180,7 +218,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    * Test RLS isolation by attempting cross-tenant data access
    * This is useful for testing that RLS policies are working correctly
    */
-  async testRLSIsolation(tenant1Id: string, tenant2Id: string): Promise<{
+  async testRLSIsolation(
+    tenant1Id: string,
+    tenant2Id: string,
+  ): Promise<{
     tenant1CompanyCount: number;
     tenant2CompanyCount: number;
     crossTenantLeakage: boolean;
@@ -190,7 +231,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       this.withTenant(tenant1Id, async (prisma) => {
         return prisma.company.count();
       }),
-      
+
       // Test tenant 2 isolation
       this.withTenant(tenant2Id, async (prisma) => {
         return prisma.company.count();

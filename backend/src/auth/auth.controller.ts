@@ -14,7 +14,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto, AuthResponseDto, TokenResponseDto } from './dto/auth-response.dto';
+import { AuthResponseDto, TokenResponseDto } from './dto/auth-response.dto';
 import { AuthenticatedUser } from './interfaces/jwt-payload.interface';
 
 @Controller('auth')
@@ -25,18 +25,14 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body(ValidationPipe) loginDto: LoginDto,
-  ): Promise<AuthResponseDto> {
+  async login(@Body(ValidationPipe) loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
   }
 
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refreshToken(
-    @Body('refreshToken') refreshToken: string,
-  ): Promise<TokenResponseDto> {
+  async refreshToken(@Body('refreshToken') refreshToken: string): Promise<TokenResponseDto> {
     if (!refreshToken) {
       throw new Error('Refresh token is required');
     }
@@ -46,9 +42,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @CurrentUser('id') userId: string,
-  ): Promise<{ success: boolean; message: string }> {
+  async logout(@CurrentUser('id') userId: string): Promise<{ success: boolean; message: string }> {
     return this.authService.logout(userId);
   }
 

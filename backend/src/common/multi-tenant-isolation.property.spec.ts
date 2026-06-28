@@ -59,7 +59,7 @@ class MockPrismaService {
         if (this.currentTenantId === null) {
           return this.mockData.companies;
         }
-        return this.mockData.companies.filter(c => c.id === this.currentTenantId);
+        return this.mockData.companies.filter((c) => c.id === this.currentTenantId);
       },
       deleteMany: async () => {
         this.mockData.companies = [];
@@ -78,12 +78,12 @@ class MockPrismaService {
       findMany: async (args?: any) => {
         let clients = this.mockData.clients;
         if (this.currentTenantId !== null) {
-          clients = clients.filter(c => c.companyId === this.currentTenantId);
+          clients = clients.filter((c) => c.companyId === this.currentTenantId);
         }
         if (args?.include?.company) {
-          return clients.map(c => ({
+          return clients.map((c) => ({
             ...c,
-            company: this.mockData.companies.find(comp => comp.id === c.companyId),
+            company: this.mockData.companies.find((comp) => comp.id === c.companyId),
           }));
         }
         return clients;
@@ -98,11 +98,11 @@ class MockPrismaService {
   get employee() {
     return {
       create: async (args: any) => {
-        const employee = { 
-          ...args.data, 
-          createdAt: new Date(), 
+        const employee = {
+          ...args.data,
+          createdAt: new Date(),
           updatedAt: new Date(),
-          terminationDate: null 
+          terminationDate: null,
         };
         this.mockData.employees.push(employee);
         return employee;
@@ -110,17 +110,18 @@ class MockPrismaService {
       findMany: async (args?: any) => {
         let employees = this.mockData.employees;
         if (this.currentTenantId !== null) {
-          employees = employees.filter(e => e.companyId === this.currentTenantId);
+          employees = employees.filter((e) => e.companyId === this.currentTenantId);
         }
         if (args?.include?.assignments) {
-          return employees.map(e => ({
+          return employees.map((e) => ({
             ...e,
             assignments: this.mockData.assignments
-              .filter(a => a.employeeId === e.id)
+              .filter((a) => a.employeeId === e.id)
               .map((a: any) => ({
                 ...a,
-                site: args.include.assignments.include?.site ? 
-                  this.mockData.sites.find((s: any) => s.id === a.siteId) : undefined,
+                site: args.include.assignments.include?.site
+                  ? this.mockData.sites.find((s: any) => s.id === a.siteId)
+                  : undefined,
               })),
           }));
         }
@@ -144,14 +145,16 @@ class MockPrismaService {
         let sites = this.mockData.sites;
         if (this.currentTenantId !== null) {
           // Filter sites by tenant through client relationship
-          const tenantClients = this.mockData.clients.filter(c => c.companyId === this.currentTenantId);
-          const tenantClientIds = tenantClients.map(c => c.id);
-          sites = sites.filter(s => tenantClientIds.includes(s.clientId));
+          const tenantClients = this.mockData.clients.filter(
+            (c) => c.companyId === this.currentTenantId,
+          );
+          const tenantClientIds = tenantClients.map((c) => c.id);
+          sites = sites.filter((s) => tenantClientIds.includes(s.clientId));
         }
         if (args?.include?.client) {
-          return sites.map(s => ({
+          return sites.map((s) => ({
             ...s,
-            client: this.mockData.clients.find(c => c.id === s.clientId),
+            client: this.mockData.clients.find((c) => c.id === s.clientId),
           }));
         }
         return sites;
@@ -166,11 +169,11 @@ class MockPrismaService {
   get assignment() {
     return {
       create: async (args: any) => {
-        const assignment = { 
-          ...args.data, 
-          createdAt: new Date(), 
+        const assignment = {
+          ...args.data,
+          createdAt: new Date(),
           updatedAt: new Date(),
-          endDate: null
+          endDate: null,
         };
         this.mockData.assignments.push(assignment);
         return assignment;
@@ -185,11 +188,11 @@ class MockPrismaService {
   get payrollRun() {
     return {
       create: async (args: any) => {
-        const payrollRun = { 
-          ...args.data, 
-          createdAt: new Date(), 
+        const payrollRun = {
+          ...args.data,
+          createdAt: new Date(),
           updatedAt: new Date(),
-          processedAt: null
+          processedAt: null,
         };
         this.mockData.payrollRuns.push(payrollRun);
         return payrollRun;
@@ -197,17 +200,18 @@ class MockPrismaService {
       findMany: async (args?: any) => {
         let payrollRuns = this.mockData.payrollRuns;
         if (this.currentTenantId !== null) {
-          payrollRuns = payrollRuns.filter(pr => pr.companyId === this.currentTenantId);
+          payrollRuns = payrollRuns.filter((pr) => pr.companyId === this.currentTenantId);
         }
         if (args?.include?.payrollItems) {
-          return payrollRuns.map(pr => ({
+          return payrollRuns.map((pr) => ({
             ...pr,
             payrollItems: this.mockData.payrollItems
-              .filter(pi => pi.payrollRunId === pr.id)
-              .map(pi => ({
+              .filter((pi) => pi.payrollRunId === pr.id)
+              .map((pi) => ({
                 ...pi,
-                employee: args.include.payrollItems.include?.employee ?
-                  this.mockData.employees.find(e => e.id === pi.employeeId) : undefined,
+                employee: args.include.payrollItems.include?.employee
+                  ? this.mockData.employees.find((e) => e.id === pi.employeeId)
+                  : undefined,
               })),
           }));
         }
@@ -316,16 +320,15 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
               // Test: Verify complete isolation across all entities
               await verifyTenantIsolation(tenant1, tenant2);
-
             } catch (error) {
               // Log error for debugging but don't fail the property test here
               // The verification functions will handle assertion failures
               console.error('Property test error:', error);
               throw error;
             }
-          }
+          },
         ),
-        PROPERTY_TEST_CONFIG
+        PROPERTY_TEST_CONFIG,
       );
     });
 
@@ -345,14 +348,13 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
               // Test complex queries that span multiple tables
               await verifyComplexQueryIsolation(tenant1Setup, tenant2Setup);
-
             } catch (error) {
               console.error('Complex query isolation test error:', error);
               throw error;
             }
-          }
+          },
         ),
-        PROPERTY_TEST_CONFIG
+        PROPERTY_TEST_CONFIG,
       );
     });
 
@@ -372,14 +374,13 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
               // Test concurrent operations
               await verifyConcurrentIsolation(tenant1, tenant2);
-
             } catch (error) {
               console.error('Concurrent isolation test error:', error);
               throw error;
             }
-          }
+          },
         ),
-        PROPERTY_TEST_CONFIG
+        PROPERTY_TEST_CONFIG,
       );
     });
   });
@@ -408,7 +409,9 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     return fc.record({
       id: fc.constant(uuidv4()),
       name: fc.string({ minLength: 5, maxLength: 50 }),
-      slug: fc.string({ minLength: 3, maxLength: 20 }).map(s => s.toLowerCase().replace(/[^a-z0-9]/g, '-')),
+      slug: fc
+        .string({ minLength: 3, maxLength: 20 })
+        .map((s) => s.toLowerCase().replace(/[^a-z0-9]/g, '-')),
       settings: fc.constant({}),
       branding: fc.constant({}),
     });
@@ -500,8 +503,8 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
               contractEnd: clientData.contractEnd,
               billingPreferences: clientData.billingPreferences,
             },
-          })
-        )
+          }),
+        ),
       );
 
       // Create employees
@@ -522,8 +525,8 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
               employmentStatus: empData.employmentStatus,
               hireDate: empData.hireDate,
             },
-          })
-        )
+          }),
+        ),
       );
 
       // Create sites
@@ -540,8 +543,8 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
               operationalStatus: siteData.operationalStatus,
               contactInfo: siteData.contactInfo,
             },
-          })
-        )
+          }),
+        ),
       );
 
       return {
@@ -567,7 +570,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
             siteId: basicSetup.sites[i].id,
             role: 'Security Guard',
             responsibilities: {},
-            hourlyRate: 25.50,
+            hourlyRate: 25.5,
             status: 'ACTIVE',
             startDate: new Date(),
           },
@@ -588,8 +591,8 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
               status: prData.status,
               totalAmount: prData.totalAmount,
             },
-          })
-        )
+          }),
+        ),
       );
 
       return {
@@ -610,7 +613,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
   async function verifyTenantDataAccess(
     currentTenantId: string,
     _currentTenantData: any,
-    otherTenantData: any
+    otherTenantData: any,
   ) {
     // Set tenant context and verify queries only return current tenant data
     const results = await prismaService.withTenant(currentTenantId, async (prisma) => {
@@ -635,16 +638,20 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     };
 
     // Check that no other tenant data appears in results
-    expect(results.companies.some((c: any) => otherTenantIds.companyIds.includes(c.id))).toBe(false);
+    expect(results.companies.some((c: any) => otherTenantIds.companyIds.includes(c.id))).toBe(
+      false,
+    );
     expect(results.clients.some((c: any) => otherTenantIds.clientIds.includes(c.id))).toBe(false);
-    expect(results.employees.some((e: any) => otherTenantIds.employeeIds.includes(e.id))).toBe(false);
+    expect(results.employees.some((e: any) => otherTenantIds.employeeIds.includes(e.id))).toBe(
+      false,
+    );
     expect(results.sites.some((s: any) => otherTenantIds.siteIds.includes(s.id))).toBe(false);
   }
 
   async function verifyComplexQueryIsolation(tenant1Setup: any, tenant2Setup: any) {
     // Test complex queries for tenant 1
     await verifyComplexQueryForTenant(tenant1Setup.company.id, tenant1Setup, tenant2Setup);
-    
+
     // Test complex queries for tenant 2
     await verifyComplexQueryForTenant(tenant2Setup.company.id, tenant2Setup, tenant1Setup);
   }
@@ -652,7 +659,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
   async function verifyComplexQueryForTenant(
     currentTenantId: string,
     _currentTenantData: any,
-    otherTenantData: any
+    otherTenantData: any,
   ) {
     const results = await prismaService.withTenant(currentTenantId, async (prisma) => {
       return {
@@ -670,7 +677,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
             },
           },
         }),
-        
+
         // Complex query: Get payroll runs with items
         payrollWithItems: await prisma.payrollRun.findMany({
           include: {
@@ -699,7 +706,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     // Verify all returned data belongs to current tenant
     results.employeesWithAssignments.forEach((employee: any) => {
       expect(employee.companyId).toBe(currentTenantId);
-      
+
       employee.assignments.forEach((assignment: any) => {
         expect(assignment.site.client.companyId).toBe(currentTenantId);
       });
@@ -707,7 +714,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
     results.payrollWithItems.forEach((payroll: any) => {
       expect(payroll.companyId).toBe(currentTenantId);
-      
+
       payroll.payrollItems.forEach((item: any) => {
         expect(item.employee.companyId).toBe(currentTenantId);
       });
@@ -715,7 +722,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
     results.sitesWithEmployees.forEach((site: any) => {
       expect(site.client.companyId).toBe(currentTenantId);
-      
+
       site.assignments.forEach((assignment: any) => {
         expect(assignment.employee.companyId).toBe(currentTenantId);
       });
@@ -750,18 +757,26 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     ]);
 
     // Verify each tenant only sees their own data
-    expect(tenant1Results.employees.every((e: any) => e.companyId === tenant1Setup.company.id)).toBe(true);
-    expect(tenant1Results.clients.every((c: any) => c.companyId === tenant1Setup.company.id)).toBe(true);
+    expect(
+      tenant1Results.employees.every((e: any) => e.companyId === tenant1Setup.company.id),
+    ).toBe(true);
+    expect(tenant1Results.clients.every((c: any) => c.companyId === tenant1Setup.company.id)).toBe(
+      true,
+    );
 
-    expect(tenant2Results.employees.every((e: any) => e.companyId === tenant2Setup.company.id)).toBe(true);
-    expect(tenant2Results.clients.every((c: any) => c.companyId === tenant2Setup.company.id)).toBe(true);
+    expect(
+      tenant2Results.employees.every((e: any) => e.companyId === tenant2Setup.company.id),
+    ).toBe(true);
+    expect(tenant2Results.clients.every((c: any) => c.companyId === tenant2Setup.company.id)).toBe(
+      true,
+    );
 
     // Verify no cross-tenant contamination
     const tenant1EmployeeIds = tenant1Results.employees.map((e: any) => e.id);
     const tenant2EmployeeIds = tenant2Results.employees.map((e: any) => e.id);
 
-    expect(tenant1EmployeeIds.some(id => tenant2EmployeeIds.includes(id))).toBe(false);
-    expect(tenant2EmployeeIds.some(id => tenant1EmployeeIds.includes(id))).toBe(false);
+    expect(tenant1EmployeeIds.some((id) => tenant2EmployeeIds.includes(id))).toBe(false);
+    expect(tenant2EmployeeIds.some((id) => tenant1EmployeeIds.includes(id))).toBe(false);
   }
 
   // Cleanup function

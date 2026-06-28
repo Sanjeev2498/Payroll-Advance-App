@@ -79,62 +79,62 @@ export class BillingPreferencesDto {
 }
 
 export class CreateClientDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Client company name',
-    example: 'Acme Security Services'
+    example: 'Acme Security Services',
   })
   @IsString()
   @MinLength(2)
   @MaxLength(100)
   name: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Primary contact email address',
-    example: 'contact@acmesecurity.com'
+    example: 'contact@acmesecurity.com',
   })
   @IsEmail()
   @MaxLength(255)
   contactEmail: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Additional contact information',
-    type: ContactInfoDto
+    type: ContactInfoDto,
   })
   @IsOptional()
   @ValidateNested()
   @Type(() => ContactInfoDto)
   contactInfo?: ContactInfoDto;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Contract status',
     enum: ContractStatus,
-    default: ContractStatus.PENDING
+    default: ContractStatus.PENDING,
   })
   @IsOptional()
   @IsEnum(ContractStatus)
   contractStatus?: ContractStatus;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Contract start date',
-    example: '2024-01-01'
+    example: '2024-01-01',
   })
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : null)
+  @Transform(({ value }) => (value ? new Date(value) : null))
   contractStart?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Contract end date',
-    example: '2024-12-31'
+    example: '2024-12-31',
   })
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : null)
+  @Transform(({ value }) => (value ? new Date(value) : null))
   contractEnd?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Billing preferences and settings',
-    type: BillingPreferencesDto
+    type: BillingPreferencesDto,
   })
   @IsOptional()
   @ValidateNested()

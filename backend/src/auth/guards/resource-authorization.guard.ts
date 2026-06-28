@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RESOURCE_AUTH_KEY } from '../decorators/resource-authorization.decorator';
-import { ResourceAuthConfig, ResourceAuthorizationService } from '../rbac/resource-authorization.service';
+import {
+  ResourceAuthConfig,
+  ResourceAuthorizationService,
+} from '../rbac/resource-authorization.service';
 import { TenantContextService } from '../../common/tenant-context.service';
 
 /**
@@ -37,7 +40,7 @@ export class ResourceAuthorizationGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    
+
     // Ensure user is authenticated and context is set
     if (!this.tenantContextService.hasContext()) {
       this.logger.warn('Resource authorization attempted without tenant context');
@@ -47,7 +50,7 @@ export class ResourceAuthorizationGuard implements CanActivate {
     try {
       // Extract resource ID from request parameters (default to 'id')
       const resourceId = request.params?.id || request.params?.resourceId;
-      
+
       // Get resource data from request body if available
       const resourceData = this.extractResourceData(request, resourceAuthConfig);
 
@@ -60,7 +63,7 @@ export class ResourceAuthorizationGuard implements CanActivate {
 
       if (!isAuthorized) {
         const errorMessage = `Access denied to ${resourceAuthConfig.resourceType} resource`;
-        
+
         this.logger.warn({
           event: 'resource_authorization_denied',
           resourceType: resourceAuthConfig.resourceType,
@@ -82,7 +85,6 @@ export class ResourceAuthorizationGuard implements CanActivate {
       });
 
       return true;
-
     } catch (error) {
       if (error instanceof ForbiddenException) {
         throw error;
@@ -105,7 +107,7 @@ export class ResourceAuthorizationGuard implements CanActivate {
       resourceData.userId = request.body.userId || request.body.ownerId;
       resourceData.companyId = request.body.companyId || request.body.tenantId;
       resourceData.id = request.body.id;
-      
+
       // Include the entire body for custom validators
       resourceData._body = request.body;
     }
@@ -115,7 +117,7 @@ export class ResourceAuthorizationGuard implements CanActivate {
       resourceData.id = resourceData.id || request.params.id;
       resourceData.userId = resourceData.userId || request.params.userId;
       resourceData.companyId = resourceData.companyId || request.params.companyId;
-      
+
       // Include params for custom validators
       resourceData._params = request.params;
     }
@@ -124,7 +126,7 @@ export class ResourceAuthorizationGuard implements CanActivate {
     if (request.query) {
       resourceData.userId = resourceData.userId || request.query.userId;
       resourceData.companyId = resourceData.companyId || request.query.companyId;
-      
+
       // Include query for custom validators
       resourceData._query = request.query;
     }
@@ -177,7 +179,7 @@ export class CompositeAuthorizationGuard implements CanActivate {
 
     // Note: Permission-based checks are handled by PermissionsGuard
     // This composite guard focuses on resource-level authorization
-    
+
     return true;
   }
 }

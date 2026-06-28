@@ -129,7 +129,7 @@ export enum SystemPermissions {
 }
 
 // Consolidated permissions type for easier usage
-export type Permission = 
+export type Permission =
   | UserPermissions
   | CompanyPermissions
   | ClientPermissions

@@ -70,7 +70,7 @@ export class AuthService {
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
-    
+
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -144,7 +144,7 @@ export class AuthService {
     // In a production system, you might want to maintain a token blacklist
     // For now, we'll just return a success response
     // The frontend will remove the tokens from storage
-    
+
     return {
       success: true,
       message: 'Logout successful',

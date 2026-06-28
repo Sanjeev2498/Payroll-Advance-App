@@ -25,8 +25,8 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
   /**
    * Property 1: Multi-tenant Data Isolation
    * Validates: Requirements 1.1
-   * 
-   * For any database operation within a tenant context, 
+   *
+   * For any database operation within a tenant context,
    * the system SHALL never return data belonging to a different tenant
    */
   it('Property 1: Multi-tenant data isolation - reduced examples', async () => {
@@ -37,8 +37,8 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
           tenant2Id: fc.constant(uuidv4()),
           companyName1: fc.string({ minLength: 3, maxLength: 20 }),
           companyName2: fc.string({ minLength: 3, maxLength: 20 }),
-          slug1: fc.string({ minLength: 3, maxLength: 15 }).map(s => s.toLowerCase()),
-          slug2: fc.string({ minLength: 3, maxLength: 15 }).map(s => s.toLowerCase()),
+          slug1: fc.string({ minLength: 3, maxLength: 15 }).map((s) => s.toLowerCase()),
+          slug2: fc.string({ minLength: 3, maxLength: 15 }).map((s) => s.toLowerCase()),
         }),
         async ({ tenant1Id, tenant2Id, companyName1, companyName2, slug1, slug2 }) => {
           // Clean up any existing test data first
@@ -56,7 +56,7 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
                   },
                   {
                     id: tenant2Id,
-                    name: companyName2, 
+                    name: companyName2,
                     slug: `${slug2}-${Date.now()}-2`, // Ensure uniqueness
                   },
                 ],
@@ -64,20 +64,14 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
             });
 
             // Test: Query as tenant1 should only see tenant1 data
-            const tenant1Companies = await prismaService.withTenant(
-              tenant1Id,
-              async (prisma) => {
-                return prisma.company.findMany();
-              }
-            );
+            const tenant1Companies = await prismaService.withTenant(tenant1Id, async (prisma) => {
+              return prisma.company.findMany();
+            });
 
-            // Test: Query as tenant2 should only see tenant2 data  
-            const tenant2Companies = await prismaService.withTenant(
-              tenant2Id,
-              async (prisma) => {
-                return prisma.company.findMany();
-              }
-            );
+            // Test: Query as tenant2 should only see tenant2 data
+            const tenant2Companies = await prismaService.withTenant(tenant2Id, async (prisma) => {
+              return prisma.company.findMany();
+            });
 
             // Verify: Each tenant sees exactly their own data
             expect(tenant1Companies).toHaveLength(1);
@@ -88,19 +82,18 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
             // Verify: No cross-tenant data leakage
             expect(tenant1Companies[0].id).not.toBe(tenant2Id);
             expect(tenant2Companies[0].id).not.toBe(tenant1Id);
-
           } finally {
             // Always clean up test data
             await cleanup(tenant1Id, tenant2Id);
           }
-        }
+        },
       ),
-      { 
+      {
         numRuns: 5, // Reduced from 100 to 5 for faster execution
         timeout: 10000, // 10 second timeout
         seed: 42,
         endOnFailure: true,
-      }
+      },
     );
   });
 
@@ -143,27 +136,26 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
             const allCompanies = await prismaService.withSystemContext(async (prisma) => {
               return prisma.company.findMany({
                 where: {
-                  id: { in: [tenant1Id, tenant2Id] }
-                }
+                  id: { in: [tenant1Id, tenant2Id] },
+                },
               });
             });
 
             // Verify: System context can see both tenants' data
             expect(allCompanies).toHaveLength(2);
-            const companyIds = allCompanies.map(c => c.id);
+            const companyIds = allCompanies.map((c) => c.id);
             expect(companyIds).toContain(tenant1Id);
             expect(companyIds).toContain(tenant2Id);
-
           } finally {
             await cleanup(tenant1Id, tenant2Id);
           }
-        }
+        },
       ),
-      { 
+      {
         numRuns: 3, // Reduced from 100 to 3 for faster execution
         timeout: 8000,
         seed: 123,
-      }
+      },
     );
   });
 
@@ -172,8 +164,8 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
       await prismaService.withSystemContext(async (prisma) => {
         await prisma.company.deleteMany({
           where: {
-            id: { in: [tenant1Id, tenant2Id] }
-          }
+            id: { in: [tenant1Id, tenant2Id] },
+          },
         });
       });
     } catch (error) {

@@ -1,6 +1,6 @@
 /**
  * RBAC Integration Test Example
- * 
+ *
  * This test demonstrates how the RBAC system works end-to-end with real HTTP requests.
  * It shows permission enforcement, tenant isolation, and role hierarchy in action.
  */
@@ -18,23 +18,11 @@ import { TenantContextService } from '../../../common/tenant-context.service';
 /**
  * Mock controller for testing RBAC functionality
  */
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { TenantGuard } from '../../../common/tenant.guard';
-import {
-  RequirePermissions,
-  AllowOwner,
-} from '../../decorators/permissions.decorator';
+import { RequirePermissions, AllowOwner } from '../../decorators/permissions.decorator';
 import {
   CurrentUserId,
   CurrentUserRole,
@@ -80,10 +68,7 @@ class TestRbacController {
 
   @Get('profile/:userId')
   @AllowOwner([UserPermissions.READ_USER])
-  async profileEndpoint(
-    @Param('userId') userId: string,
-    @CurrentUserId() currentUserId: string,
-  ) {
+  async profileEndpoint(@Param('userId') userId: string, @CurrentUserId() currentUserId: string) {
     return {
       message: 'Profile endpoint - owner access or READ_USER permission',
       userId,
@@ -117,7 +102,7 @@ describe('RBAC Integration Tests', () => {
   // Test data
   const testTenant1 = 'tenant-1-uuid';
   const testTenant2 = 'tenant-2-uuid';
-  
+
   const testUsers = {
     employee: {
       id: 'employee-user-id',
@@ -188,22 +173,18 @@ describe('RBAC Integration Tests', () => {
 
   describe('Permission-based Access Control', () => {
     it('should allow access to public endpoints without authentication', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/test-rbac/public')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/test-rbac/public').expect(200);
 
       expect(response.body.message).toBe('Public endpoint - no permissions required');
     });
 
     it('should deny access without authentication', async () => {
-      await request(app.getHttpServer())
-        .get('/test-rbac/user-read')
-        .expect(401);
+      await request(app.getHttpServer()).get('/test-rbac/user-read').expect(401);
     });
 
     it('should allow employee to access READ_USER endpoint', async () => {
       const token = generateToken(testUsers.employee);
-      
+
       const response = await request(app.getHttpServer())
         .get('/test-rbac/user-read')
         .set('Authorization', `Bearer ${token}`)
@@ -214,7 +195,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should deny employee access to CREATE_USER endpoint', async () => {
       const token = generateToken(testUsers.employee);
-      
+
       await request(app.getHttpServer())
         .post('/test-rbac/user-create')
         .set('Authorization', `Bearer ${token}`)
@@ -223,7 +204,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should allow manager to access CREATE_USER endpoint', async () => {
       const token = generateToken(testUsers.manager);
-      
+
       const response = await request(app.getHttpServer())
         .post('/test-rbac/user-create')
         .set('Authorization', `Bearer ${token}`)
@@ -234,7 +215,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should deny employee access to employee management', async () => {
       const token = generateToken(testUsers.employee);
-      
+
       await request(app.getHttpServer())
         .get('/test-rbac/employee-manage')
         .set('Authorization', `Bearer ${token}`)
@@ -243,7 +224,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should allow supervisor to access employee management', async () => {
       const token = generateToken(testUsers.supervisor);
-      
+
       const response = await request(app.getHttpServer())
         .get('/test-rbac/employee-manage')
         .set('Authorization', `Bearer ${token}`)
@@ -254,7 +235,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should deny manager access to payroll processing', async () => {
       const token = generateToken(testUsers.manager);
-      
+
       await request(app.getHttpServer())
         .post('/test-rbac/payroll-process')
         .set('Authorization', `Bearer ${token}`)
@@ -263,7 +244,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should allow company admin to process payroll', async () => {
       const token = generateToken(testUsers.companyAdmin);
-      
+
       const response = await request(app.getHttpServer())
         .post('/test-rbac/payroll-process')
         .set('Authorization', `Bearer ${token}`)
@@ -274,7 +255,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should allow super admin access to all endpoints', async () => {
       const token = generateToken(testUsers.superAdmin);
-      
+
       // Test multiple endpoints
       await request(app.getHttpServer())
         .get('/test-rbac/user-read')
@@ -296,7 +277,7 @@ describe('RBAC Integration Tests', () => {
   describe('Resource Ownership Access Control', () => {
     it('should allow user to access their own profile without admin permissions', async () => {
       const token = generateToken(testUsers.employee);
-      
+
       const response = await request(app.getHttpServer())
         .get(`/test-rbac/profile/${testUsers.employee.id}`)
         .set('Authorization', `Bearer ${token}`)
@@ -308,7 +289,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should deny employee access to other user profiles without admin permissions', async () => {
       const token = generateToken(testUsers.employee);
-      
+
       await request(app.getHttpServer())
         .get(`/test-rbac/profile/${testUsers.supervisor.id}`)
         .set('Authorization', `Bearer ${token}`)
@@ -317,7 +298,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should allow manager to access other user profiles with admin permissions', async () => {
       const token = generateToken(testUsers.manager);
-      
+
       const response = await request(app.getHttpServer())
         .get(`/test-rbac/profile/${testUsers.employee.id}`)
         .set('Authorization', `Bearer ${token}`)
@@ -332,7 +313,7 @@ describe('RBAC Integration Tests', () => {
   describe('Tenant Context and Isolation', () => {
     it('should provide correct tenant context information', async () => {
       const token = generateToken(testUsers.manager);
-      
+
       const response = await request(app.getHttpServer())
         .get('/test-rbac/context-info')
         .set('Authorization', `Bearer ${token}`)
@@ -345,7 +326,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should isolate users from different tenants', async () => {
       const crossTenantToken = generateToken(testUsers.crossTenantUser);
-      
+
       const response = await request(app.getHttpServer())
         .get('/test-rbac/context-info')
         .set('Authorization', `Bearer ${crossTenantToken}`)
@@ -357,7 +338,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should prevent cross-tenant profile access', async () => {
       const crossTenantToken = generateToken(testUsers.crossTenantUser);
-      
+
       // Cross-tenant user should not be able to access tenant1 user profile
       // This would be prevented at the database level by RLS policies
       await request(app.getHttpServer())
@@ -393,17 +374,18 @@ describe('RBAC Integration Tests', () => {
 
     roleHierarchyTests.forEach(({ role, canAccess, cannotAccess }) => {
       describe(`${role} role permissions`, () => {
-        const testUser = Object.values(testUsers).find(user => user.role === role);
-        
+        const testUser = Object.values(testUsers).find((user) => user.role === role);
+
         if (!testUser) {
           return;
         }
 
-        canAccess.forEach(endpoint => {
+        canAccess.forEach((endpoint) => {
           it(`should allow ${role} to access ${endpoint}`, async () => {
             const token = generateToken(testUser);
-            const method = endpoint.includes('create') || endpoint.includes('process') ? 'post' : 'get';
-            
+            const method =
+              endpoint.includes('create') || endpoint.includes('process') ? 'post' : 'get';
+
             await request(app.getHttpServer())
               [method](`/test-rbac/${endpoint}`)
               .set('Authorization', `Bearer ${token}`)
@@ -411,11 +393,12 @@ describe('RBAC Integration Tests', () => {
           });
         });
 
-        cannotAccess.forEach(endpoint => {
+        cannotAccess.forEach((endpoint) => {
           it(`should deny ${role} access to ${endpoint}`, async () => {
             const token = generateToken(testUser);
-            const method = endpoint.includes('create') || endpoint.includes('process') ? 'post' : 'get';
-            
+            const method =
+              endpoint.includes('create') || endpoint.includes('process') ? 'post' : 'get';
+
             await request(app.getHttpServer())
               [method](`/test-rbac/${endpoint}`)
               .set('Authorization', `Bearer ${token}`)
@@ -444,9 +427,9 @@ describe('RBAC Integration Tests', () => {
         type: 'access',
         exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
       };
-      
+
       const expiredToken = jwtService.sign(expiredPayload);
-      
+
       await request(app.getHttpServer())
         .get('/test-rbac/user-read')
         .set('Authorization', `Bearer ${expiredToken}`)
@@ -455,7 +438,7 @@ describe('RBAC Integration Tests', () => {
 
     it('should return 403 for insufficient permissions with clear message', async () => {
       const token = generateToken(testUsers.employee);
-      
+
       const response = await request(app.getHttpServer())
         .post('/test-rbac/user-create')
         .set('Authorization', `Bearer ${token}`)
@@ -475,25 +458,27 @@ describe('RBAC Integration Tests', () => {
   describe('Performance and Caching', () => {
     it('should handle multiple concurrent requests efficiently', async () => {
       const token = generateToken(testUsers.manager);
-      
+
       // Make multiple concurrent requests
-      const requests = Array(10).fill(0).map(() =>
-        request(app.getHttpServer())
-          .get('/test-rbac/user-read')
-          .set('Authorization', `Bearer ${token}`)
-      );
+      const requests = Array(10)
+        .fill(0)
+        .map(() =>
+          request(app.getHttpServer())
+            .get('/test-rbac/user-read')
+            .set('Authorization', `Bearer ${token}`),
+        );
 
       const responses = await Promise.all(requests);
-      
+
       // All requests should succeed
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
       });
     });
 
     it('should maintain consistent permission checks across requests', async () => {
       const token = generateToken(testUsers.supervisor);
-      
+
       // Multiple requests should have consistent permission behavior
       await request(app.getHttpServer())
         .get('/test-rbac/employee-manage')
@@ -515,23 +500,23 @@ describe('RBAC Integration Tests', () => {
 
 /**
  * Usage Notes:
- * 
+ *
  * 1. To run this test:
  *    npm test -- --testPathPattern="integration-test-example.spec.ts"
- * 
+ *
  * 2. This test demonstrates:
  *    - End-to-end permission checking
  *    - Tenant isolation
  *    - Role hierarchy enforcement
  *    - Resource ownership patterns
  *    - Error handling scenarios
- * 
+ *
  * 3. In a real environment, you would:
  *    - Use a test database
  *    - Seed test data properly
  *    - Mock external services
  *    - Add more edge cases
- * 
+ *
  * 4. The test shows how permissions work at the HTTP level,
  *    validating the complete RBAC system integration.
  */

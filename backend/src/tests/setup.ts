@@ -5,7 +5,8 @@
 jest.setTimeout(30000);
 
 // Mock environment variables for testing
-process.env.DATABASE_URL = process.env.DATABASE_URL || 
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL ||
   'postgresql://payroll_user:payroll_pass_dev_123@localhost:5432/payroll_system_test';
 process.env.NODE_ENV = 'test';
 

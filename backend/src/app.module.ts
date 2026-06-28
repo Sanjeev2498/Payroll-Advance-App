@@ -8,6 +8,9 @@ import { CommonModule } from './common/common.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ClientsModule } from './clients/clients.module';
+import { SitesModule } from './sites/sites.module';
+import { EmployeesModule } from './employees/employees.module';
+import { AssignmentsModule } from './assignments/assignments.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { TenantContextMiddleware } from './common/tenant-context.middleware';
 import { TenantGuard } from './common/tenant.guard';
@@ -28,6 +31,9 @@ import { PrismaService } from './prisma/prisma.service';
     CommonModule,
     AuthModule,
     ClientsModule,
+    SitesModule,
+    EmployeesModule,
+    AssignmentsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -35,7 +41,11 @@ import { PrismaService } from './prisma/prisma.service';
     // Authentication guard - ensures JWT token is valid and sets tenant context
     {
       provide: APP_GUARD,
-      useFactory: (reflector: Reflector, tenantContextService: TenantContextService, prismaService: PrismaService) => {
+      useFactory: (
+        reflector: Reflector,
+        tenantContextService: TenantContextService,
+        prismaService: PrismaService,
+      ) => {
         return new JwtAuthGuard(reflector, tenantContextService, prismaService);
       },
       inject: [Reflector, TenantContextService, PrismaService],
@@ -51,7 +61,11 @@ import { PrismaService } from './prisma/prisma.service';
     // RBAC permissions guard - enforces role-based access control
     {
       provide: APP_GUARD,
-      useFactory: (reflector: Reflector, rbacService: RbacService, tenantContextService: TenantContextService) => {
+      useFactory: (
+        reflector: Reflector,
+        rbacService: RbacService,
+        tenantContextService: TenantContextService,
+      ) => {
         return new PermissionsGuard(reflector, rbacService, tenantContextService);
       },
       inject: [Reflector, RbacService, TenantContextService],
@@ -61,8 +75,6 @@ import { PrismaService } from './prisma/prisma.service';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply tenant context middleware to all routes after authentication
-    consumer
-      .apply(TenantContextMiddleware)
-      .forRoutes('*');
+    consumer.apply(TenantContextMiddleware).forRoutes('*');
   }
 }

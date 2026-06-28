@@ -70,7 +70,7 @@ describe('RolePermissionsConfig', () => {
     it('should return true when role has permission', () => {
       const result = RolePermissionsConfig.hasPermission(
         UserRole.MANAGER,
-        UserPermissions.CREATE_USER
+        UserPermissions.CREATE_USER,
       );
 
       expect(result).toBe(true);
@@ -79,7 +79,7 @@ describe('RolePermissionsConfig', () => {
     it('should return false when role does not have permission', () => {
       const result = RolePermissionsConfig.hasPermission(
         UserRole.EMPLOYEE,
-        UserPermissions.CREATE_USER
+        UserPermissions.CREATE_USER,
       );
 
       expect(result).toBe(false);
@@ -141,28 +141,46 @@ describe('RolePermissionsConfig', () => {
     it('should allow higher roles to manage lower roles', () => {
       expect(RolePermissionsConfig.canManageRole(UserRole.MANAGER, UserRole.EMPLOYEE)).toBe(true);
       expect(RolePermissionsConfig.canManageRole(UserRole.MANAGER, UserRole.SUPERVISOR)).toBe(true);
-      expect(RolePermissionsConfig.canManageRole(UserRole.SUPERVISOR, UserRole.EMPLOYEE)).toBe(true);
+      expect(RolePermissionsConfig.canManageRole(UserRole.SUPERVISOR, UserRole.EMPLOYEE)).toBe(
+        true,
+      );
     });
 
     it('should not allow lower roles to manage higher roles', () => {
-      expect(RolePermissionsConfig.canManageRole(UserRole.EMPLOYEE, UserRole.SUPERVISOR)).toBe(false);
-      expect(RolePermissionsConfig.canManageRole(UserRole.SUPERVISOR, UserRole.MANAGER)).toBe(false);
+      expect(RolePermissionsConfig.canManageRole(UserRole.EMPLOYEE, UserRole.SUPERVISOR)).toBe(
+        false,
+      );
+      expect(RolePermissionsConfig.canManageRole(UserRole.SUPERVISOR, UserRole.MANAGER)).toBe(
+        false,
+      );
     });
 
     it('should not allow same level role management (except super admin)', () => {
       expect(RolePermissionsConfig.canManageRole(UserRole.MANAGER, UserRole.MANAGER)).toBe(false);
-      expect(RolePermissionsConfig.canManageRole(UserRole.SUPERVISOR, UserRole.SUPERVISOR)).toBe(false);
+      expect(RolePermissionsConfig.canManageRole(UserRole.SUPERVISOR, UserRole.SUPERVISOR)).toBe(
+        false,
+      );
     });
 
     it('should allow super admin to manage any role', () => {
-      expect(RolePermissionsConfig.canManageRole(UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN)).toBe(true);
-      expect(RolePermissionsConfig.canManageRole(UserRole.SUPER_ADMIN, UserRole.SUPER_ADMIN)).toBe(true);
+      expect(
+        RolePermissionsConfig.canManageRole(UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN),
+      ).toBe(true);
+      expect(RolePermissionsConfig.canManageRole(UserRole.SUPER_ADMIN, UserRole.SUPER_ADMIN)).toBe(
+        true,
+      );
     });
 
     it('should allow company admin to manage all except super admin', () => {
-      expect(RolePermissionsConfig.canManageRole(UserRole.COMPANY_ADMIN, UserRole.MANAGER)).toBe(true);
-      expect(RolePermissionsConfig.canManageRole(UserRole.COMPANY_ADMIN, UserRole.COMPANY_ADMIN)).toBe(true);
-      expect(RolePermissionsConfig.canManageRole(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)).toBe(false);
+      expect(RolePermissionsConfig.canManageRole(UserRole.COMPANY_ADMIN, UserRole.MANAGER)).toBe(
+        true,
+      );
+      expect(
+        RolePermissionsConfig.canManageRole(UserRole.COMPANY_ADMIN, UserRole.COMPANY_ADMIN),
+      ).toBe(true);
+      expect(
+        RolePermissionsConfig.canManageRole(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN),
+      ).toBe(false);
     });
   });
 

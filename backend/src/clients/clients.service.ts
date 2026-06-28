@@ -7,12 +7,7 @@ import {
 } from '@nestjs/common';
 import { ClientRepository } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
-import {
-  CreateClientDto,
-  UpdateClientDto,
-  ClientQueryDto,
-  ContractStatus,
-} from './dto';
+import { CreateClientDto, UpdateClientDto, ClientQueryDto, ContractStatus } from './dto';
 import { Client } from '@prisma/client';
 
 @Injectable()

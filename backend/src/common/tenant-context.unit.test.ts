@@ -64,11 +64,7 @@ describe('Tenant Context Management System - Unit Tests', () => {
       expect(tenantContextService.hasContext()).toBe(false);
 
       // Set tenant context
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       // Verify context is set
       expect(tenantContextService.hasContext()).toBe(true);
@@ -79,16 +75,12 @@ describe('Tenant Context Management System - Unit Tests', () => {
 
     it('should throw error when accessing tenant ID without context', () => {
       expect(() => tenantContextService.getTenantId()).toThrow(
-        'Tenant context not set. Ensure authentication middleware is properly configured.'
+        'Tenant context not set. Ensure authentication middleware is properly configured.',
       );
     });
 
     it('should validate tenant access correctly', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       // Should allow access to own tenant
       expect(tenantContextService.validateTenantAccess(mockTenant1.id)).toBe(true);
@@ -98,11 +90,7 @@ describe('Tenant Context Management System - Unit Tests', () => {
     });
 
     it('should check admin roles correctly', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       expect(tenantContextService.isAdmin()).toBe(true);
       expect(tenantContextService.hasRole('COMPANY_ADMIN')).toBe(true);
@@ -112,11 +100,7 @@ describe('Tenant Context Management System - Unit Tests', () => {
     });
 
     it('should check manager roles correctly', () => {
-      tenantContextService.setContext(
-        mockTenant2.id,
-        mockTenant2.user.id,
-        mockTenant2.user.role
-      );
+      tenantContextService.setContext(mockTenant2.id, mockTenant2.user.id, mockTenant2.user.role);
 
       expect(tenantContextService.isAdmin()).toBe(false); // Manager is not admin
       expect(tenantContextService.hasRole('MANAGER')).toBe(true);
@@ -126,11 +110,7 @@ describe('Tenant Context Management System - Unit Tests', () => {
     });
 
     it('should handle super admin access correctly', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        'superadmin',
-        'SUPER_ADMIN'
-      );
+      tenantContextService.setContext(mockTenant1.id, 'superadmin', 'SUPER_ADMIN');
 
       // Super admins can access any tenant
       expect(tenantContextService.validateTenantAccess(mockTenant1.id)).toBe(true);
@@ -139,11 +119,7 @@ describe('Tenant Context Management System - Unit Tests', () => {
     });
 
     it('should clear context correctly', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       expect(tenantContextService.hasContext()).toBe(true);
 
@@ -154,14 +130,10 @@ describe('Tenant Context Management System - Unit Tests', () => {
     });
 
     it('should generate context snapshot for debugging', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       const snapshot = tenantContextService.getContextSnapshot();
-      
+
       expect(snapshot).toContain(mockTenant1.id);
       expect(snapshot).toContain(mockTenant1.user.id);
       expect(snapshot).toContain(mockTenant1.user.role);
@@ -169,11 +141,7 @@ describe('Tenant Context Management System - Unit Tests', () => {
     });
 
     it('should get complete context information', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       const context = tenantContextService.getContext();
 
@@ -190,7 +158,10 @@ describe('Tenant Context Management System - Unit Tests', () => {
     let testModule: TestingModule;
     let testContextService: TenantContextService;
 
-    const createMockExecutionContext = (user?: any, reflectorReturns: any = undefined): ExecutionContext => {
+    const createMockExecutionContext = (
+      user?: any,
+      reflectorReturns: any = undefined,
+    ): ExecutionContext => {
       return {
         switchToHttp: () => ({
           getRequest: () => ({ user }),
@@ -213,7 +184,7 @@ describe('Tenant Context Management System - Unit Tests', () => {
           },
         ],
       }).compile();
-      
+
       jest.clearAllMocks();
 
       // Get the same instance for both test and guard
@@ -230,11 +201,11 @@ describe('Tenant Context Management System - Unit Tests', () => {
       const guard = new TenantGuard(mockReflector, testContextService);
 
       (mockReflector.get as jest.Mock).mockReturnValue(true); // SystemOnly decorator
-      
+
       const context = createMockExecutionContext();
-      
+
       const result = guard.canActivate(context);
-      
+
       expect(result).toBe(true);
     });
 
@@ -243,11 +214,11 @@ describe('Tenant Context Management System - Unit Tests', () => {
       const guard = new TenantGuard(mockReflector, testContextService);
 
       (mockReflector.get as jest.Mock).mockReturnValue(undefined); // No RequireTenant decorator
-      
+
       const context = createMockExecutionContext();
-      
+
       const result = guard.canActivate(context);
-      
+
       expect(result).toBe(true);
     });
 
@@ -257,14 +228,14 @@ describe('Tenant Context Management System - Unit Tests', () => {
 
       // Ensure context is cleared
       testContextService.clearContext();
-      
+
       (mockReflector.get as jest.Mock).mockReturnValueOnce(false); // Not SystemOnly (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // Not SystemOnly (class)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(['MANAGER']); // RequireTenant (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // RequireTenant (class)
-      
+
       const context = createMockExecutionContext();
-      
+
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
     });
 
@@ -272,21 +243,17 @@ describe('Tenant Context Management System - Unit Tests', () => {
       const mockReflector = testModule.get<Reflector>(Reflector);
       const guard = new TenantGuard(mockReflector, testContextService);
 
-      testContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      testContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       (mockReflector.get as jest.Mock).mockReturnValueOnce(false); // Not SystemOnly (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // Not SystemOnly (class)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(['COMPANY_ADMIN', 'MANAGER']); // RequireTenant (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // RequireTenant (class)
-      
+
       const context = createMockExecutionContext(mockTenant1.user);
-      
+
       const result = guard.canActivate(context);
-      
+
       expect(result).toBe(true);
     });
 
@@ -294,19 +261,15 @@ describe('Tenant Context Management System - Unit Tests', () => {
       const mockReflector = testModule.get<Reflector>(Reflector);
       const guard = new TenantGuard(mockReflector, testContextService);
 
-      testContextService.setContext(
-        mockTenant2.id,
-        mockTenant2.user.id,
-        mockTenant2.user.role
-      );
+      testContextService.setContext(mockTenant2.id, mockTenant2.user.id, mockTenant2.user.role);
 
       (mockReflector.get as jest.Mock).mockReturnValueOnce(false); // Not SystemOnly (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // Not SystemOnly (class)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(['COMPANY_ADMIN']); // RequireTenant - only admin (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // RequireTenant (class)
-      
+
       const context = createMockExecutionContext(mockTenant2.user);
-      
+
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
@@ -314,25 +277,21 @@ describe('Tenant Context Management System - Unit Tests', () => {
       const mockReflector = testModule.get<Reflector>(Reflector);
       const guard = new TenantGuard(mockReflector, testContextService);
 
-      testContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      testContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       (mockReflector.get as jest.Mock).mockReturnValueOnce(false); // Not SystemOnly (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // Not SystemOnly (class)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(['MANAGER']); // RequireTenant (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // RequireTenant (class)
-      
+
       // User claims different tenant than context
       const mismatchedUser = {
         ...mockTenant2.user,
         role: 'MANAGER',
       };
-      
+
       const context = createMockExecutionContext(mismatchedUser);
-      
+
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
@@ -348,21 +307,17 @@ describe('Tenant Context Management System - Unit Tests', () => {
         email: 'superadmin@system.com',
       };
 
-      testContextService.setContext(
-        mockTenant1.id,
-        superAdminUser.id,
-        superAdminUser.role
-      );
+      testContextService.setContext(mockTenant1.id, superAdminUser.id, superAdminUser.role);
 
       (mockReflector.get as jest.Mock).mockReturnValueOnce(false); // Not SystemOnly (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // Not SystemOnly (class)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(['COMPANY_ADMIN']); // RequireTenant - admin only (handler)
       (mockReflector.get as jest.Mock).mockReturnValueOnce(undefined); // RequireTenant (class)
-      
+
       const context = createMockExecutionContext(superAdminUser);
-      
+
       const result = guard.canActivate(context);
-      
+
       expect(result).toBe(true);
     });
   });
@@ -386,16 +341,13 @@ describe('Tenant Context Management System - Unit Tests', () => {
     });
 
     it('should handle complete auth flow with tenant context', async () => {
-      const contextService = await integrationModule.resolve<TenantContextService>(TenantContextService);
+      const contextService =
+        await integrationModule.resolve<TenantContextService>(TenantContextService);
       const mockReflector = integrationModule.get<Reflector>(Reflector);
       const guard = new TenantGuard(mockReflector, contextService);
 
       // Step 1: Set tenant context (normally done by middleware)
-      contextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      contextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       // Step 2: Verify context is properly established
       expect(contextService.hasContext()).toBe(true);
@@ -404,7 +356,7 @@ describe('Tenant Context Management System - Unit Tests', () => {
       // Step 3: Guard should allow access for admin user
       (mockReflector.get as jest.Mock).mockReturnValueOnce(false); // Not SystemOnly
       (mockReflector.get as jest.Mock).mockReturnValueOnce(['COMPANY_ADMIN']); // Admin required
-      
+
       const context = {
         switchToHttp: () => ({
           getRequest: () => ({ user: mockTenant1.user }),
@@ -418,27 +370,21 @@ describe('Tenant Context Management System - Unit Tests', () => {
     });
 
     it('should handle tenant switching in same request cycle', async () => {
-      const contextService1 = await integrationModule.resolve<TenantContextService>(TenantContextService);
-      const contextService2 = await integrationModule.resolve<TenantContextService>(TenantContextService);
+      const contextService1 =
+        await integrationModule.resolve<TenantContextService>(TenantContextService);
+      const contextService2 =
+        await integrationModule.resolve<TenantContextService>(TenantContextService);
 
       // Start with tenant 1
-      contextService1.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      contextService1.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
       expect(contextService1.getTenantId()).toBe(mockTenant1.id);
 
       // Different instance should have different context
-      contextService2.setContext(
-        mockTenant2.id,
-        mockTenant2.user.id,
-        mockTenant2.user.role
-      );
+      contextService2.setContext(mockTenant2.id, mockTenant2.user.id, mockTenant2.user.role);
 
       expect(contextService2.getTenantId()).toBe(mockTenant2.id);
       expect(contextService2.getUserRole()).toBe('MANAGER');
-      
+
       // Original context should still be intact
       expect(contextService1.getTenantId()).toBe(mockTenant1.id);
     });

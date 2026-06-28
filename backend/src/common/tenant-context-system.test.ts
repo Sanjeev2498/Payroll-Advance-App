@@ -66,7 +66,8 @@ describe('Tenant Context Management System', () => {
 
     prismaService = module.get<PrismaService>(PrismaService);
     tenantContextService = await module.resolve<TenantContextService>(TenantContextService);
-    tenantContextMiddleware = await module.resolve<TenantContextMiddleware>(TenantContextMiddleware);
+    tenantContextMiddleware =
+      await module.resolve<TenantContextMiddleware>(TenantContextMiddleware);
     tenantGuard = module.get<TenantGuard>(TenantGuard);
     employeeRepository = module.get<EmployeeRepository>(EmployeeRepository);
     clientRepository = module.get<ClientRepository>(ClientRepository);
@@ -95,11 +96,7 @@ describe('Tenant Context Management System', () => {
       expect(tenantContextService.hasContext()).toBe(false);
 
       // Set tenant context
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       // Verify context is set
       expect(tenantContextService.hasContext()).toBe(true);
@@ -109,11 +106,7 @@ describe('Tenant Context Management System', () => {
     });
 
     it('should validate tenant access correctly', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       // Should allow access to own tenant
       expect(tenantContextService.validateTenantAccess(mockTenant1.id)).toBe(true);
@@ -123,11 +116,7 @@ describe('Tenant Context Management System', () => {
     });
 
     it('should check roles correctly', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       expect(tenantContextService.isAdmin()).toBe(true);
       expect(tenantContextService.hasRole('COMPANY_ADMIN')).toBe(true);
@@ -137,11 +126,7 @@ describe('Tenant Context Management System', () => {
     });
 
     it('should clear context correctly', () => {
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
 
       expect(tenantContextService.hasContext()).toBe(true);
 
@@ -165,7 +150,7 @@ describe('Tenant Context Management System', () => {
       await tenantContextMiddleware.use(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response,
-        mockNext
+        mockNext,
       );
 
       expect(tenantContextService.hasContext()).toBe(true);
@@ -185,7 +170,7 @@ describe('Tenant Context Management System', () => {
       await tenantContextMiddleware.use(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response,
-        mockNext
+        mockNext,
       );
 
       expect(tenantContextService.hasContext()).toBe(false);
@@ -208,7 +193,7 @@ describe('Tenant Context Management System', () => {
       await tenantContextMiddleware.use(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response,
-        mockNext
+        mockNext,
       );
 
       expect(tenantContextService.hasContext()).toBe(false);
@@ -219,11 +204,7 @@ describe('Tenant Context Management System', () => {
   describe('Repository Tenant Isolation', () => {
     beforeEach(async () => {
       // Set tenant context for repository tests
-      tenantContextService.setContext(
-        mockTenant1.id,
-        mockTenant1.user.id,
-        mockTenant1.user.role
-      );
+      tenantContextService.setContext(mockTenant1.id, mockTenant1.user.id, mockTenant1.user.role);
       await prismaService.setTenantContext(mockTenant1.id, mockTenant1.user.role);
     });
 
@@ -233,6 +214,7 @@ describe('Tenant Context Management System', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john.doe@company1.com',
+        hireDate: new Date('2024-01-01'),
         skills: ['Security', 'First Aid'],
       };
 
@@ -276,8 +258,13 @@ describe('Tenant Context Management System', () => {
     });
 
     it('should search employees by skills within tenant', async () => {
-      await createTestEmployee(mockTenant1.id, 'Security', 'Guard', 'guard@company1.com', ['Security', 'Patrol']);
-      await createTestEmployee(mockTenant1.id, 'Office', 'Manager', 'manager@company1.com', ['Management']);
+      await createTestEmployee(mockTenant1.id, 'Security', 'Guard', 'guard@company1.com', [
+        'Security',
+        'Patrol',
+      ]);
+      await createTestEmployee(mockTenant1.id, 'Office', 'Manager', 'manager@company1.com', [
+        'Management',
+      ]);
 
       const securityEmployees = await employeeRepository.findBySkills(['Security']);
 
@@ -293,11 +280,11 @@ describe('Tenant Context Management System', () => {
 
       expect(rlsStatus).toBeDefined();
       expect(Array.isArray(rlsStatus)).toBe(true);
-      
+
       // Check that key tables have RLS enabled
-      const employeeRLS = rlsStatus.find(table => table.tableName === 'employees');
-      const clientRLS = rlsStatus.find(table => table.tableName === 'clients');
-      
+      const employeeRLS = rlsStatus.find((table) => table.tableName === 'employees');
+      const clientRLS = rlsStatus.find((table) => table.tableName === 'clients');
+
       expect(employeeRLS?.rlsEnabled).toBe(true);
       expect(clientRLS?.rlsEnabled).toBe(true);
     });
@@ -356,7 +343,7 @@ describe('Tenant Context Management System', () => {
     firstName: string,
     lastName: string,
     email: string,
-    skills: string[] = []
+    skills: string[] = [],
   ) {
     return prismaService.withTenant(tenantId, async (prisma) => {
       return prisma.employee.create({

@@ -84,9 +84,7 @@ export class UserManagementController {
 
   @Get()
   @RequirePermissions(UserPermissions.READ_USER)
-  async getAllUsers(
-    @Query(ValidationPipe) filters: UserFilterDto,
-  ): Promise<UserListResponseDto> {
+  async getAllUsers(@Query(ValidationPipe) filters: UserFilterDto): Promise<UserListResponseDto> {
     const { users, total } = await this.userManagementService.findAllUsers(filters);
 
     const { page = 1, limit = 20 } = filters;
@@ -131,9 +129,7 @@ export class UserManagementController {
 
   @Get(':id')
   @RequirePermissions(UserPermissions.READ_USER)
-  async getUserById(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<SingleUserResponseDto> {
+  async getUserById(@Param('id', ParseUUIDPipe) id: string): Promise<SingleUserResponseDto> {
     const user = await this.userManagementService.findUserById(id);
 
     return {
@@ -196,9 +192,7 @@ export class UserManagementController {
 
   @Put(':id/deactivate')
   @RequirePermissions(UserPermissions.DEACTIVATE_USER)
-  async deactivateUser(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<SingleUserResponseDto> {
+  async deactivateUser(@Param('id', ParseUUIDPipe) id: string): Promise<SingleUserResponseDto> {
     const user = await this.userManagementService.deactivateUser(id);
 
     return {
@@ -210,9 +204,7 @@ export class UserManagementController {
 
   @Put(':id/reactivate')
   @RequirePermissions(UserPermissions.ACTIVATE_USER)
-  async reactivateUser(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<SingleUserResponseDto> {
+  async reactivateUser(@Param('id', ParseUUIDPipe) id: string): Promise<SingleUserResponseDto> {
     const user = await this.userManagementService.reactivateUser(id);
 
     return {

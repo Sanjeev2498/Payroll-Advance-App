@@ -132,9 +132,9 @@ describe('AuthService', () => {
       (prismaService.user.findUnique as jest.Mock).mockResolvedValue(inactiveUser);
 
       // Act & Assert
-      await expect(
-        service.validateUser('test@example.com', 'password123')
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.validateUser('test@example.com', 'password123')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should return null when password is invalid', async () => {
@@ -302,7 +302,7 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        service.changePassword('user-id', 'oldpassword', 'newpassword123')
+        service.changePassword('user-id', 'oldpassword', 'newpassword123'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -313,7 +313,7 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        service.changePassword('user-id', 'wrongpassword', 'newpassword123')
+        service.changePassword('user-id', 'wrongpassword', 'newpassword123'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -323,9 +323,9 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       // Act & Assert
-      await expect(
-        service.changePassword('user-id', 'oldpassword', '12345')
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.changePassword('user-id', 'oldpassword', '12345')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

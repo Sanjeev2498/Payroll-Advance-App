@@ -46,7 +46,7 @@ describe('RbacUtilitiesService', () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Default mock values
     tenantContextService.getUserId.mockReturnValue('user-1');
     tenantContextService.getUserRole.mockReturnValue(UserRole.EMPLOYEE);
@@ -64,7 +64,7 @@ describe('RbacUtilitiesService', () => {
 
       const result = await service.validatePermissions(
         [UserPermissions.READ_USER, UserPermissions.UPDATE_USER],
-        'update_profile'
+        'update_profile',
       );
 
       expect(result.allowed).toBe(true);
@@ -77,7 +77,7 @@ describe('RbacUtilitiesService', () => {
 
       const result = await service.validatePermissions(
         [UserPermissions.READ_USER, UserPermissions.UPDATE_USER],
-        'update_profile'
+        'update_profile',
       );
 
       expect(result.allowed).toBe(false);
@@ -102,7 +102,7 @@ describe('RbacUtilitiesService', () => {
 
       const result = await service.validatePermissions(
         [UserPermissions.UPDATE_USER],
-        'test_action'
+        'test_action',
       );
 
       expect(result.allowed).toBe(true);
@@ -114,15 +114,13 @@ describe('RbacUtilitiesService', () => {
 
       const result = await service.validatePermissions(
         [UserPermissions.CREATE_USER, UserPermissions.UPDATE_USER],
-        'manage_user'
+        'manage_user',
       );
 
       expect(result.alternativeActions).toContain(
-        'Request creation permissions from your administrator'
+        'Request creation permissions from your administrator',
       );
-      expect(result.alternativeActions).toContain(
-        'Request edit permissions from your supervisor'
-      );
+      expect(result.alternativeActions).toContain('Request edit permissions from your supervisor');
     });
   });
 
@@ -132,31 +130,23 @@ describe('RbacUtilitiesService', () => {
         id: 'self_access_rule',
         description: 'Users can access their own data',
         priority: 100,
-        condition: (context) => 
-          context.action === 'read' && 
-          context.resourceData?.userId === context.userId,
+        condition: (context) =>
+          context.action === 'read' && context.resourceData?.userId === context.userId,
         validator: () => true,
       };
 
       service.registerDynamicRule(mockRule);
 
-      const result = await service.canPerformActionWithContext(
-        'read',
-        'user',
-        'user-1',
-        { userId: 'user-1' }
-      );
+      const result = await service.canPerformActionWithContext('read', 'user', 'user-1', {
+        userId: 'user-1',
+      });
 
       expect(result.allowed).toBe(true);
       expect(result.reason).toContain('Users can access their own profile data');
     });
 
     it('should return denied when no applicable rules found', async () => {
-      const result = await service.canPerformActionWithContext(
-        'delete',
-        'user',
-        'user-2'
-      );
+      const result = await service.canPerformActionWithContext('delete', 'user', 'user-2');
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('No applicable rules found');
@@ -182,10 +172,7 @@ describe('RbacUtilitiesService', () => {
       service.registerDynamicRule(lowPriorityRule);
       service.registerDynamicRule(highPriorityRule);
 
-      const result = await service.canPerformActionWithContext(
-        'test',
-        'resource'
-      );
+      const result = await service.canPerformActionWithContext('test', 'resource');
 
       expect(result.allowed).toBe(true);
       expect(result.reason).toContain('High priority rule');
@@ -204,10 +191,7 @@ describe('RbacUtilitiesService', () => {
 
       service.registerDynamicRule(ruleWithPermissions);
 
-      const result = await service.canPerformActionWithContext(
-        'test',
-        'resource'
-      );
+      const result = await service.canPerformActionWithContext('test', 'resource');
 
       expect(result.allowed).toBe(false);
       expect(rbacService.hasAllPermissions).toHaveBeenCalledWith([UserPermissions.DELETE_USER]);
@@ -225,10 +209,7 @@ describe('RbacUtilitiesService', () => {
 
       service.registerDynamicRule(testRule);
 
-      const result = await service.canPerformActionWithContext(
-        'test',
-        'resource'
-      );
+      const result = await service.canPerformActionWithContext('test', 'resource');
 
       expect(result.allowed).toBe(true);
     });
@@ -244,10 +225,7 @@ describe('RbacUtilitiesService', () => {
       service.registerDynamicRule(testRule);
       service.unregisterDynamicRule('test_unregistration');
 
-      const result = await service.canPerformActionWithContext(
-        'test',
-        'resource'
-      );
+      const result = await service.canPerformActionWithContext('test', 'resource');
 
       expect(result.allowed).toBe(false);
     });
@@ -317,7 +295,7 @@ describe('RbacUtilitiesService', () => {
       const result = await service.canPerformActionWithContext(
         'read',
         'user',
-        'user-123' // Same as current user
+        'user-123', // Same as current user
       );
 
       expect(result.allowed).toBe(true);
@@ -330,7 +308,7 @@ describe('RbacUtilitiesService', () => {
       const result = await service.canPerformActionWithContext(
         'read',
         'user',
-        'user-456' // Different user
+        'user-456', // Different user
       );
 
       expect(result.allowed).toBe(false);

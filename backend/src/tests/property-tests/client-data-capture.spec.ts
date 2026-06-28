@@ -8,7 +8,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 /**
  * Property-Based Test: Client Data Capture Completeness
  * **Validates: Requirements 2.1**
- * 
+ *
  * This test ensures that client onboarding captures all required data without loss
  * and maintains data integrity throughout the process.
  */
@@ -33,14 +33,14 @@ describe('Property Test: Client Data Capture Completeness', () => {
   /**
    * Property 4: Client Data Capture Completeness
    * **Validates: Requirements 2.1**
-   * 
+   *
    * For any client onboarding request with valid data, the system SHALL successfully
    * capture and store all required client details, contract terms, and billing preferences
    * without data loss or corruption.
    */
   it('Property 4: Client data capture completeness', async () => {
     const testTenantId = randomUUID();
-    
+
     // Setup: Create a test company first
     await prismaService.withSystemContext(async (prisma) => {
       await prisma.company.create({
@@ -57,36 +57,46 @@ describe('Property Test: Client Data Capture Completeness', () => {
         fc.asyncProperty(
           // Generate comprehensive client data
           fc.record({
-            name: fc.string({ minLength: 2, maxLength: 100 }).filter(s => s.trim().length >= 2),
+            name: fc.string({ minLength: 2, maxLength: 100 }).filter((s) => s.trim().length >= 2),
             contactEmail: fc.emailAddress(),
-            contactInfo: fc.option(fc.record({
-              contactPerson: fc.string({ minLength: 2, maxLength: 100 }),
-              phone: fc.option(fc.string({ minLength: 10, maxLength: 20 })),
-              secondaryEmail: fc.option(fc.emailAddress()),
-              address: fc.option(fc.record({
-                street: fc.string({ minLength: 5, maxLength: 100 }),
-                city: fc.string({ minLength: 2, maxLength: 50 }),
-                state: fc.string({ minLength: 2, maxLength: 50 }),
-                zipCode: fc.string({ minLength: 5, maxLength: 10 }),
-                country: fc.string({ minLength: 2, maxLength: 50 }),
-              })),
-              notes: fc.option(fc.string({ maxLength: 500 })),
-            })),
+            contactInfo: fc.option(
+              fc.record({
+                contactPerson: fc.string({ minLength: 2, maxLength: 100 }),
+                phone: fc.option(fc.string({ minLength: 10, maxLength: 20 })),
+                secondaryEmail: fc.option(fc.emailAddress()),
+                address: fc.option(
+                  fc.record({
+                    street: fc.string({ minLength: 5, maxLength: 100 }),
+                    city: fc.string({ minLength: 2, maxLength: 50 }),
+                    state: fc.string({ minLength: 2, maxLength: 50 }),
+                    zipCode: fc.string({ minLength: 5, maxLength: 10 }),
+                    country: fc.string({ minLength: 2, maxLength: 50 }),
+                  }),
+                ),
+                notes: fc.option(fc.string({ maxLength: 500 })),
+              }),
+            ),
             contractStatus: fc.constantFrom(
               ContractStatus.ACTIVE,
               ContractStatus.PENDING,
               ContractStatus.EXPIRED,
-              ContractStatus.TERMINATED
+              ContractStatus.TERMINATED,
             ),
-            contractStart: fc.option(fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31') })),
-            contractEnd: fc.option(fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31') })),
-            billingPreferences: fc.option(fc.record({
-              frequency: fc.constantFrom('MONTHLY', 'QUARTERLY', 'YEARLY'),
-              method: fc.option(fc.constantFrom('EMAIL', 'MAIL', 'PORTAL')),
-              paymentTerms: fc.option(fc.integer({ min: 1, max: 90 })),
-              billingEmail: fc.option(fc.emailAddress()),
-              instructions: fc.option(fc.string({ maxLength: 500 })),
-            })),
+            contractStart: fc.option(
+              fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31') }),
+            ),
+            contractEnd: fc.option(
+              fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31') }),
+            ),
+            billingPreferences: fc.option(
+              fc.record({
+                frequency: fc.constantFrom('MONTHLY', 'QUARTERLY', 'YEARLY'),
+                method: fc.option(fc.constantFrom('EMAIL', 'MAIL', 'PORTAL')),
+                paymentTerms: fc.option(fc.integer({ min: 1, max: 90 })),
+                billingEmail: fc.option(fc.emailAddress()),
+                instructions: fc.option(fc.string({ maxLength: 500 })),
+              }),
+            ),
           }),
           async (clientData) => {
             // Ensure contract dates are logical if both provided
@@ -109,8 +119,8 @@ describe('Property Test: Client Data Capture Completeness', () => {
                   contractEnd: clientData.contractEnd,
                   billingPreferences: clientData.billingPreferences,
                   company: {
-                    connect: { id: testTenantId }
-                  }
+                    connect: { id: testTenantId },
+                  },
                 },
               });
             });
@@ -134,7 +144,9 @@ describe('Property Test: Client Data Capture Completeness', () => {
                 expect(storedContactInfo.phone).toBe(clientData.contactInfo.phone);
               }
               if (clientData.contactInfo.secondaryEmail) {
-                expect(storedContactInfo.secondaryEmail).toBe(clientData.contactInfo.secondaryEmail);
+                expect(storedContactInfo.secondaryEmail).toBe(
+                  clientData.contactInfo.secondaryEmail,
+                );
               }
             }
 
@@ -151,7 +163,9 @@ describe('Property Test: Client Data Capture Completeness', () => {
               const storedBillingPrefs = createdClient.billingPreferences as any;
               expect(storedBillingPrefs.frequency).toBe(clientData.billingPreferences.frequency);
               if (clientData.billingPreferences.paymentTerms) {
-                expect(storedBillingPrefs.paymentTerms).toBe(clientData.billingPreferences.paymentTerms);
+                expect(storedBillingPrefs.paymentTerms).toBe(
+                  clientData.billingPreferences.paymentTerms,
+                );
               }
             }
 
@@ -162,48 +176,54 @@ describe('Property Test: Client Data Capture Completeness', () => {
             // Test: Retrieve the client to verify data persistence
             const retrievedClient = await prismaService.withTenant(testTenantId, async (prisma) => {
               return prisma.client.findUnique({
-                where: { id: createdClient.id }
+                where: { id: createdClient.id },
               });
             });
-            
+
             // Verify: Retrieved data matches created data exactly
             expect(retrievedClient).toBeDefined();
             expect(retrievedClient!.name).toBe(createdClient.name);
             expect(retrievedClient!.contactEmail).toBe(createdClient.contactEmail);
             expect(retrievedClient!.contractStatus).toBe(createdClient.contractStatus);
-            
+
             // Deep comparison of JSON fields if they exist
             if (createdClient.contactInfo && retrievedClient!.contactInfo) {
-              expect(JSON.stringify(retrievedClient!.contactInfo)).toBe(JSON.stringify(createdClient.contactInfo));
+              expect(JSON.stringify(retrievedClient!.contactInfo)).toBe(
+                JSON.stringify(createdClient.contactInfo),
+              );
             }
-            
+
             if (createdClient.billingPreferences && retrievedClient!.billingPreferences) {
-              expect(JSON.stringify(retrievedClient!.billingPreferences)).toBe(JSON.stringify(createdClient.billingPreferences));
+              expect(JSON.stringify(retrievedClient!.billingPreferences)).toBe(
+                JSON.stringify(createdClient.billingPreferences),
+              );
             }
 
             // Cleanup: Remove the test client
             await prismaService.withTenant(testTenantId, async (prisma) => {
               await prisma.client.delete({
-                where: { id: createdClient.id }
+                where: { id: createdClient.id },
               });
             });
-          }
+          },
         ),
         {
           numRuns: 10, // Reasonable number for comprehensive testing
           timeout: 15000, // 15 second timeout per test
           seed: 42,
           endOnFailure: true,
-        }
+        },
       );
     } finally {
       // Cleanup: Remove the test company
       await prismaService.withSystemContext(async (prisma) => {
-        await prisma.company.delete({
-          where: { id: testTenantId }
-        }).catch(() => {
-          // Ignore cleanup errors
-        });
+        await prisma.company
+          .delete({
+            where: { id: testTenantId },
+          })
+          .catch(() => {
+            // Ignore cleanup errors
+          });
       });
     }
   }, 30000); // 30 second test timeout
@@ -211,13 +231,13 @@ describe('Property Test: Client Data Capture Completeness', () => {
   /**
    * Property 5: Client Data Validation and Constraints
    * **Validates: Requirements 2.1**
-   * 
+   *
    * The system SHALL properly validate client data and reject invalid inputs
    * while providing meaningful error messages.
    */
   it('Property 5: Client data validation and constraints', async () => {
     const testTenantId = randomUUID();
-    
+
     // Setup: Create a test company
     await prismaService.withSystemContext(async (prisma) => {
       await prisma.company.create({
@@ -248,8 +268,8 @@ describe('Property Test: Client Data Capture Completeness', () => {
                   contractStart: validData.contractStart,
                   contractEnd: validData.contractEnd,
                   company: {
-                    connect: { id: testTenantId }
-                  }
+                    connect: { id: testTenantId },
+                  },
                 },
               });
             });
@@ -257,29 +277,31 @@ describe('Property Test: Client Data Capture Completeness', () => {
             expect(client).toBeDefined();
             expect(client.name).toBe(validData.name);
             expect(client.contactEmail).toBe(validData.contactEmail);
-            
+
             // Cleanup successful creation
             await prismaService.withTenant(testTenantId, async (prisma) => {
               await prisma.client.delete({
-                where: { id: client.id }
+                where: { id: client.id },
               });
             });
-          }
+          },
         ),
         {
           numRuns: 5,
           timeout: 10000,
           seed: 123,
-        }
+        },
       );
     } finally {
       // Cleanup: Remove the test company
       await prismaService.withSystemContext(async (prisma) => {
-        await prisma.company.delete({
-          where: { id: testTenantId }
-        }).catch(() => {
-          // Ignore cleanup errors
-        });
+        await prisma.company
+          .delete({
+            where: { id: testTenantId },
+          })
+          .catch(() => {
+            // Ignore cleanup errors
+          });
       });
     }
   }, 30000);

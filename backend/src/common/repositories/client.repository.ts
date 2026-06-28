@@ -6,8 +6,6 @@ import { Client, Prisma } from '@prisma/client';
 import { CreateClientDto } from '../../clients/dto/create-client.dto';
 import { UpdateClientDto } from '../../clients/dto/update-client.dto';
 
-
-
 export interface ClientSearchFilters {
   search?: string;
   contractStatus?: string;
@@ -36,10 +34,12 @@ export class ClientRepository extends TenantAwareRepository {
       contractStatus: data.contractStatus || 'PENDING',
       contractStart: data.contractStart,
       contractEnd: data.contractEnd,
-      billingPreferences: data.billingPreferences ? (data.billingPreferences as unknown as Prisma.JsonValue) : undefined,
+      billingPreferences: data.billingPreferences
+        ? (data.billingPreferences as unknown as Prisma.JsonValue)
+        : undefined,
       company: {
-        connect: { id: this.tenantContext.getTenantId() }
-      }
+        connect: { id: this.tenantContext.getTenantId() },
+      },
     };
 
     return this.writeWithTenant(() =>
@@ -98,7 +98,9 @@ export class ClientRepository extends TenantAwareRepository {
       ...(data.contractStatus && { contractStatus: data.contractStatus }),
       ...(data.contractStart && { contractStart: data.contractStart }),
       ...(data.contractEnd && { contractEnd: data.contractEnd }),
-      ...(data.billingPreferences && { billingPreferences: data.billingPreferences as unknown as Prisma.JsonValue }),
+      ...(data.billingPreferences && {
+        billingPreferences: data.billingPreferences as unknown as Prisma.JsonValue,
+      }),
     };
 
     return this.writeWithTenant(() =>
@@ -124,7 +126,7 @@ export class ClientRepository extends TenantAwareRepository {
     return this.writeWithTenant(() =>
       this.prisma.client.update({
         where: { id },
-        data: { 
+        data: {
           contractStatus: 'TERMINATED',
         },
       }),
@@ -139,10 +141,10 @@ export class ClientRepository extends TenantAwareRepository {
     page?: number,
     limit?: number,
     sortBy?: keyof Client,
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: 'asc' | 'desc',
   ): Promise<{
-    clients: (Client & { 
-      _count: { sites: number }
+    clients: (Client & {
+      _count: { sites: number };
     })[];
     total: number;
     page: number;
@@ -175,9 +177,7 @@ export class ClientRepository extends TenantAwareRepository {
           take: pagination.take,
         }),
       ) as Promise<(Client & { _count: { sites: number } })[]>,
-      this.findWithTenant(() =>
-        this.prisma.client.count({ where }),
-      ) as Promise<number>,
+      this.findWithTenant(() => this.prisma.client.count({ where })) as Promise<number>,
     ]);
 
     return {
@@ -219,6 +219,7 @@ export class ClientRepository extends TenantAwareRepository {
   async getClientStats(): Promise<{
     total: number;
     active: number;
+    suspended: number;
     expired: number;
     terminated: number;
     expiringThisMonth: number;
@@ -228,7 +229,7 @@ export class ClientRepository extends TenantAwareRepository {
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-    const [total, active, expired, terminated, expiringThisMonth] = await Promise.all([
+    const [total, active, suspended, expired, terminated, expiringThisMonth] = await Promise.all([
       this.findWithTenant(() =>
         this.prisma.client.count({
           where: this.getTenantFilter(),
@@ -239,6 +240,14 @@ export class ClientRepository extends TenantAwareRepository {
           where: {
             ...this.getTenantFilter(),
             contractStatus: 'ACTIVE',
+          },
+        }),
+      ) as Promise<number>,
+      this.findWithTenant(() =>
+        this.prisma.client.count({
+          where: {
+            ...this.getTenantFilter(),
+            contractStatus: 'SUSPENDED',
           },
         }),
       ) as Promise<number>,
@@ -272,12 +281,13 @@ export class ClientRepository extends TenantAwareRepository {
       ) as Promise<number>,
     ]);
 
-    return { 
-      total, 
-      active, 
-      expired, 
-      terminated, 
-      expiringThisMonth 
+    return {
+      total,
+      active,
+      suspended,
+      expired,
+      terminated,
+      expiringThisMonth,
     };
   }
 
@@ -306,10 +316,7 @@ export class ClientRepository extends TenantAwareRepository {
 
     // Text search across name and email
     if (filters.search) {
-      const textSearch = this.buildTextSearchFilter(filters.search, [
-        'name',
-        'contactEmail',
-      ]);
+      const textSearch = this.buildTextSearchFilter(filters.search, ['name', 'contactEmail']);
       conditions.push(textSearch);
     }
 

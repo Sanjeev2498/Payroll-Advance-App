@@ -20,31 +20,27 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getHandler(),
       context.getClass(),
     ]);
-    
+
     if (isPublic) {
       return true;
     }
 
     const result = await super.canActivate(context);
-    
+
     if (result) {
       // After successful authentication, set tenant context
       const request = context.switchToHttp().getRequest();
       const user = request.user;
-      
+
       if (user && user.companyId) {
         // Set application-level tenant context
-        this.tenantContextService.setContext(
-          user.companyId,
-          user.id,
-          user.role
-        );
+        this.tenantContextService.setContext(user.companyId, user.id, user.role);
 
         // Set database-level tenant context for RLS
         await this.prismaService.setTenantContext(user.companyId, user.role);
       }
     }
-    
+
     return !!result;
   }
 }

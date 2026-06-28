@@ -1,6 +1,11 @@
 import { PartialType } from '@nestjs/swagger';
-import { CreateClientDto, ContractStatus, ContactInfoDto, BillingPreferencesDto } from './create-client.dto';
-import { 
+import {
+  CreateClientDto,
+  ContractStatus,
+  ContactInfoDto,
+  BillingPreferencesDto,
+} from './create-client.dto';
+import {
   IsEmail,
   IsString,
   IsOptional,
@@ -18,9 +23,9 @@ export class UpdateClientDto extends PartialType(CreateClientDto) {
   // All properties from CreateClientDto are now optional
   // This allows partial updates to client records
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Client company name',
-    example: 'Acme Security Services'
+    example: 'Acme Security Services',
   })
   @IsOptional()
   @IsString()
@@ -28,53 +33,53 @@ export class UpdateClientDto extends PartialType(CreateClientDto) {
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Primary contact email address',
-    example: 'contact@acmesecurity.com'
+    example: 'contact@acmesecurity.com',
   })
   @IsOptional()
   @IsEmail()
   @MaxLength(255)
   contactEmail?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Additional contact information',
-    type: ContactInfoDto
+    type: ContactInfoDto,
   })
   @IsOptional()
   @ValidateNested()
   @Type(() => ContactInfoDto)
   contactInfo?: ContactInfoDto;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Contract status',
-    enum: ContractStatus
+    enum: ContractStatus,
   })
   @IsOptional()
   @IsEnum(ContractStatus)
   contractStatus?: ContractStatus;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Contract start date',
-    example: '2024-01-01'
+    example: '2024-01-01',
   })
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : null)
+  @Transform(({ value }) => (value ? new Date(value) : null))
   contractStart?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Contract end date',
-    example: '2024-12-31'
+    example: '2024-12-31',
   })
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : null)
+  @Transform(({ value }) => (value ? new Date(value) : null))
   contractEnd?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Billing preferences and settings',
-    type: BillingPreferencesDto
+    type: BillingPreferencesDto,
   })
   @IsOptional()
   @ValidateNested()

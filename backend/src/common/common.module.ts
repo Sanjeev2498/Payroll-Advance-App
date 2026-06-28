@@ -7,15 +7,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 @Global()
 @Module({
   imports: [PrismaModule],
-  providers: [
-    TenantContextService,
-    TenantContextMiddleware,
-    TenantGuard,
-  ],
-  exports: [
-    TenantContextService,
-    TenantContextMiddleware,
-    TenantGuard,
-  ],
+  providers: [TenantContextService, TenantContextMiddleware, TenantGuard],
+  exports: [TenantContextService, TenantContextMiddleware, TenantGuard],
 })
 export class CommonModule {}
