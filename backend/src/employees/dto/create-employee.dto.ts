@@ -11,6 +11,8 @@ import {
   MinLength,
   ValidateNested,
   IsPhoneNumber,
+  Matches,
+  Length,
   Min,
   Max,
 } from 'class-validator';
@@ -42,6 +44,7 @@ export class ContactInfoDto {
   @IsOptional()
   @IsString()
   @MaxLength(20)
+  @Matches(/^\+91 \d{5}-\d{5}$/, { message: 'Phone number must be in format: +91 11111-22222' })
   emergencyContactPhone?: string;
 
   @ApiPropertyOptional({ description: 'Emergency contact relationship' })
@@ -266,12 +269,36 @@ export class CreateEmployeeDto {
 
   @ApiPropertyOptional({
     description: 'Phone number',
-    example: '+1-555-123-4567',
+    example: '+91 98765-43210',
+    pattern: '^\\+91 \\d{5}-\\d{5}$'
   })
   @IsOptional()
   @IsString()
   @MaxLength(20)
+  @Matches(/^\+91 \d{5}-\d{5}$/, { message: 'Phone number must be in format: +91 11111-22222' })
   phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Aadhaar number (12 digits)',
+    example: '123456789012',
+    pattern: '^\\d{12}$'
+  })
+  @IsOptional()
+  @IsString()
+  @Length(12, 12)
+  @Matches(/^\d{12}$/, { message: 'Aadhaar number must be exactly 12 digits' })
+  aadhaarNumber?: string;
+
+  @ApiPropertyOptional({
+    description: 'PAN number (10 alphanumeric characters)',
+    example: 'ABCDE1234F',
+    pattern: '^[A-Z]{5}\\d{4}[A-Z]$'
+  })
+  @IsOptional()
+  @IsString()
+  @Length(10, 10)
+  @Matches(/^[A-Z]{5}\d{4}[A-Z]$/, { message: 'PAN must be in format: ABCDE1234F (5 letters, 4 digits, 1 letter)' })
+  panNumber?: string;
 
   @ApiPropertyOptional({
     description: 'Contact information and emergency contacts',

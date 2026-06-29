@@ -9,17 +9,17 @@ async function main() {
   // Create a demo company
   const company = await prisma.company.create({
     data: {
-      name: 'Demo Security Agency',
+      name: 'Demo Security Services',
       slug: 'demo-security',
       settings: {
-        timezone: 'America/New_York',
-        dateFormat: 'MM/dd/yyyy',
-        currency: 'USD'
+        timezone: 'Asia/Kolkata',
+        dateFormat: 'dd/MM/yyyy',
+        currency: 'INR'
       },
       branding: {
         primaryColor: '#1E40AF',
         logo: null,
-        companyAddress: '123 Security Blvd, New York, NY 10001'
+        companyAddress: '123 Security Tower, MG Road, Bangalore, Karnataka 560001'
       }
     }
   });
@@ -31,7 +31,7 @@ async function main() {
   const adminUser = await prisma.user.create({
     data: {
       companyId: company.id,
-      email: 'admin@demosecurity.com',
+      email: 'admin@demosecurity.co.in',
       firstName: 'System',
       lastName: 'Administrator',
       passwordHash: hashedPassword,
@@ -46,12 +46,12 @@ async function main() {
   const client = await prisma.client.create({
     data: {
       companyId: company.id,
-      name: 'Downtown Shopping Mall',
-      contactEmail: 'security@downtownmall.com',
+      name: 'Phoenix MarketCity Mall',
+      contactEmail: 'security@phoenixmarketcity.com',
       contactInfo: {
-        primaryContact: 'Jane Smith',
-        phone: '+1-555-0123',
-        address: '456 Commerce St, New York, NY 10002'
+        primaryContact: 'Priya Sharma',
+        phone: '+91 80456-78901',
+        address: '142, City Square, Whitefield Road, Bangalore, Karnataka 560066'
       },
       contractStatus: ContractStatus.ACTIVE,
       contractStart: new Date('2024-01-01'),
@@ -70,13 +70,13 @@ async function main() {
   const site1 = await prisma.site.create({
     data: {
       clientId: client.id,
-      name: 'Main Entrance',
+      name: 'Main Mall Entrance',
       address: {
-        street: '456 Commerce St',
-        city: 'New York',
-        state: 'NY',
-        zipCode: '10002',
-        building: 'Main Building'
+        street: '142, City Square, Whitefield Road',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        zipCode: '560066',
+        building: 'Phoenix MarketCity'
       },
       accessRequirements: {
         securityClearance: 'Basic',
@@ -84,13 +84,13 @@ async function main() {
         equipmentProvided: ['radio', 'flashlight']
       },
       safetyProtocols: {
-        emergencyContacts: ['+1-555-9911'],
+        emergencyContacts: ['+91 80100-08080'],
         evacuationPlan: 'Plan A',
         hazardTypes: ['crowd_control']
       },
       contactInfo: {
-        siteManager: 'Bob Wilson',
-        phone: '+1-555-0124'
+        siteManager: 'Rajesh Kumar',
+        phone: '+91 80456-78902'
       }
     }
   });
@@ -98,13 +98,13 @@ async function main() {
   const site2 = await prisma.site.create({
     data: {
       clientId: client.id,
-      name: 'Parking Garage',
+      name: 'Parking Area',
       address: {
-        street: '458 Commerce St',
-        city: 'New York',
-        state: 'NY',
-        zipCode: '10002',
-        building: 'Parking Structure'
+        street: '142, City Square, Whitefield Road',
+        city: 'Bangalore',
+        state: 'Karnataka', 
+        zipCode: '560066',
+        building: 'Parking Complex'
       },
       accessRequirements: {
         securityClearance: 'Basic',
@@ -112,13 +112,13 @@ async function main() {
         equipmentProvided: ['radio', 'flashlight', 'vehicle']
       },
       safetyProtocols: {
-        emergencyContacts: ['+1-555-9911'],
+        emergencyContacts: ['+91 80100-08080'],
         evacuationPlan: 'Plan B',
         hazardTypes: ['vehicle_traffic']
       },
       contactInfo: {
-        siteManager: 'Carol Davis',
-        phone: '+1-555-0125'
+        siteManager: 'Sunita Patel',
+        phone: '+91 80456-78903'
       }
     }
   });
@@ -130,26 +130,28 @@ async function main() {
     data: {
       companyId: company.id,
       employeeNumber: 'EMP001',
-      firstName: 'John',
-      lastName: 'Security',
-      email: 'john.security@demosecurity.com',
-      phone: '+1-555-0201',
+      firstName: 'Arjun',
+      lastName: 'Singh',
+      email: 'arjun.singh@demosecurity.co.in',
+      phone: '+91 98765-43210',
+      aadhaarNumber: '123456789012', // Valid 12-digit Aadhaar
+      panNumber: 'ABCDE1234F',       // Valid PAN format
       address: {
-        street: '789 Worker Ave',
-        city: 'New York',
-        state: 'NY',
-        zipCode: '10003'
+        street: '45, MG Road',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        zipCode: '560001'
       },
       certifications: {
         securityLicense: {
-          number: 'SEC123456',
+          number: 'KAR123456',
           expiryDate: '2025-06-30',
-          issuingAuthority: 'NY State'
+          issuingAuthority: 'Karnataka Police'
         },
         firstAid: {
           number: 'FA789012',
           expiryDate: '2025-03-15',
-          issuingAuthority: 'Red Cross'
+          issuingAuthority: 'Indian Red Cross'
         }
       },
       skills: ['crowd_control', 'emergency_response', 'customer_service'],
@@ -162,21 +164,23 @@ async function main() {
     data: {
       companyId: company.id,
       employeeNumber: 'EMP002',
-      firstName: 'Sarah',
-      lastName: 'Guardian',
-      email: 'sarah.guardian@demosecurity.com',
-      phone: '+1-555-0202',
+      firstName: 'Priya',
+      lastName: 'Reddy',
+      email: 'priya.reddy@demosecurity.co.in',
+      phone: '+91 87654-32109',
+      aadhaarNumber: '987654321098', // Valid 12-digit Aadhaar  
+      panNumber: 'FGHIJ5678K',       // Valid PAN format
       address: {
-        street: '123 Guard Lane',
-        city: 'New York',
-        state: 'NY',
-        zipCode: '10004'
+        street: '78, Brigade Road',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        zipCode: '560025'
       },
       certifications: {
         securityLicense: {
-          number: 'SEC654321',
+          number: 'KAR654321',
           expiryDate: '2025-08-30',
-          issuingAuthority: 'NY State'
+          issuingAuthority: 'Karnataka Police'
         }
       },
       skills: ['patrol', 'report_writing', 'customer_service'],
@@ -187,7 +191,7 @@ async function main() {
 
   console.log(`✅ Created employees: ${employee1.firstName} ${employee1.lastName}, ${employee2.firstName} ${employee2.lastName}`);
 
-  console.log('🎉 Database seeding completed successfully!');
+  console.log('�🇳 Database seeding completed successfully with Indian localization!');
 }
 
 main()

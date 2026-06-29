@@ -99,14 +99,71 @@ export interface Attendance {
   clockIn?: string
   clockOut?: string
   locationData: Record<string, any>
-  status: 'CLOCKED_IN' | 'CLOCKED_OUT' | 'NO_SHOW' | 'LATE' | 'EARLY_DEPARTURE'
+  status: 'PRESENT' | 'LATE' | 'ABSENT' | 'EARLY_DEPARTURE' | 'OVERTIME' | 'PENDING'
   verificationData: Record<string, any>
+  notes?: string
   createdAt: string
   updatedAt: string
+  
+  // Calculated fields
+  hoursWorked?: number
+  overtimeHours?: number
+  isLate?: boolean
+  isEarlyDeparture?: boolean
   
   // Relations
   employee?: Employee
   shift?: Shift
+}
+
+export interface AttendanceAnomaly {
+  id: string
+  attendanceId: string
+  type: 'LATE_ARRIVAL' | 'EARLY_DEPARTURE' | 'NO_SHOW' | 'EXCESSIVE_HOURS' | 'OVERTIME' | 'LOCATION_MISMATCH'
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  description: string
+  metadata: Record<string, any>
+  detectedAt: string
+  resolvedAt?: string
+  resolvedBy?: string
+}
+
+export interface AttendanceStats {
+  totalRecords: number
+  presentCount: number
+  lateCount: number
+  absentCount: number
+  overtimeCount: number
+  attendanceRate: number
+  averageHoursWorked: number
+  totalOvertimeHours: number
+}
+
+export interface ClockAction {
+  success: boolean
+  action: 'CLOCK_IN' | 'CLOCK_OUT'
+  timestamp: string
+  attendance?: Attendance
+  warnings?: string[]
+  anomalies?: AttendanceAnomaly[]
+  nextExpectedAction: 'CLOCK_IN' | 'CLOCK_OUT' | 'NONE'
+  hoursWorked?: number
+  overtimeHours?: number
+}
+
+export interface AttendanceFilter {
+  search?: string
+  employeeId?: string
+  shiftId?: string
+  siteId?: string
+  status?: string
+  dateFrom?: string
+  dateTo?: string
+  anomaliesOnly?: boolean
+  lateOnly?: boolean
+  overtimeOnly?: boolean
+  page?: number
+  limit?: number
 }
 
 export interface PayrollRun {

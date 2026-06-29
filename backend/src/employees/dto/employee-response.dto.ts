@@ -69,6 +69,12 @@ export class EmployeeResponseDto {
   @ApiPropertyOptional({ description: 'Phone number' })
   phone?: string;
 
+  @ApiPropertyOptional({ description: 'Aadhaar number (masked for security)' })
+  aadhaarNumber?: string;
+
+  @ApiPropertyOptional({ description: 'PAN number' })
+  panNumber?: string;
+
   @ApiPropertyOptional({ description: 'Contact information', type: ContactInfoDto })
   contactInfo?: ContactInfoDto;
 

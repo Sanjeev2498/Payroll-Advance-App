@@ -16,7 +16,7 @@ describe('EmployeesController', () => {
     firstName: 'John',
     lastName: 'Doe',
     email: 'john.doe@example.com',
-    phone: '+1-555-123-4567',
+    phone: '+91 98765-43210', // Indian format
     address: null,
     employmentStatus: 'ACTIVE' as EmploymentStatus,
     hireDate: new Date('2024-01-01'),

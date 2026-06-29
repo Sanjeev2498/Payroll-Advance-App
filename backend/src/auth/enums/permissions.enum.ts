@@ -94,6 +94,8 @@ export enum PayrollPermissions {
   DELETE_PAYROLL = 'payroll:delete',
   PROCESS_PAYROLL = 'payroll:process',
   APPROVE_PAYROLL = 'payroll:approve',
+  CORRECT_PAYROLL = 'payroll:correct',
+  EXPORT_PAYROLL = 'payroll:export',
   VIEW_PAYROLL_REPORTS = 'payroll:view_reports',
   MANAGE_PAYROLL_SETTINGS = 'payroll:manage_settings',
 }

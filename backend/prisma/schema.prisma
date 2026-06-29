@@ -24,10 +24,11 @@ model Company {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  users       User[]
-  clients     Client[]
-  employees   Employee[]
-  payrollRuns PayrollRun[]
+  users          User[]
+  clients        Client[]
+  employees      Employee[]
+  payrollRuns    PayrollRun[]
+  shiftTemplates ShiftTemplate[]
 
   @@map("companies")
 }
@@ -46,7 +47,8 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shiftNotifications ShiftNotification[]
 
   @@index([companyId])
   @@map("users")
@@ -107,9 +109,10 @@ model Site {
   updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  assignments Assignment[]
-  shifts      Shift[]
+  client         Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignments    Assignment[]
+  shifts         Shift[]
+  shiftTemplates ShiftTemplate[]
 
   @@index([clientId])
   @@index([operationalStatus])
@@ -136,6 +139,11 @@ model Employee {
   email            String?          @db.VarChar(255)
   phone            String?          @db.VarChar(20)
   address          Json?            @db.JsonB
+  
+  // Indian Identity Documents
+  aadhaarNumber    String?          @map("aadhaar_number") @db.VarChar(12)  // 12 digits with checksum
+  panNumber        String?          @map("pan_number") @db.VarChar(10)      // 10 alphanumeric characters
+  
   certifications   Json?            @db.JsonB
   skills           String[]         @db.VarChar(50)
   metadata         Json?            @db.JsonB
@@ -146,12 +154,15 @@ model Employee {
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  assignments       Assignment[]
-  attendanceRecords Attendance[]
-  payrollItems      PayrollItem[]
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignments        Assignment[]
+  attendanceRecords  Attendance[]
+  payrollItems       PayrollItem[]
+  shiftNotifications ShiftNotification[]
 
   @@unique([companyId, employeeNumber])
+  @@unique([aadhaarNumber]) // Aadhaar must be unique across all employees
+  @@unique([panNumber])     // PAN must be unique across all employees
   @@index([companyId])
   @@index([companyId, employmentStatus])
   @@index([skills])
@@ -201,27 +212,42 @@ enum AssignmentStatus {
 // ============================================================================
 
 model Shift {
-  id           String      @id @default(uuid()) @db.Uuid
-  assignmentId String      @map("assignment_id") @db.Uuid
-  siteId       String      @map("site_id") @db.Uuid
-  shiftDate    DateTime    @map("shift_date") @db.Date
-  startTime    DateTime    @map("start_time") @db.Time
-  endTime      DateTime    @map("end_time") @db.Time
-  shiftType    ShiftType   @default(REGULAR) @map("shift_type")
-  status       ShiftStatus @default(SCHEDULED)
-  notes        Json?       @db.JsonB
-  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+  id                String           @id @default(uuid()) @db.Uuid
+  assignmentId      String?          @map("assignment_id") @db.Uuid
+  siteId            String           @map("site_id") @db.Uuid
+  templateId        String?          @map("template_id") @db.Uuid
+  shiftDate         DateTime         @map("shift_date") @db.Date
+  startTime         DateTime         @map("start_time") @db.Time
+  endTime           DateTime         @map("end_time") @db.Time
+  shiftType         ShiftType        @default(REGULAR) @map("shift_type")
+  status            ShiftStatus      @default(SCHEDULED)
+  priority          ShiftPriority    @default(NORMAL)
+  isRecurring       Boolean          @default(false) @map("is_recurring")
+  recurringPattern  Json?            @map("recurring_pattern") @db.JsonB
+  coverageRequired  Int              @default(1) @map("coverage_required")
+  coverageAssigned  Int              @default(0) @map("coverage_assigned")
+  skillRequirements Json?            @map("skill_requirements") @db.JsonB
+  shiftRequirements Json?            @map("shift_requirements") @db.JsonB
+  breakSchedule     Json?            @map("break_schedule") @db.JsonB
+  modificationLog   Json?            @map("modification_log") @db.JsonB
+  notes             Json?            @db.JsonB
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  assignment        Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  site              Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  assignment        Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  site              Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  template          ShiftTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
   attendanceRecords Attendance[]
+  notifications     ShiftNotification[]
 
   @@index([assignmentId])
   @@index([siteId])
+  @@index([templateId])
   @@index([shiftDate])
   @@index([status])
+  @@index([isRecurring])
+  @@index([priority])
   @@map("shifts")
 }
 
@@ -230,14 +256,51 @@ enum ShiftType {
   OVERTIME
   HOLIDAY
   EMERGENCY
+  TRAINING
+  MAINTENANCE
 }
 
 enum ShiftStatus {
+  DRAFT
   SCHEDULED
+  CONFIRMED
   IN_PROGRESS
   COMPLETED
   CANCELLED
   NO_SHOW
+  NEEDS_COVERAGE
+}
+
+enum ShiftPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum RecurrenceType {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum NotificationType {
+  SHIFT_ASSIGNED
+  SHIFT_CHANGED
+  SHIFT_CANCELLED
+  COVERAGE_REQUEST
+  SHIFT_REMINDER
+  OVERTIME_ALERT
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  READ
+  ACKNOWLEDGED
+  FAILED
 }
 
 model Attendance {
@@ -350,6 +413,14 @@ model Invoice {
   status             InvoiceStatus @default(DRAFT)
   dueDate            DateTime      @map("due_date") @db.Date
   paidAt             DateTime?     @map("paid_at") @db.Timestamptz
+  
+  // Additional fields for Indian billing compliance
+  gstDetails         Json?         @map("gst_details") @db.JsonB
+  deploymentSummary  Json?         @map("deployment_summary") @db.JsonB
+  additionalCharges  Json?         @map("additional_charges") @db.JsonB
+  notes              String?       @db.Text
+  paymentReference   String?       @map("payment_reference") @db.VarChar(255)
+  
   createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -369,4 +440,67 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
+}
+
+// ============================================================================
+// SHIFT SCHEDULING SYSTEM EXTENSIONS
+// ============================================================================
+
+model ShiftTemplate {
+  id                String        @id @default(uuid()) @db.Uuid
+  companyId         String        @map("company_id") @db.Uuid
+  name              String        @db.VarChar(100)
+  description       String?       @db.Text
+  siteId            String?       @map("site_id") @db.Uuid
+  startTime         DateTime      @map("start_time") @db.Time
+  endTime           DateTime      @map("end_time") @db.Time
+  shiftType         ShiftType     @default(REGULAR) @map("shift_type")
+  coverageRequired  Int           @default(1) @map("coverage_required")
+  skillRequirements Json?         @map("skill_requirements") @db.JsonB
+  shiftRequirements Json?         @map("shift_requirements") @db.JsonB
+  breakSchedule     Json?         @map("break_schedule") @db.JsonB
+  recurrencePattern Json?         @map("recurrence_pattern") @db.JsonB
+  isActive          Boolean       @default(true) @map("is_active")
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  site    Site?   @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  shifts  Shift[]
+
+  @@index([companyId])
+  @@index([siteId])
+  @@index([isActive])
+  @@map("shift_templates")
+}
+
+model ShiftNotification {
+  id            String             @id @default(uuid()) @db.Uuid
+  shiftId       String             @map("shift_id") @db.Uuid
+  userId        String?            @map("user_id") @db.Uuid
+  employeeId    String?            @map("employee_id") @db.Uuid
+  type          NotificationType
+  title         String             @db.VarChar(255)
+  message       String             @db.Text
+  status        NotificationStatus @default(PENDING)
+  scheduledFor  DateTime?          @map("scheduled_for") @db.Timestamptz
+  sentAt        DateTime?          @map("sent_at") @db.Timestamptz
+  readAt        DateTime?          @map("read_at") @db.Timestamptz
+  metadata      Json?              @db.JsonB
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  shift    Shift     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([shiftId])
+  @@index([userId])
+  @@index([employeeId])
+  @@index([type])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("shift_notifications")
 }

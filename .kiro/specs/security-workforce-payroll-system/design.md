@@ -75,7 +75,7 @@ graph TB
 
 ### Multi-Tenant Architecture Design
 
-The system implements a **Row-Level Security (RLS)** approach for multi-tenancy, providing optimal balance between data isolation, operational efficiency, and cost-effectiveness.
+ents a **Row-Level Security (RLS)** approach for multi-tenancy, providing optimal balance between data The system implemisolation, operational efficiency, and cost-effectiveness.
 
 **Tenant Isolation Strategy**:
 - Single PostgreSQL database with RLS policies enforcing data isolation

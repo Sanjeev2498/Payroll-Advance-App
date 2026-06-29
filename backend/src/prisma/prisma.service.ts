@@ -50,6 +50,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get shift() {
     return this.prismaClient.shift;
   }
+  get shiftTemplate() {
+    return this.prismaClient.shiftTemplate;
+  }
+  get shiftNotification() {
+    return this.prismaClient.shiftNotification;
+  }
   get attendance() {
     return this.prismaClient.attendance;
   }

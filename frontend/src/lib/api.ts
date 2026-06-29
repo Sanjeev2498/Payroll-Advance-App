@@ -22,6 +22,18 @@ interface ApiResponse<T = any> {
   }
 }
 
+class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string,
+    public details?: any[]
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 class ApiClient {
   private baseURL: string
 
@@ -46,16 +58,50 @@ class ApiClient {
 
     try {
       const response = await fetch(`${this.baseURL}${endpoint}`, config)
-      const data = await response.json()
+      
+      let data
+      try {
+        data = await response.json()
+      } catch (error) {
+        throw new ApiError(
+          'Invalid JSON response from server',
+          response.status
+        )
+      }
 
       if (!response.ok) {
-        throw new Error(data.error?.message || 'An error occurred')
+        // Handle specific error cases
+        if (response.status === 401) {
+          // Unauthorized - token expired or invalid
+          useAuthStore.getState().logout()
+          throw new ApiError(
+            'Authentication required',
+            401,
+            'UNAUTHORIZED'
+          )
+        }
+
+        throw new ApiError(
+          data.error?.message || `HTTP ${response.status}: ${response.statusText}`,
+          response.status,
+          data.error?.code,
+          data.error?.details
+        )
       }
 
       return data
     } catch (error) {
+      if (error instanceof ApiError) {
+        throw error
+      }
+      
+      // Network or other errors
       console.error('API request failed:', error)
-      throw error
+      throw new ApiError(
+        'Network error - please check your connection',
+        0,
+        'NETWORK_ERROR'
+      )
     }
   }
 

@@ -148,38 +148,38 @@ The approach focuses on building essential foundation components without over-en
     - **Validates: Requirements 5.2**
     - Test that system prevents scheduling conflicts and validates availability
 
-- [ ] 6. Shift Management and Attendance Tracking
-  - [ ] 6.1 Implement Shift scheduling system
+- [x] 6. Shift Management and Attendance Tracking
+  - [x] 6.1 Implement Shift scheduling system
     - Create Shift entity with flexible patterns and recurring schedules
     - Build shift CRUD operations with coverage requirement tracking
     - Implement shift modification workflows with notifications
     - _Requirements: 6.1, 6.2_
 
-  - [ ] 6.2 Implement Attendance tracking system
+  - [x] 6.2 Implement Attendance tracking system
     - Create Attendance entity with timestamp and location verification
     - Build clock-in/clock-out endpoints with validation and anomaly detection
     - Implement attendance correction workflows with approval processes
     - _Requirements: 7.1, 7.4_
 
-  - [ ] 6.3 Write property test for attendance recording accuracy
+  - [x] 6.3 Write property test for attendance recording accuracy
     - **Property 9: Attendance Recording Accuracy**
     - **Validates: Requirements 7.1**
     - Test that attendance records capture complete data without corruption
 
-  - [ ] 6.4 Build real-time attendance dashboard components
+  - [x] 6.4 Build real-time attendance dashboard components
     - Create attendance monitoring interface with live updates
     - Implement attendance anomaly detection and alerting
     - Build attendance reporting with filtering and export capabilities
     - _Requirements: 7.3, 11.1_
 
 - [ ] 7. Payroll Processing Engine
-  - [ ] 7.1 Implement core payroll calculation engine
+  - [x] 7.1 Implement core payroll calculation engine
     - Create PayrollRun and PayrollItem entities with calculation logic
     - Build payroll calculation service with attendance-based salary computation
     - Implement basic pay, overtime, and deduction calculations
     - _Requirements: 8.1, 8.2_
 
-  - [ ] 7.2 Write property tests for payroll calculations
+  - [x] 7.2 Write property tests for payroll calculations
     - **Property 10: Payroll Calculation Correctness**
     - **Validates: Requirements 8.1**
     - Test mathematical accuracy of salary calculations based on attendance and rates
@@ -187,13 +187,13 @@ The approach focuses on building essential foundation components without over-en
     - **Validates: Requirements 8.2**
     - Test accuracy of complex payroll components (overtime, bonuses, deductions)
 
-  - [ ] 7.3 Build payroll run management system
+  - [x] 7.3 Build payroll run management system
     - Create payroll run initialization and processing workflows
     - Implement payroll approval processes with immutable finalization
     - Build payroll reports, pay slips, and export functionality
     - _Requirements: 8.3, 8.5_
 
-  - [ ] 7.4 Implement client billing and invoice generation
+  - [x] 7.4 Implement client billing and invoice generation
     - Create Invoice entity with site deployment-based charging
     - Build invoice calculation logic based on hours worked and contract rates
     - Implement invoice generation, tracking, and status management

@@ -17,7 +17,7 @@ describe('EmployeesService', () => {
     firstName: 'John',
     lastName: 'Doe',
     email: 'john.doe@example.com',
-    phone: '+1-555-123-4567',
+    phone: '+91 98765-43210', // Indian format
     address: null,
     employmentStatus: EmploymentStatus.ACTIVE,
     hireDate: new Date('2024-01-01'),
@@ -76,7 +76,7 @@ describe('EmployeesService', () => {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
-      phone: '+1-555-123-4567',
+      phone: '+91 98765-43210', // Indian format
       hireDate: new Date('2024-01-01'),
       employmentType: EmploymentType.FULL_TIME,
       department: 'Security',

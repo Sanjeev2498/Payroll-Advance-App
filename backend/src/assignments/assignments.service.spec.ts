@@ -16,7 +16,7 @@ describe('AssignmentsService', () => {
     employeeId: 'employee-1',
     siteId: 'site-1',
     role: 'Security Guard',
-    hourlyRate: 25.50,
+    hourlyRate: 250.00, // ₹250 per hour
     status: 'ACTIVE',
     startDate: new Date('2024-01-15'),
     endDate: new Date('2024-12-31'),
@@ -99,7 +99,7 @@ describe('AssignmentsService', () => {
       employeeId: 'employee-1',
       siteId: 'site-1',
       role: 'Security Guard',
-      hourlyRate: 25.50,
+      hourlyRate: 250.00, // ₹250 per hour
       startDate: '2026-07-01',
       endDate: '2026-12-31',
     };
