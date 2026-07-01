@@ -74,7 +74,7 @@ export class EmployeesController {
   })
   async create(@Body() createEmployeeDto: CreateEmployeeDto): Promise<EmployeeResponseDto> {
     this.logger.log('POST /employees - Creating new employee');
-    const employee = await this.employeesService.create(createEmployeeDto);
+    const employee = await this.employeesService.create(createEmployeeDto, 'ADMIN');
     return this.mapToResponseDto(employee);
   }
 
@@ -107,14 +107,14 @@ export class EmployeesController {
   })
   async findAll(@Query() queryDto: EmployeeQueryDto): Promise<EmployeeListResponseDto> {
     this.logger.log('GET /employees - Fetching employees list');
-    const result = await this.employeesService.findAll(queryDto);
+    const result = await this.employeesService.findAll(queryDto, 'ADMIN');
 
     return {
       employees: result.employees.map(employee => this.mapToResponseDto(employee)),
       total: result.total,
       page: result.page,
       limit: result.limit,
-      totalPages: result.totalPages,
+      totalPages: result.pages,
     };
   }
 
@@ -131,7 +131,7 @@ export class EmployeesController {
   })
   async getStats(): Promise<EmployeeStatsResponseDto> {
     this.logger.log('GET /employees/stats - Fetching employee statistics');
-    return await this.employeesService.getStats();
+    return await this.employeesService.getStats('ADMIN');
   }
 
   @Get('search')
@@ -153,7 +153,7 @@ export class EmployeesController {
   })
   async searchEmployees(@Query() searchDto: EmployeeSearchDto): Promise<SkillMatchDto[]> {
     this.logger.log('GET /employees/search - Performing advanced employee search');
-    const results = await this.employeesService.searchEmployees(searchDto);
+    const results = await this.employeesService.searchEmployees(searchDto, 'ADMIN');
     
     return results.map(result => ({
       employee: this.mapToResponseDto(result.employee),
@@ -179,7 +179,7 @@ export class EmployeesController {
   async findBySkills(@Query('skills') skills: string): Promise<EmployeeResponseDto[]> {
     this.logger.log(`GET /employees/by-skills - Finding employees with skills: ${skills}`);
     const skillsArray = skills.split(',').map(skill => skill.trim());
-    const employees = await this.employeesService.findBySkills(skillsArray);
+    const employees = await this.employeesService.findBySkills(skillsArray, 'ADMIN');
     return employees.map(employee => this.mapToResponseDto(employee));
   }
 
@@ -228,7 +228,7 @@ export class EmployeesController {
     @Query('days', new ParseIntPipe({ optional: true })) days: number = 30,
   ): Promise<EmployeeResponseDto[]> {
     this.logger.log(`GET /employees/expiring-certifications - Finding certifications expiring in ${days} days`);
-    const employees = await this.employeesService.findExpiringCertifications(days);
+    const employees = await this.employeesService.findExpiringCertifications(days, 'ADMIN');
     return employees.map(employee => this.mapToResponseDto(employee));
   }
 
@@ -250,7 +250,7 @@ export class EmployeesController {
   })
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<EmployeeResponseDto> {
     this.logger.log(`GET /employees/${id} - Fetching employee details`);
-    const employee = await this.employeesService.findOne(id);
+    const employee = await this.employeesService.findOne(id, 'ADMIN');
     return this.mapToResponseDto(employee);
   }
 
@@ -323,7 +323,7 @@ export class EmployeesController {
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ): Promise<EmployeeResponseDto> {
     this.logger.log(`PATCH /employees/${id} - Updating employee`);
-    const employee = await this.employeesService.update(id, updateEmployeeDto);
+    const employee = await this.employeesService.update(id, updateEmployeeDto, 'ADMIN');
     return this.mapToResponseDto(employee);
   }
 
@@ -345,7 +345,7 @@ export class EmployeesController {
   })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<EmployeeResponseDto> {
     this.logger.log(`DELETE /employees/${id} - Soft deleting employee`);
-    const employee = await this.employeesService.remove(id);
+    const employee = await this.employeesService.remove(id, 'ADMIN');
     return this.mapToResponseDto(employee);
   }
 

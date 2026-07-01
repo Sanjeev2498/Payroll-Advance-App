@@ -15,6 +15,7 @@ import { ShiftsModule } from './shifts/shifts.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { BillingModule } from './billing/billing.module';
+import { EncryptionModule } from './common/encryption/encryption.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { TenantContextMiddleware } from './common/tenant-context.middleware';
 import { TenantGuard } from './common/tenant.guard';
@@ -33,6 +34,7 @@ import { PrismaService } from './prisma/prisma.service';
     }),
     PrismaModule,
     CommonModule,
+    EncryptionModule, // Global encryption services
     AuthModule,
     ClientsModule,
     SitesModule,

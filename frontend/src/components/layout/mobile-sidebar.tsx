@@ -6,75 +6,115 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuthPermissions } from '@/components/auth/protected-route'
-import { RoleGuard } from '@/components/auth/role-guard'
 import { Badge } from '@/components/ui/badge'
 
 interface NavigationItem {
   name: string
   href: string
   icon: string
-  requiredRoles?: string[]
-  badge?: string
   description?: string
+  badge?: string
+  roles: string[]
+  priority: number
 }
 
-const navigation: NavigationItem[] = [
+// Same navigation structure as role-specific sidebar
+const allNavigation: NavigationItem[] = [
   {
     name: 'Dashboard',
     href: '/dashboard',
     icon: '📊',
     description: 'Overview and metrics',
+    roles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'SUPERVISOR', 'EMPLOYEE'],
+    priority: 1,
+  },
+  {
+    name: 'My Schedule',
+    href: '/dashboard/my-schedule',
+    icon: '📅',
+    description: 'Your work schedule',
+    roles: ['EMPLOYEE', 'SUPERVISOR'],
+    priority: 2,
+  },
+  {
+    name: 'Clock In/Out',
+    href: '/dashboard/attendance/clock',
+    icon: '⏰',
+    description: 'Time tracking',
+    roles: ['EMPLOYEE', 'SUPERVISOR'],
+    priority: 3,
+  },
+  {
+    name: 'Team Attendance',
+    href: '/dashboard/attendance',
+    icon: '⏰',
+    description: 'Monitor team attendance',
+    roles: ['SUPERVISOR', 'MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 4,
+  },
+  {
+    name: 'Sites',
+    href: '/dashboard/sites',
+    icon: '📍',
+    description: 'Site operations',
+    roles: ['SUPERVISOR', 'MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 5,
   },
   {
     name: 'Clients',
     href: '/dashboard/clients',
     icon: '🏢',
     description: 'Client management',
-  },
-  {
-    name: 'Sites',
-    href: '/dashboard/sites', 
-    icon: '📍',
-    description: 'Site operations',
+    roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 6,
   },
   {
     name: 'Employees',
     href: '/dashboard/employees',
     icon: '👥',
     description: 'Workforce management',
+    roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 7,
   },
   {
     name: 'Assignments',
     href: '/dashboard/assignments',
     icon: '📋',
     description: 'Work assignments',
-  },
-  {
-    name: 'Attendance',
-    href: '/dashboard/attendance',
-    icon: '⏰',
-    description: 'Time tracking',
+    roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 8,
   },
   {
     name: 'Payroll',
     href: '/dashboard/payroll',
     icon: '💰',
-    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'],
     description: 'Salary processing',
+    roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 9,
+  },
+  {
+    name: 'My Profile',
+    href: '/dashboard/profile',
+    icon: '👤',
+    description: 'Personal information',
+    roles: ['EMPLOYEE', 'SUPERVISOR', 'MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 10,
   },
   {
     name: 'Reports',
     href: '/dashboard/reports',
     icon: '📈',
-    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'],
     description: 'Analytics & reports',
+    roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 11,
   },
   {
     name: 'Settings',
     href: '/dashboard/settings',
     icon: '⚙️',
-    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN'],
     description: 'System configuration',
+    roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 12,
   },
 ]
 
@@ -85,13 +125,18 @@ interface MobileSidebarProps {
 
 export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const pathname = usePathname()
-  const { user } = useAuthPermissions()
+  const { user, hasRole } = useAuthPermissions()
+
+  // Filter and sort navigation items based on user role
+  const availableNavigation = allNavigation
+    .filter(item => hasRole(item.roles))
+    .sort((a, b) => a.priority - b.priority)
 
   const NavigationItem = ({ item }: { item: NavigationItem }) => {
     const isActive = pathname === item.href || 
       (item.href !== '/dashboard' && pathname.startsWith(item.href))
     
-    const content = (
+    return (
       <Link
         href={item.href}
         onClick={onClose} // Close sidebar on navigation
@@ -130,17 +175,63 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
         )}
       </Link>
     )
-
-    if (item.requiredRoles) {
-      return (
-        <RoleGuard roles={item.requiredRoles}>
-          {content}
-        </RoleGuard>
-      )
-    }
-
-    return content
   }
+
+  const getRoleDisplayInfo = () => {
+    const role = user?.role || ''
+    switch (role) {
+      case 'EMPLOYEE':
+        return { 
+          title: 'Employee Portal',
+          subtitle: 'Manage your work activities',
+          color: 'text-green-600',
+          bgColor: 'bg-green-50',
+          borderColor: 'border-green-200'
+        }
+      case 'SUPERVISOR':
+        return { 
+          title: 'Supervisor Dashboard',
+          subtitle: 'Monitor team operations',
+          color: 'text-blue-600',
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200'
+        }
+      case 'MANAGER':
+        return { 
+          title: 'Management Console',
+          subtitle: 'Workforce operations',
+          color: 'text-purple-600',
+          bgColor: 'bg-purple-50',
+          borderColor: 'border-purple-200'
+        }
+      case 'COMPANY_ADMIN':
+        return { 
+          title: 'Admin Console',
+          subtitle: 'Company administration',
+          color: 'text-red-600',
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200'
+        }
+      case 'SUPER_ADMIN':
+        return { 
+          title: 'Super Admin',
+          subtitle: 'System administration',
+          color: 'text-indigo-600',
+          bgColor: 'bg-indigo-50',
+          borderColor: 'border-indigo-200'
+        }
+      default:
+        return { 
+          title: 'WorkforceOS',
+          subtitle: 'Security workforce management',
+          color: 'text-gray-600',
+          bgColor: 'bg-gray-50',
+          borderColor: 'border-gray-200'
+        }
+    }
+  }
+
+  const roleInfo = getRoleDisplayInfo()
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -190,13 +281,34 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
               <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                 {/* Logo */}
                 <div className="flex h-16 shrink-0 items-center">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 w-full">
                     <div className="text-2xl">🛡️</div>
-                    <div>
-                      <span className="text-xl font-bold text-gray-900">WorkforceOS</span>
-                      <p className="text-xs text-gray-500">Security Workforce Management</p>
+                    <div className="flex-1 min-w-0">
+                      <h1 className="text-lg font-bold text-gray-900 truncate">
+                        {roleInfo.title}
+                      </h1>
+                      <p className="text-xs text-gray-500 truncate">
+                        {roleInfo.subtitle}
+                      </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Role Indicator */}
+                <div className={cn(
+                  "p-3 rounded-lg border",
+                  roleInfo.bgColor,
+                  roleInfo.borderColor
+                )}>
+                  <div className="flex items-center space-x-2">
+                    <div className={cn("w-2 h-2 rounded-full", roleInfo.color.replace('text-', 'bg-'))} />
+                    <span className={cn("text-sm font-medium", roleInfo.color)}>
+                      {user?.role?.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {user?.firstName} {user?.lastName}
+                  </p>
                 </div>
                 
                 {/* Navigation */}
@@ -204,7 +316,7 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   <ul role="list" className="flex flex-1 flex-col gap-y-7">
                     <li>
                       <ul role="list" className="-mx-2 space-y-1">
-                        {navigation.map((item) => (
+                        {availableNavigation.map((item) => (
                           <li key={item.name}>
                             <NavigationItem item={item} />
                           </li>
@@ -219,10 +331,10 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   {user && (
                     <div className="bg-gray-50 rounded-lg p-3">
                       <div className="text-sm font-medium text-gray-900 truncate">
-                        {user.tenantName}
+                        {user.company?.name || 'Company Name'}
                       </div>
                       <div className="text-xs text-gray-500 truncate">
-                        Company ID: {user.tenantId.slice(0, 8)}...
+                        ID: {user.companyId.slice(0, 8)}...
                       </div>
                     </div>
                   )}

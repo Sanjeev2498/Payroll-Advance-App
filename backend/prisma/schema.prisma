@@ -136,13 +136,78 @@ model Employee {
   employeeNumber   String           @map("employee_number") @db.VarChar(20)
   firstName        String           @map("first_name") @db.VarChar(50)
   lastName         String           @map("last_name") @db.VarChar(50)
-  email            String?          @db.VarChar(255)
-  phone            String?          @db.VarChar(20)
+  
+  // Contact Information (Encrypted - Sensitive Level)
+  email            String?          @db.VarChar(500)  // Increased for encrypted data
+  emailIv          String?          @map("email_iv") @db.VarChar(32)
+  emailTag         String?          @map("email_tag") @db.VarChar(32)
+  
+  phone            String?          @db.VarChar(500)  // Increased for encrypted data  
+  phoneIv          String?          @map("phone_iv") @db.VarChar(32)
+  phoneTag         String?          @map("phone_tag") @db.VarChar(32)
+  
   address          Json?            @db.JsonB
   
-  // Indian Identity Documents
-  aadhaarNumber    String?          @map("aadhaar_number") @db.VarChar(12)  // 12 digits with checksum
-  panNumber        String?          @map("pan_number") @db.VarChar(10)      // 10 alphanumeric characters
+  // Indian Identity Documents (Encrypted - Restricted Level)
+  aadhaarNumber    String?          @map("aadhaar_number") @db.VarChar(500)  // Encrypted
+  aadhaarIv        String?          @map("aadhaar_iv") @db.VarChar(32)
+  aadhaarTag       String?          @map("aadhaar_tag") @db.VarChar(32)
+  
+  panNumber        String?          @map("pan_number") @db.VarChar(500)      // Encrypted
+  panIv            String?          @map("pan_iv") @db.VarChar(32)
+  panTag           String?          @map("pan_tag") @db.VarChar(32)
+  
+  // Salary Structure (Encrypted - Financial Level)
+  basicSalary      String?          @map("basic_salary") @db.VarChar(500)     // Encrypted
+  basicSalaryIv    String?          @map("basic_salary_iv") @db.VarChar(32)
+  basicSalaryTag   String?          @map("basic_salary_tag") @db.VarChar(32)
+  
+  hraAmount        String?          @map("hra_amount") @db.VarChar(500)       // Encrypted
+  hraAmountIv      String?          @map("hra_amount_iv") @db.VarChar(32)
+  hraAmountTag     String?          @map("hra_amount_tag") @db.VarChar(32)
+  
+  otherAllowances  String?          @map("other_allowances") @db.VarChar(500) // Encrypted
+  otherAllowancesIv String?         @map("other_allowances_iv") @db.VarChar(32)
+  otherAllowancesTag String?        @map("other_allowances_tag") @db.VarChar(32)
+  
+  grossSalary      String?          @map("gross_salary") @db.VarChar(500)     // Encrypted
+  grossSalaryIv    String?          @map("gross_salary_iv") @db.VarChar(32)
+  grossSalaryTag   String?          @map("gross_salary_tag") @db.VarChar(32)
+  
+  salaryType       SalaryType       @default(MONTHLY) @map("salary_type")
+  
+  // Bank Details (Encrypted - Financial Level)
+  bankName         String?          @map("bank_name") @db.VarChar(500)        // Encrypted
+  bankNameIv       String?          @map("bank_name_iv") @db.VarChar(32)
+  bankNameTag      String?          @map("bank_name_tag") @db.VarChar(32)
+  
+  accountNumber    String?          @map("account_number") @db.VarChar(500)   // Encrypted
+  accountNumberIv  String?          @map("account_number_iv") @db.VarChar(32)
+  accountNumberTag String?          @map("account_number_tag") @db.VarChar(32)
+  
+  ifscCode         String?          @map("ifsc_code") @db.VarChar(500)        // Encrypted
+  ifscCodeIv       String?          @map("ifsc_code_iv") @db.VarChar(32)
+  ifscCodeTag      String?          @map("ifsc_code_tag") @db.VarChar(32)
+  
+  accountType      AccountType      @default(SAVINGS) @map("account_type")
+  
+  // Statutory IDs (Encrypted - Restricted Level)
+  uanNumber        String?          @map("uan_number") @db.VarChar(500)       // Encrypted
+  uanNumberIv      String?          @map("uan_number_iv") @db.VarChar(32)
+  uanNumberTag     String?          @map("uan_number_tag") @db.VarChar(32)
+  
+  esicNumber       String?          @map("esic_number") @db.VarChar(500)      // Encrypted
+  esicNumberIv     String?          @map("esic_number_iv") @db.VarChar(32)
+  esicNumberTag    String?          @map("esic_number_tag") @db.VarChar(32)
+  
+  // Payroll Configuration
+  epfApplicable    Boolean          @default(true) @map("epf_applicable")
+  esicApplicable   Boolean          @default(true) @map("esic_applicable")
+  ptApplicable     Boolean          @default(true) @map("pt_applicable")
+  tdsApplicable    Boolean          @default(true) @map("tds_applicable")
+  
+  // Additional Employee Information
+  dateOfBirth      DateTime?        @map("date_of_birth") @db.Date
   
   certifications   Json?            @db.JsonB
   skills           String[]         @db.VarChar(50)
@@ -161,8 +226,6 @@ model Employee {
   shiftNotifications ShiftNotification[]
 
   @@unique([companyId, employeeNumber])
-  @@unique([aadhaarNumber]) // Aadhaar must be unique across all employees
-  @@unique([panNumber])     // PAN must be unique across all employees
   @@index([companyId])
   @@index([companyId, employmentStatus])
   @@index([skills])
@@ -176,13 +239,29 @@ enum EmploymentStatus {
   ON_LEAVE
 }
 
+enum SalaryType {
+  MONTHLY
+  DAILY
+  HOURLY
+}
+
+enum AccountType {
+  SAVINGS
+  CURRENT
+}
+
 model Assignment {
   id               String           @id @default(uuid()) @db.Uuid
   employeeId       String           @map("employee_id") @db.Uuid
   siteId           String           @map("site_id") @db.Uuid
   role             String           @db.VarChar(50)
   responsibilities Json?            @db.JsonB
-  hourlyRate       Decimal          @map("hourly_rate") @db.Decimal(10, 2)
+  
+  // Financial Data (Encrypted - Financial Level)
+  hourlyRate       String           @map("hourly_rate") @db.VarChar(500)    // Encrypted
+  hourlyRateIv     String           @map("hourly_rate_iv") @db.VarChar(32)
+  hourlyRateTag    String           @map("hourly_rate_tag") @db.VarChar(32)
+  
   status           AssignmentStatus @default(ACTIVE)
   startDate        DateTime         @map("start_date") @db.Date
   endDate          DateTime?        @map("end_date") @db.Date
@@ -375,7 +454,12 @@ model PayrollItem {
   employeeId      String          @map("employee_id") @db.Uuid
   itemType        PayrollItemType @map("item_type")
   description     String          @db.VarChar(255)
-  amount          Decimal         @db.Decimal(10, 2)
+  
+  // Financial Data (Encrypted - Financial Level)
+  amount          String          @db.VarChar(500)    // Encrypted
+  amountIv        String          @map("amount_iv") @db.VarChar(32)
+  amountTag       String          @map("amount_tag") @db.VarChar(32)
+  
   calculationData Json?           @map("calculation_data") @db.JsonB
   createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz

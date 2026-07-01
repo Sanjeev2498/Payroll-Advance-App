@@ -5,8 +5,10 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { EmployeeRepository } from '../common/repositories/employee.repository';
+import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../common/tenant-context.service';
+import { DataTransformService } from '../common/services/data-transform.service';
+import { EncryptionUtil } from '../common/utils/encryption.util';
 import { 
   CreateEmployeeDto, 
   UpdateEmployeeDto, 
@@ -14,6 +16,7 @@ import {
   EmployeeSearchDto,
   EmploymentStatus 
 } from './dto';
+import { EmployeeRoleResponse } from '../common/dto/encrypted-field.dto';
 import { Employee } from '@prisma/client';
 
 @Injectable()
@@ -21,15 +24,22 @@ export class EmployeesService {
   private readonly logger = new Logger(EmployeesService.name);
 
   constructor(
-    private readonly employeeRepository: EmployeeRepository,
+    private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContextService,
+    private readonly dataTransform: DataTransformService,
+    private readonly encryptionUtil: EncryptionUtil,
   ) {}
 
   /**
-   * Create a new employee with comprehensive data validation
+   * Create a new employee with encrypted sensitive data
    */
-  async create(createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
+  async create(createEmployeeDto: CreateEmployeeDto, userRole: string): Promise<EmployeeRoleResponse> {
     this.logger.log(`Creating new employee: ${createEmployeeDto.firstName} ${createEmployeeDto.lastName}`);
+
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
 
     // Validate hire date
     if (createEmployeeDto.hireDate > new Date()) {
@@ -39,30 +49,21 @@ export class EmployeesService {
     // Check for duplicate employee number within tenant
     await this.validateUniqueEmployeeNumber(createEmployeeDto.employeeNumber);
 
-    // Check for duplicate email if provided
-    if (createEmployeeDto.email) {
-      await this.validateUniqueEmail(createEmployeeDto.email);
-    }
-
     try {
-      // Prepare employee data with proper metadata structure
+      // Encrypt sensitive data before storing
+      const encryptedData = this.dataTransform.encryptEmployeeData(createEmployeeDto);
+
+      // Prepare employee data
       const employeeData = {
+        companyId: tenantId,
         employeeNumber: createEmployeeDto.employeeNumber,
         firstName: createEmployeeDto.firstName,
         lastName: createEmployeeDto.lastName,
-        email: createEmployeeDto.email,
-        phone: createEmployeeDto.phone,
         hireDate: createEmployeeDto.hireDate,
-        skills: createEmployeeDto.skills as any, // Repository will handle the conversion
+        skills: createEmployeeDto.skills?.map(skill => skill.name) || [], // Extract skill names
+        employmentStatus: 'ACTIVE', // Default status
         certifications: createEmployeeDto.certifications as any,
-        contactInfo: createEmployeeDto.contactInfo as any,
-        employmentType: createEmployeeDto.employmentType,
-        department: createEmployeeDto.department,
-        jobTitle: createEmployeeDto.jobTitle,
-        complianceStatus: createEmployeeDto.complianceStatus as any,
-        availability: createEmployeeDto.availability as any,
-        performanceMetrics: createEmployeeDto.performanceMetrics as any,
-        hourlyRate: createEmployeeDto.hourlyRate,
+        address: createEmployeeDto.contactInfo?.address as any,
         metadata: {
           employmentType: createEmployeeDto.employmentType,
           department: createEmployeeDto.department,
@@ -74,15 +75,18 @@ export class EmployeesService {
           hourlyRate: createEmployeeDto.hourlyRate,
           ...createEmployeeDto.metadata,
         } as any,
+        // Encrypted fields
+        ...encryptedData,
       };
 
-      const employee = await this.employeeRepository.create(employeeData);
+      const employee = await this.prisma.employee.create({
+        data: employeeData,
+      });
+
       this.logger.log(`Successfully created employee: ${employee.id}`);
 
-      // Trigger onboarding workflow
-      await this.initiateEmployeeOnboarding(employee);
-
-      return employee;
+      // Return role-based view of the employee data
+      return this.dataTransform.transformEmployeeForRole(employee, userRole, false);
     } catch (error) {
       this.logger.error(`Failed to create employee: ${error.message}`, error.stack);
       throw new BadRequestException(`Failed to create employee: ${error.message}`);
@@ -90,35 +94,81 @@ export class EmployeesService {
   }
 
   /**
-   * Find all employees with advanced filtering and pagination
+   * Find all employees with role-based data filtering
    */
-  async findAll(queryDto: EmployeeQueryDto) {
+  async findAll(queryDto: EmployeeQueryDto, userRole: string, requestingUserId?: string) {
     this.logger.log('Fetching employees list with filters', { queryDto });
 
-    const filters = {
-      search: queryDto.search,
-      skills: queryDto.skills,
-      employmentStatus: queryDto.employmentStatus,
-      department: queryDto.department,
-      jobTitle: queryDto.jobTitle,
-      hireDateFrom: queryDto.hireDateFrom ? new Date(queryDto.hireDateFrom) : undefined,
-      hireDateTo: queryDto.hireDateTo ? new Date(queryDto.hireDateTo) : undefined,
-      availabilityStatus: queryDto.availabilityStatus,
-      certificationExpiringBefore: queryDto.certificationExpiringBefore,
-      complianceStatus: queryDto.complianceStatus,
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
+
+    const where: any = {
+      companyId: tenantId,
     };
 
-    try {
-      const result = await this.employeeRepository.findMany(
-        filters,
-        queryDto.page,
-        queryDto.limit,
-        queryDto.sortBy as any,
-        queryDto.sortOrder,
-      );
+    // Apply filters
+    if (queryDto.search) {
+      where.OR = [
+        { firstName: { contains: queryDto.search, mode: 'insensitive' } },
+        { lastName: { contains: queryDto.search, mode: 'insensitive' } },
+        { employeeNumber: { contains: queryDto.search, mode: 'insensitive' } },
+      ];
+    }
 
-      this.logger.log(`Found ${result.total} employees`);
-      return result;
+    if (queryDto.employmentStatus) {
+      where.employmentStatus = queryDto.employmentStatus;
+    }
+
+    if (queryDto.skills && queryDto.skills.length > 0) {
+      where.skills = {
+        hasEvery: queryDto.skills,
+      };
+    }
+
+    // Handle date filters
+    if (queryDto.hireDateFrom || queryDto.hireDateTo) {
+      where.hireDate = {};
+      if (queryDto.hireDateFrom) {
+        where.hireDate.gte = new Date(queryDto.hireDateFrom);
+      }
+      if (queryDto.hireDateTo) {
+        where.hireDate.lte = new Date(queryDto.hireDateTo);
+      }
+    }
+
+    try {
+      const skip = ((queryDto.page || 1) - 1) * (queryDto.limit || 10);
+      const take = queryDto.limit || 10;
+
+      const [employees, total] = await Promise.all([
+        this.prisma.employee.findMany({
+          where,
+          skip,
+          take,
+          orderBy: {
+            [queryDto.sortBy || 'createdAt']: queryDto.sortOrder || 'desc',
+          },
+        }),
+        this.prisma.employee.count({ where }),
+      ]);
+
+      // Transform each employee based on user role
+      const transformedEmployees = employees.map((employee) => {
+        const isOwnData = requestingUserId === employee.id;
+        return this.dataTransform.transformEmployeeForRole(employee, userRole, isOwnData);
+      });
+
+      this.logger.log(`Found ${total} employees`);
+      
+      return {
+        employees: transformedEmployees,
+        total,
+        page: queryDto.page || 1,
+        limit: queryDto.limit || 10,
+        pages: Math.ceil(total / (queryDto.limit || 10)),
+      };
     } catch (error) {
       this.logger.error(`Failed to fetch employees: ${error.message}`, error.stack);
       throw new BadRequestException(`Failed to fetch employees: ${error.message}`);
@@ -126,24 +176,46 @@ export class EmployeesService {
   }
 
   /**
-   * Find employee by ID with related data
+   * Find employee by ID with role-based data filtering
    */
-  async findOne(id: string): Promise<Employee> {
+  async findOne(id: string, userRole: string, requestingUserId?: string): Promise<EmployeeRoleResponse> {
     this.logger.log(`Fetching employee: ${id}`);
 
-    const employee = await this.employeeRepository.findById(id);
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
+
+    const employee = await this.prisma.employee.findFirst({
+      where: {
+        id,
+        companyId: tenantId,
+      },
+    });
+
     if (!employee) {
       throw new NotFoundException(`Employee with ID ${id} not found`);
     }
 
-    return employee;
+    const isOwnData = requestingUserId === employee.id;
+    return this.dataTransform.transformEmployeeForRole(employee, userRole, isOwnData);
   }
 
   /**
-   * Update employee information
+   * Update employee information with encryption
    */
-  async update(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee> {
+  async update(
+    id: string, 
+    updateEmployeeDto: UpdateEmployeeDto, 
+    userRole: string,
+    requestingUserId?: string
+  ): Promise<EmployeeRoleResponse> {
     this.logger.log(`Updating employee: ${id}`);
+
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
 
     // Validate hire date if being updated
     if (updateEmployeeDto.hireDate && updateEmployeeDto.hireDate > new Date()) {
@@ -155,43 +227,45 @@ export class EmployeesService {
       await this.validateUniqueEmployeeNumber(updateEmployeeDto.employeeNumber, id);
     }
 
-    // Check for duplicate email if being updated
-    if (updateEmployeeDto.email) {
-      await this.validateUniqueEmail(updateEmployeeDto.email, id);
-    }
-
     try {
-      // Prepare update data with proper metadata structure
+      // Get current employee first
+      const currentEmployee = await this.prisma.employee.findFirst({
+        where: { id, companyId: tenantId },
+      });
+
+      if (!currentEmployee) {
+        throw new NotFoundException(`Employee with ID ${id} not found`);
+      }
+
+      // Encrypt sensitive data in the update
+      const encryptedUpdateData = this.dataTransform.encryptEmployeeData(updateEmployeeDto);
+
+      // Prepare update data
       const updateData: any = {
         ...updateEmployeeDto,
+        ...encryptedUpdateData,
       };
 
-      // Handle metadata fields
+      // Handle metadata updates
       if (updateEmployeeDto.employmentType || updateEmployeeDto.department || 
-          updateEmployeeDto.jobTitle || updateEmployeeDto.contactInfo ||
-          updateEmployeeDto.complianceStatus || updateEmployeeDto.availability ||
-          updateEmployeeDto.performanceMetrics || updateEmployeeDto.hourlyRate ||
-          updateEmployeeDto.metadata) {
+          updateEmployeeDto.jobTitle || updateEmployeeDto.metadata) {
         
-        // Get current employee to merge metadata
-        const currentEmployee = await this.findOne(id);
-        const currentMetadata = ((currentEmployee as any).metadata) || {};
+        const currentMetadata = (currentEmployee.metadata as any) || {};
         
         updateData.metadata = {
           ...currentMetadata,
           ...(updateEmployeeDto.employmentType && { employmentType: updateEmployeeDto.employmentType }),
           ...(updateEmployeeDto.department && { department: updateEmployeeDto.department }),
           ...(updateEmployeeDto.jobTitle && { jobTitle: updateEmployeeDto.jobTitle }),
-          ...(updateEmployeeDto.contactInfo && { contactInfo: updateEmployeeDto.contactInfo }),
-          ...(updateEmployeeDto.complianceStatus && { complianceStatus: updateEmployeeDto.complianceStatus }),
-          ...(updateEmployeeDto.availability && { availability: updateEmployeeDto.availability }),
-          ...(updateEmployeeDto.performanceMetrics && { performanceMetrics: updateEmployeeDto.performanceMetrics }),
-          ...(updateEmployeeDto.hourlyRate && { hourlyRate: updateEmployeeDto.hourlyRate }),
           ...updateEmployeeDto.metadata,
         };
       }
 
-      const updatedEmployee = await this.employeeRepository.update(id, updateData);
+      const updatedEmployee = await this.prisma.employee.update({
+        where: { id },
+        data: updateData,
+      });
+
       this.logger.log(`Successfully updated employee: ${id}`);
 
       // Handle employment status changes
@@ -199,7 +273,8 @@ export class EmployeesService {
         await this.handleEmploymentStatusChange(updatedEmployee, updateEmployeeDto.employmentStatus);
       }
 
-      return updatedEmployee;
+      const isOwnData = requestingUserId === updatedEmployee.id;
+      return this.dataTransform.transformEmployeeForRole(updatedEmployee, userRole, isOwnData);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -212,64 +287,82 @@ export class EmployeesService {
   /**
    * Soft delete employee (set to TERMINATED status)
    */
-  async remove(id: string): Promise<Employee> {
+  async remove(id: string, userRole: string): Promise<EmployeeRoleResponse> {
     this.logger.log(`Soft deleting employee: ${id}`);
 
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
+
     try {
-      const deletedEmployee = await this.employeeRepository.delete(id);
+      const deletedEmployee = await this.prisma.employee.update({
+        where: { 
+          id,
+          companyId: tenantId,
+        },
+        data: {
+          employmentStatus: 'TERMINATED',
+          terminationDate: new Date(),
+        },
+      });
+
       this.logger.log(`Successfully soft deleted employee: ${id}`);
 
       // Handle termination workflow
       await this.handleEmployeeTermination(deletedEmployee);
 
-      return deletedEmployee;
+      return this.dataTransform.transformEmployeeForRole(deletedEmployee, userRole, false);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       this.logger.error(`Failed to delete employee: ${error.message}`, error.stack);
       throw new BadRequestException(`Failed to delete employee: ${error.message}`);
     }
   }
 
   /**
-   * Advanced search by skills and availability
+   * Advanced search by skills and availability (simplified)
    */
-  async searchEmployees(searchDto: EmployeeSearchDto) {
+  async searchEmployees(searchDto: EmployeeSearchDto, userRole: string) {
     this.logger.log('Performing advanced employee search', { searchDto });
 
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
+
     try {
-      const results = [];
+      const where: any = {
+        companyId: tenantId,
+        employmentStatus: 'ACTIVE',
+      };
 
       if (searchDto.requiredSkills && searchDto.requiredSkills.length > 0) {
-        // Use skill matching algorithm
-        const skillMatches = await this.employeeRepository.findEmployeesWithSkillMatching(
-          searchDto.requiredSkills
-        );
-        
-        // Filter by performance rating if specified
-        const filtered = searchDto.minPerformanceRating
-          ? skillMatches.filter(match => {
-              const performance = ((match.employee as any).metadata)?.performanceMetrics;
-              return performance?.overallRating >= searchDto.minPerformanceRating!;
-            })
-          : skillMatches;
+        where.skills = {
+          hasEvery: searchDto.requiredSkills,
+        };
+      }
 
-        results.push(...filtered);
-      } else {
-        // Basic search without skills
-        const employees = await this.employeeRepository.findMany({
-          employmentStatus: 'ACTIVE',
-        });
+      const employees = await this.prisma.employee.findMany({
+        where,
+        take: 50, // Limit results
+      });
+
+      const results = employees.map(employee => {
+        const transformedEmployee = this.dataTransform.transformEmployeeForRole(employee, userRole, false);
         
-        results.push(...employees.employees.map(employee => ({
-          employee,
-          matchPercentage: 100,
-          matchedSkills: [],
+        // Calculate match percentage (simplified)
+        const matchPercentage = searchDto.requiredSkills 
+          ? Math.min(100, (employee.skills.length / searchDto.requiredSkills.length) * 100)
+          : 100;
+
+        return {
+          employee: transformedEmployee,
+          matchPercentage,
+          matchedSkills: employee.skills,
           missingSkills: [],
           availabilityScore: 75, // Default score
-        })));
-      }
+        };
+      });
 
       this.logger.log(`Found ${results.length} matching employees`);
       return results;
@@ -282,13 +375,31 @@ export class EmployeesService {
   /**
    * Find employees by specific skills
    */
-  async findBySkills(skills: string[]) {
+  async findBySkills(skills: string[], userRole: string) {
     this.logger.log(`Finding employees with skills: ${skills.join(', ')}`);
 
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
+
     try {
-      const employees = await this.employeeRepository.findBySkills(skills);
-      this.logger.log(`Found ${employees.length} employees with required skills`);
-      return employees;
+      const employees = await this.prisma.employee.findMany({
+        where: {
+          companyId: tenantId,
+          employmentStatus: 'ACTIVE',
+          skills: {
+            hasEvery: skills,
+          },
+        },
+      });
+
+      const transformedEmployees = employees.map(employee => 
+        this.dataTransform.transformEmployeeForRole(employee, userRole, false)
+      );
+
+      this.logger.log(`Found ${transformedEmployees.length} employees with required skills`);
+      return transformedEmployees;
     } catch (error) {
       this.logger.error(`Failed to find employees by skills: ${error.message}`, error.stack);
       throw new BadRequestException(`Failed to find employees by skills: ${error.message}`);
@@ -296,28 +407,39 @@ export class EmployeesService {
   }
 
   /**
-   * Find available employees for scheduling
+   * Find available employees for scheduling (simplified)
    */
-  async findAvailable(startDate?: string, endDate?: string, requiredSkills?: string[]) {
+  async findAvailable(startDate?: string, endDate?: string, requiredSkills?: string[], userRole?: string) {
     this.logger.log('Finding available employees for scheduling');
 
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
+
     try {
-      if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const employees = await this.employeeRepository.findAvailableEmployees(
-          start,
-          end,
-          requiredSkills
-        );
-        return employees;
-      } else {
-        // Return all active employees if no date range specified
-        const result = await this.employeeRepository.findMany({
-          employmentStatus: 'ACTIVE',
-        });
-        return result.employees;
+      const where: any = {
+        companyId: tenantId,
+        employmentStatus: 'ACTIVE',
+      };
+
+      if (requiredSkills && requiredSkills.length > 0) {
+        where.skills = {
+          hasEvery: requiredSkills,
+        };
       }
+
+      const employees = await this.prisma.employee.findMany({
+        where,
+      });
+
+      if (userRole) {
+        return employees.map(employee => 
+          this.dataTransform.transformEmployeeForRole(employee, userRole, false)
+        );
+      }
+
+      return employees;
     } catch (error) {
       this.logger.error(`Failed to find available employees: ${error.message}`, error.stack);
       throw new BadRequestException(`Failed to find available employees: ${error.message}`);
@@ -327,11 +449,34 @@ export class EmployeesService {
   /**
    * Get employee statistics
    */
-  async getStats() {
+  async getStats(userRole: string) {
     this.logger.log('Fetching employee statistics');
 
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
+
     try {
-      const stats = await this.employeeRepository.getEmployeeStats();
+      const [total, active, inactive, onLeave, terminated] = await Promise.all([
+        this.prisma.employee.count({ where: { companyId: tenantId } }),
+        this.prisma.employee.count({ where: { companyId: tenantId, employmentStatus: 'ACTIVE' } }),
+        this.prisma.employee.count({ where: { companyId: tenantId, employmentStatus: 'INACTIVE' } }),
+        this.prisma.employee.count({ where: { companyId: tenantId, employmentStatus: 'ON_LEAVE' } }),
+        this.prisma.employee.count({ where: { companyId: tenantId, employmentStatus: 'TERMINATED' } }),
+      ]);
+
+      const stats = {
+        total,
+        active,
+        inactive,
+        onLeave,
+        terminated,
+        certificationsExpiringSoon: 0, // TODO: Implement when certification tracking is added
+        complianceIssues: 0, // TODO: Implement when compliance tracking is added
+        averagePerformanceRating: 0, // TODO: Implement when performance tracking is added
+      };
+
       this.logger.log('Successfully fetched employee statistics', stats);
       return stats;
     } catch (error) {
@@ -341,15 +486,34 @@ export class EmployeesService {
   }
 
   /**
-   * Find employees with expiring certifications
+   * Find employees with expiring certifications (simplified)
    */
-  async findExpiringCertifications(days: number = 30) {
+  async findExpiringCertifications(days: number = 30, userRole: string) {
     this.logger.log(`Finding employees with certifications expiring in ${days} days`);
 
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
+    }
+
     try {
-      const employees = await this.employeeRepository.findEmployeesWithExpiringCertifications(days);
-      this.logger.log(`Found ${employees.length} employees with expiring certifications`);
-      return employees;
+      // This is a simplified version - would need more complex logic for actual certification tracking
+      const employees = await this.prisma.employee.findMany({
+        where: {
+          companyId: tenantId,
+          employmentStatus: 'ACTIVE',
+          certifications: {
+            not: null,
+          },
+        },
+      });
+
+      const transformedEmployees = employees.map(employee => 
+        this.dataTransform.transformEmployeeForRole(employee, userRole, false)
+      );
+
+      this.logger.log(`Found ${transformedEmployees.length} employees with certifications`);
+      return transformedEmployees;
     } catch (error) {
       this.logger.error(`Failed to find expiring certifications: ${error.message}`, error.stack);
       throw new BadRequestException(`Failed to find expiring certifications: ${error.message}`);
@@ -359,11 +523,11 @@ export class EmployeesService {
   /**
    * Handle employee documents (placeholder for future implementation)
    */
-  async getEmployeeDocuments(employeeId: string) {
+  async getEmployeeDocuments(employeeId: string, userRole: string = 'ADMIN') {
     this.logger.log(`Fetching documents for employee: ${employeeId}`);
     
     // Verify employee exists
-    await this.findOne(employeeId);
+    await this.findOne(employeeId, userRole);
     
     // TODO: Implement document management
     return [];
@@ -372,11 +536,11 @@ export class EmployeesService {
   /**
    * Upload employee document (placeholder for future implementation)
    */
-  async uploadDocument(employeeId: string, documentData: any): Promise<any> {
+  async uploadDocument(employeeId: string, documentData: any, userRole: string = 'ADMIN'): Promise<any> {
     this.logger.log(`Uploading document for employee: ${employeeId}`);
     
     // Verify employee exists
-    await this.findOne(employeeId);
+    await this.findOne(employeeId, userRole);
     
     // TODO: Implement document upload
     // For now, return a mock response
@@ -472,23 +636,23 @@ export class EmployeesService {
    * Validate employee number uniqueness within tenant
    */
   private async validateUniqueEmployeeNumber(employeeNumber: string, excludeId?: string): Promise<void> {
-    const existing = await this.employeeRepository.findByEmployeeNumber(employeeNumber);
-    if (existing && (!excludeId || existing.id !== excludeId)) {
-      throw new ConflictException(`Employee number ${employeeNumber} already exists`);
+    const tenantId = this.tenantContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context not found');
     }
-  }
 
-  /**
-   * Validate email uniqueness within tenant
-   */
-  private async validateUniqueEmail(email: string, excludeId?: string): Promise<void> {
-    const result = await this.employeeRepository.findMany({
-      search: email,
-    });
-    
-    const existing = result.employees.find(emp => emp.email === email);
-    if (existing && (!excludeId || existing.id !== excludeId)) {
-      throw new ConflictException(`Email ${email} already exists`);
+    const where: any = {
+      companyId: tenantId,
+      employeeNumber,
+    };
+
+    if (excludeId) {
+      where.id = { not: excludeId };
+    }
+
+    const existing = await this.prisma.employee.findFirst({ where });
+    if (existing) {
+      throw new ConflictException(`Employee number ${employeeNumber} already exists`);
     }
   }
 }

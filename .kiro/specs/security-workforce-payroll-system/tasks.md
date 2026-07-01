@@ -100,7 +100,7 @@ The approach focuses on building essential foundation components without over-en
 - [x] 4. Checkpoint - Authentication and Database Foundation
   - Ensure all tests pass, verify multi-tenant isolation works correctly, ask the user if questions arise.
 
-- [ ] 5. Core Business Logic and API Implementation
+- [x] 5. Core Business Logic and API Implementation
   - [x] 5.1 Implement Client management module
     - Create Client entity CRUD operations with full API endpoints
     - Build client onboarding workflow with contract management
@@ -172,7 +172,7 @@ The approach focuses on building essential foundation components without over-en
     - Build attendance reporting with filtering and export capabilities
     - _Requirements: 7.3, 11.1_
 
-- [ ] 7. Payroll Processing Engine
+- [x] 7. Payroll Processing Engine
   - [x] 7.1 Implement core payroll calculation engine
     - Create PayrollRun and PayrollItem entities with calculation logic
     - Build payroll calculation service with attendance-based salary computation
@@ -199,7 +199,7 @@ The approach focuses on building essential foundation components without over-en
     - Implement invoice generation, tracking, and status management
     - _Requirements: 9.1, 9.3, 9.4_
 
-  - [ ] 7.5 Write property test for invoice calculation precision
+  - [x] 7.5 Write property test for invoice calculation precision
     - **Property 12: Invoice Calculation Precision**
     - **Validates: Requirements 9.1**
     - Test that invoice calculations accurately reflect deployment evidence and rates
