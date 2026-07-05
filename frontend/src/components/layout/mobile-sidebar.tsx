@@ -331,10 +331,10 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   {user && (
                     <div className="bg-gray-50 rounded-lg p-3">
                       <div className="text-sm font-medium text-gray-900 truncate">
-                        {user.company?.name || 'Company Name'}
+                        {user.tenantName || 'Company Name'}
                       </div>
                       <div className="text-xs text-gray-500 truncate">
-                        ID: {user.companyId.slice(0, 8)}...
+                        ID: {user.tenantId.slice(0, 8)}...
                       </div>
                     </div>
                   )}

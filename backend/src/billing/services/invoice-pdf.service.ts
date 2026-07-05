@@ -3,6 +3,8 @@ import { InvoiceResponse, InvoicePdfResponse } from '../dto';
 import { GstCalculationService } from './gst-calculation.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getErrorMessage, getErrorStack, formatError } from '../../common/utils/error.util';
+
 
 @Injectable()
 export class InvoicePdfService {
@@ -41,7 +43,7 @@ export class InvoicePdfService {
         generatedAt: new Date().toISOString(),
       };
     } catch (error) {
-      throw new BadRequestException(`Failed to generate invoice PDF: ${error.message}`);
+      throw new BadRequestException(`Failed to generate invoice PDF: ${getErrorMessage(error)}`);
     }
   }
 

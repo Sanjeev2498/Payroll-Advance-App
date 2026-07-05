@@ -75,11 +75,25 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Update last login timestamp
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    // Update last login timestamp and get company info for tenant fields
+    const [, userWithCompany] = await Promise.all([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      }),
+    ]);
 
     const tokens = await this.generateTokens(user);
 
@@ -93,6 +107,12 @@ export class AuthService {
           lastName: user.lastName,
           role: user.role,
           companyId: user.companyId,
+          // Add tenant fields for frontend compatibility
+          tenantId: user.companyId,
+          tenantName: userWithCompany?.company?.name || 'Unknown Company',
+          status: 'ACTIVE', // Add status field expected by frontend
+          createdAt: new Date().toISOString(), // Add placeholder dates
+          updatedAt: new Date().toISOString(),
         },
         tokens,
       },

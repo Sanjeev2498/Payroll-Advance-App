@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../common/tenant-context.service';
 import { BadRequestException } from '@nestjs/common';
 import { PayrollStatus, AttendanceStatus, PayrollItemType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 
 describe('PayrollService', () => {
   let service: PayrollService;

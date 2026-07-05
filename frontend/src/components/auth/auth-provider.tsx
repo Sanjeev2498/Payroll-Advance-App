@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useRef, ReactNode } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { authApi } from '@/lib/api/auth'
+import { isValidJWTFormat, decodeJWTPayload, isTokenExpired } from '@/lib/utils/token'
 
 interface AuthContextType {
   refreshToken: () => Promise<void>
@@ -23,8 +24,13 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { token, setAuth, logout, user } = useAuthStore()
+  const { token, setAuth, logout, user, validateStoredAuth } = useAuthStore()
   const refreshTimeoutRef = useRef<NodeJS.Timeout>()
+
+  // Validate stored authentication on component mount
+  useEffect(() => {
+    validateStoredAuth()
+  }, [validateStoredAuth])
 
   const refreshToken = async () => {
     if (!token) return
@@ -32,7 +38,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await authApi.refreshToken()
       if (user) {
-        setAuth(user, response.token)
+        setAuth(user, response.accessToken)
       }
     } catch (error) {
       console.error('Token refresh failed:', error)
@@ -46,9 +52,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearTimeout(refreshTimeoutRef.current)
     }
 
+    // Validate token format and decode payload
+    if (!isValidJWTFormat(token)) {
+      console.warn('Invalid JWT token format, logging out')
+      logout()
+      return
+    }
+
+    const payload = decodeJWTPayload(token)
+    if (!payload) {
+      console.warn('Failed to decode JWT payload, logging out')
+      logout()
+      return
+    }
+
+    // Check if token is already expired
+    if (isTokenExpired(token)) {
+      console.log('Token expired, refreshing immediately')
+      refreshToken()
+      return
+    }
+
     try {
-      // Decode JWT to get expiration time
-      const payload = JSON.parse(atob(token.split('.')[1]))
       const expirationTime = payload.exp * 1000
       const currentTime = Date.now()
       const timeUntilExpiry = expirationTime - currentTime
@@ -59,8 +84,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       refreshTimeoutRef.current = setTimeout(() => {
         refreshToken()
       }, refreshTime)
+      
+      console.log(`Token refresh scheduled in ${Math.round(refreshTime / 1000 / 60)} minutes`)
     } catch (error) {
-      console.error('Failed to parse token for auto-refresh:', error)
+      console.error('Failed to schedule token refresh:', error)
+      logout()
     }
   }
 
@@ -80,19 +108,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && token) {
-        // Check if token is close to expiry when user returns
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          const expirationTime = payload.exp * 1000
-          const currentTime = Date.now()
-          const timeUntilExpiry = expirationTime - currentTime
-          
-          // If token expires in less than 10 minutes, refresh it
-          if (timeUntilExpiry < 10 * 60 * 1000) {
-            refreshToken()
-          }
-        } catch (error) {
-          console.error('Failed to check token expiry:', error)
+        // Validate token and check expiry when user returns
+        if (!isValidJWTFormat(token)) {
+          console.warn('Invalid JWT token format detected on visibility change')
+          logout()
+          return
+        }
+
+        if (isTokenExpired(token)) {
+          console.log('Token expired on visibility change, refreshing')
+          refreshToken()
+          return
+        }
+
+        const payload = decodeJWTPayload(token)
+        if (!payload) {
+          console.warn('Failed to decode token on visibility change')
+          logout()
+          return
+        }
+
+        const expirationTime = payload.exp * 1000
+        const currentTime = Date.now()
+        const timeUntilExpiry = expirationTime - currentTime
+        
+        // If token expires in less than 10 minutes, refresh it
+        if (timeUntilExpiry < 10 * 60 * 1000) {
+          console.log('Token expires soon, refreshing proactively')
+          refreshToken()
         }
       }
     }

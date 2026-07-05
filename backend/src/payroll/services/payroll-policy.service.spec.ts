@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PayrollPolicyService } from './payroll-policy.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 
 describe('PayrollPolicyService', () => {
   let service: PayrollPolicyService;

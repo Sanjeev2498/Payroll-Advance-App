@@ -3,7 +3,7 @@ import { PayrollController } from './payroll.controller';
 import { PayrollService } from './payroll.service';
 import { NotFoundException } from '@nestjs/common';
 import { PayrollStatus } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 
 // Mock all guards
 jest.mock('../auth/guards/jwt-auth.guard');

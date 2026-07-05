@@ -1,435 +1,328 @@
 'use client'
 
 import React, { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Separator } from '@/components/ui/separator'
 import { AttendanceFilter } from '@/types'
 import { 
-  CalendarIcon, 
+  Filter, 
   X, 
-  Search, 
-  Filter,
-  RotateCcw
+  Search,
+  Calendar,
+  MapPin,
+  Users,
+  Clock,
+  AlertTriangle
 } from 'lucide-react'
-import { format } from 'date-fns'
 
 interface AttendanceFiltersProps {
   filters: AttendanceFilter
-  onChange: (filters: AttendanceFilter) => void
+  onFiltersChange: (filters: AttendanceFilter) => void
+  onReset: () => void
 }
-
-interface DateRangePreset {
-  label: string
-  value: { dateFrom: string; dateTo: string }
-}
-
-const DATE_PRESETS: DateRangePreset[] = [
-  {
-    label: 'Today',
-    value: {
-      dateFrom: new Date().toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0]
-    }
-  },
-  {
-    label: 'Yesterday',
-    value: {
-      dateFrom: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-      dateTo: new Date(Date.now() - 86400000).toISOString().split('T')[0]
-    }
-  },
-  {
-    label: 'This Week',
-    value: {
-      dateFrom: new Date(Date.now() - (new Date().getDay() * 86400000)).toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0]
-    }
-  },
-  {
-    label: 'Last 7 Days',
-    value: {
-      dateFrom: new Date(Date.now() - (7 * 86400000)).toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0]
-    }
-  },
-  {
-    label: 'This Month',
-    value: {
-      dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0]
-    }
-  },
-  {
-    label: 'Last 30 Days',
-    value: {
-      dateFrom: new Date(Date.now() - (30 * 86400000)).toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0]
-    }
-  }
-]
-
-const STATUS_OPTIONS = [
-  { value: 'PRESENT', label: 'Present' },
-  { value: 'LATE', label: 'Late' },
-  { value: 'ABSENT', label: 'Absent' },
-  { value: 'EARLY_DEPARTURE', label: 'Early Departure' },
-  { value: 'OVERTIME', label: 'Overtime' },
-  { value: 'PENDING', label: 'Pending' }
-]
 
 export const AttendanceFilters: React.FC<AttendanceFiltersProps> = ({
   filters,
-  onChange
+  onFiltersChange,
+  onReset
 }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
   const [tempFilters, setTempFilters] = useState<AttendanceFilter>(filters)
-  const [showDateFromPicker, setShowDateFromPicker] = useState(false)
-  const [showDateToPicker, setShowDateToPicker] = useState(false)
 
-  const updateFilter = (key: keyof AttendanceFilter, value: any) => {
-    const newFilters = { ...tempFilters, [key]: value }
-    setTempFilters(newFilters)
-    onChange(newFilters)
+  const handleTempFilterChange = (key: keyof AttendanceFilter, value: any) => {
+    setTempFilters(prev => ({ ...prev, [key]: value }))
   }
 
-  const applyDatePreset = (preset: DateRangePreset) => {
-    const newFilters = { ...tempFilters, ...preset.value }
-    setTempFilters(newFilters)
-    onChange(newFilters)
+  const applyFilters = () => {
+    onFiltersChange(tempFilters)
+    setIsExpanded(false)
   }
 
-  const clearAllFilters = () => {
-    const clearedFilters: AttendanceFilter = {
+  const resetFilters = () => {
+    onReset()
+    setTempFilters({
       dateFrom: new Date().toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0]
-    }
-    setTempFilters(clearedFilters)
-    onChange(clearedFilters)
+      dateTo: new Date().toISOString().split('T')[0],
+      page: 1,
+      limit: 50
+    })
+    setIsExpanded(false)
   }
 
-  const getActiveFilterCount = () => {
+  const getActiveFiltersCount = () => {
     let count = 0
-    if (tempFilters.search) count++
-    if (tempFilters.employeeId) count++
-    if (tempFilters.siteId) count++
-    if (tempFilters.status) count++
-    if (tempFilters.anomaliesOnly) count++
-    if (tempFilters.lateOnly) count++
-    if (tempFilters.overtimeOnly) count++
+    if (filters.search) count++
+    if (filters.status) count++
+    if (filters.siteId) count++
+    if (filters.employeeId) count++
+    if (filters.lateOnly) count++
+    if (filters.overtimeOnly) count++
+    if (filters.anomaliesOnly) count++
     return count
   }
 
-  const activeFilterCount = getActiveFilterCount()
+  const activeFiltersCount = getActiveFiltersCount()
 
   return (
-    <div className="space-y-4">
-      {/* Quick Date Presets */}
-      <div className="flex flex-wrap gap-2">
-        <Label className="text-sm font-medium mb-1 w-full">Quick Date Ranges:</Label>
-        {DATE_PRESETS.map((preset) => (
-          <Button
-            key={preset.label}
-            variant="outline"
-            size="sm"
-            onClick={() => applyDatePreset(preset)}
-            className={`text-xs ${
-              tempFilters.dateFrom === preset.value.dateFrom && 
-              tempFilters.dateTo === preset.value.dateTo
-                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                : ''
-            }`}
-          >
-            {preset.label}
-          </Button>
-        ))}
-      </div>
-
-      {/* Primary Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Search */}
-        <div className="space-y-2">
-          <Label htmlFor="search">Search</Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              id="search"
-              placeholder="Employee name or ID..."
-              value={tempFilters.search || ''}
-              onChange={(e) => updateFilter('search', e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-
-        {/* Date From */}
-        <div className="space-y-2">
-          <Label>From Date</Label>
-          <Popover open={showDateFromPicker} onOpenChange={setShowDateFromPicker}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {tempFilters.dateFrom ? format(new Date(tempFilters.dateFrom), 'MMM dd, yyyy') : 'Select date'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={tempFilters.dateFrom ? new Date(tempFilters.dateFrom) : undefined}
-                onSelect={(date) => {
-                  if (date) {
-                    updateFilter('dateFrom', date.toISOString().split('T')[0])
-                    setShowDateFromPicker(false)
-                  }
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Date To */}
-        <div className="space-y-2">
-          <Label>To Date</Label>
-          <Popover open={showDateToPicker} onOpenChange={setShowDateToPicker}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {tempFilters.dateTo ? format(new Date(tempFilters.dateTo), 'MMM dd, yyyy') : 'Select date'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={tempFilters.dateTo ? new Date(tempFilters.dateTo) : undefined}
-                onSelect={(date) => {
-                  if (date) {
-                    updateFilter('dateTo', date.toISOString().split('T')[0])
-                    setShowDateToPicker(false)
-                  }
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Status Filter */}
-        <div className="space-y-2">
-          <Label>Status</Label>
-          <Select
-            value={tempFilters.status || ''}
-            onValueChange={(value) => updateFilter('status', value || undefined)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
-              {STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Advanced Filters Toggle */}
-      <div className="flex items-center justify-between pt-2 border-t">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-sm"
-        >
-          <Filter className="h-4 w-4 mr-2" />
-          Advanced Filters
-          {activeFilterCount > 0 && (
-            <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
-              {activeFilterCount}
-            </Badge>
-          )}
-        </Button>
-
-        <div className="flex items-center gap-2">
-          {activeFilterCount > 0 && (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Filter className="h-5 w-5" />
+            Filters & Search
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {activeFiltersCount} active
+              </Badge>
+            )}
+          </CardTitle>
+          <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={clearAllFilters}
-              className="text-sm text-gray-600 hover:text-gray-900"
+              onClick={() => setIsExpanded(!isExpanded)}
             >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Clear All
+              {isExpanded ? 'Less Filters' : 'More Filters'}
             </Button>
-          )}
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear All
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Advanced Filters */}
-      {showAdvanced && (
-        <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Employee ID Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="employeeId">Employee ID</Label>
+      <CardContent className="space-y-4">
+        {/* Basic Filters - Always Visible */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Date Range */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">From Date</Label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                id="employeeId"
-                placeholder="Enter employee ID..."
-                value={tempFilters.employeeId || ''}
-                onChange={(e) => updateFilter('employeeId', e.target.value)}
+                type="date"
+                value={tempFilters.dateFrom}
+                onChange={(e) => handleTempFilterChange('dateFrom', e.target.value)}
+                className="pl-10"
               />
             </div>
+          </div>
 
-            {/* Site Filter */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">To Date</Label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="date"
+                value={tempFilters.dateTo}
+                onChange={(e) => handleTempFilterChange('dateTo', e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Search</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Employee name, site..."
+                value={tempFilters.search || ''}
+                onChange={(e) => handleTempFilterChange('search', e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Status</Label>
+            <Select 
+              value={tempFilters.status || 'all'} 
+              onValueChange={(value) => handleTempFilterChange('status', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="PRESENT">Present</SelectItem>
+                <SelectItem value="LATE">Late</SelectItem>
+                <SelectItem value="ABSENT">Absent</SelectItem>
+                <SelectItem value="EARLY_DEPARTURE">Early Departure</SelectItem>
+                <SelectItem value="OVERTIME">Overtime</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Advanced Filters - Expandable */}
+        {isExpanded && (
+          <>
+            <Separator />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Site Filter */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Site</Label>
+                <Select 
+                  value={tempFilters.siteId || 'all'} 
+                  onValueChange={(value) => handleTempFilterChange('siteId', value === 'all' ? undefined : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All sites" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sites</SelectItem>
+                    <SelectItem value="site-1">Downtown Office</SelectItem>
+                    <SelectItem value="site-2">Shopping Mall</SelectItem>
+                    <SelectItem value="site-3">Industrial Complex</SelectItem>
+                    <SelectItem value="site-4">Hospital Campus</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Employee Filter */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Employee</Label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Employee ID or name..."
+                    value={tempFilters.employeeId || ''}
+                    onChange={(e) => handleTempFilterChange('employeeId', e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Time Range */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Time Range</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Time</SelectItem>
+                    <SelectItem value="morning">Morning (6-12)</SelectItem>
+                    <SelectItem value="afternoon">Afternoon (12-18)</SelectItem>
+                    <SelectItem value="evening">Evening (18-24)</SelectItem>
+                    <SelectItem value="night">Night (0-6)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Quick Filter Toggles */}
             <div className="space-y-2">
-              <Label htmlFor="siteId">Site</Label>
-              <Select
-                value={tempFilters.siteId || ''}
-                onValueChange={(value) => updateFilter('siteId', value || undefined)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All sites" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Sites</SelectItem>
-                  {/* In a real app, these would come from an API */}
-                  <SelectItem value="site1">Downtown Office</SelectItem>
-                  <SelectItem value="site2">Shopping Mall</SelectItem>
-                  <SelectItem value="site3">Industrial Complex</SelectItem>
-                  <SelectItem value="site4">Hospital Campus</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-sm font-medium">Quick Filters</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={tempFilters.lateOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleTempFilterChange('lateOnly', !tempFilters.lateOnly)}
+                  className="flex items-center gap-2"
+                >
+                  <Clock className="h-4 w-4" />
+                  Late Arrivals Only
+                </Button>
+                
+                <Button
+                  variant={tempFilters.overtimeOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleTempFilterChange('overtimeOnly', !tempFilters.overtimeOnly)}
+                  className="flex items-center gap-2"
+                >
+                  <Clock className="h-4 w-4" />
+                  Overtime Only
+                </Button>
+                
+                <Button
+                  variant={tempFilters.anomaliesOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleTempFilterChange('anomaliesOnly', !tempFilters.anomaliesOnly)}
+                  className="flex items-center gap-2"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Anomalies Only
+                </Button>
+              </div>
             </div>
+
+            {/* Location & Verification Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Location Verification</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any verification status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Status</SelectItem>
+                    <SelectItem value="verified">GPS Verified</SelectItem>
+                    <SelectItem value="unverified">Not Verified</SelectItem>
+                    <SelectItem value="failed">Verification Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Hours Worked Range</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="number" 
+                    placeholder="Min hours" 
+                    className="w-20" 
+                    min="0" 
+                    max="24"
+                  />
+                  <span className="text-gray-400">to</span>
+                  <Input 
+                    type="number" 
+                    placeholder="Max hours" 
+                    className="w-20" 
+                    min="0" 
+                    max="24"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between pt-2 border-t">
+          <div className="text-sm text-gray-600">
+            {activeFiltersCount > 0 && (
+              <span>{activeFiltersCount} filter(s) active</span>
+            )}
           </div>
-
-          {/* Toggle Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-medium">Anomalies Only</Label>
-                <p className="text-xs text-gray-600">Show records with detected anomalies</p>
-              </div>
-              <Switch
-                checked={tempFilters.anomaliesOnly || false}
-                onCheckedChange={(checked) => updateFilter('anomaliesOnly', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-medium">Late Arrivals Only</Label>
-                <p className="text-xs text-gray-600">Show only late clock-ins</p>
-              </div>
-              <Switch
-                checked={tempFilters.lateOnly || false}
-                onCheckedChange={(checked) => updateFilter('lateOnly', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-medium">Overtime Only</Label>
-                <p className="text-xs text-gray-600">Show overtime records</p>
-              </div>
-              <Switch
-                checked={tempFilters.overtimeOnly || false}
-                onCheckedChange={(checked) => updateFilter('overtimeOnly', checked)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Active Filters Display */}
-      {activeFilterCount > 0 && (
-        <div className="flex flex-wrap gap-2 pt-2 border-t">
-          <Label className="text-sm text-gray-600 mr-2">Active Filters:</Label>
           
-          {tempFilters.search && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Search: "{tempFilters.search}"
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => updateFilter('search', undefined)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-
-          {tempFilters.status && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Status: {STATUS_OPTIONS.find(s => s.value === tempFilters.status)?.label}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => updateFilter('status', undefined)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-
-          {tempFilters.anomaliesOnly && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Anomalies Only
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => updateFilter('anomaliesOnly', false)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-
-          {tempFilters.lateOnly && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Late Only
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => updateFilter('lateOnly', false)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-
-          {tempFilters.overtimeOnly && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Overtime Only
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => updateFilter('overtimeOnly', false)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={resetFilters} size="sm">
+              Reset
+            </Button>
+            <Button onClick={applyFilters} size="sm">
+              Apply Filters
+            </Button>
+          </div>
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   )
 }

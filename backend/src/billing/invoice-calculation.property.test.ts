@@ -5,9 +5,11 @@ import { GstCalculationService } from './services/gst-calculation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../common/tenant-context.service';
 import { CreateInvoiceDto, BillingModel } from './dto/create-invoice.dto';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 import { AttendanceStatus, ShiftType } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+
 
 /**
  * Property-Based Test: Invoice Calculation Precision
@@ -150,9 +152,9 @@ describe('Property Test: Invoice Calculation Precision', () => {
 
             } catch (error) {
               // Allow legitimate business validation errors
-              if (error.message.includes('not found') || 
-                  error.message.includes('Invalid') ||
-                  error.message.includes('before end date')) {
+              if (getErrorMessage(error).includes('not found') || 
+                  getErrorMessage(error).includes('Invalid') ||
+                  getErrorMessage(error).includes('before end date')) {
                 return; // Skip - valid business rule
               }
               throw error;
@@ -231,7 +233,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
               }
 
             } catch (error) {
-              if (error.message.includes('not found') || error.message.includes('Invalid')) {
+              if (getErrorMessage(error).includes('not found') || getErrorMessage(error).includes('Invalid')) {
                 return;
               }
               throw error;
@@ -292,7 +294,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
               });
 
             } catch (error) {
-              if (error.message.includes('not found')) {
+              if (getErrorMessage(error).includes('not found')) {
                 return;
               }
               throw error;
@@ -356,7 +358,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
               }
 
             } catch (error) {
-              if (error.message.includes('not found')) {
+              if (getErrorMessage(error).includes('not found')) {
                 return;
               }
               throw error;

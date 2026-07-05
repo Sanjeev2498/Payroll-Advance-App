@@ -2,6 +2,8 @@ import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from './tenant-context.service';
+import { getErrorMessage, getErrorStack, formatError } from './utils/error.util';
+
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -61,7 +63,7 @@ export class TenantContextMiddleware implements NestMiddleware {
 
       next();
     } catch (error) {
-      this.logger.error(`Failed to set tenant context: ${error.message}`, error.stack);
+      this.logger.error(`Failed to set tenant context: ${getErrorMessage(error)}`, getErrorStack(error));
 
       // Clear context on error to prevent potential security issues
       this.tenantContextService.clearContext();

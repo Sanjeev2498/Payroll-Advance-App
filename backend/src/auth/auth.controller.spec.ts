@@ -1,8 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthenticatedUser } from './interfaces/jwt-payload.interface';
+import { TenantContextService } from '../common/tenant-context.service';
+import { DataTransformService } from '../common/services/data-transform.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionUtil } from '../common/utils/encryption.util';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -49,6 +54,89 @@ describe('AuthController', () => {
             refreshToken: jest.fn(),
             logout: jest.fn(),
             changePassword: jest.fn(),
+          },
+        },
+        {
+          provide: TenantContextService,
+          useValue: {
+            setContext: jest.fn(),
+            getTenantId: jest.fn().mockReturnValue('test-company-id'),
+            getUserId: jest.fn().mockReturnValue('test-user-id'),
+            getUserRole: jest.fn().mockReturnValue('EMPLOYEE'),
+            hasContext: jest.fn().mockReturnValue(true),
+            getContext: jest.fn().mockReturnValue({
+              tenantId: 'test-company-id',
+              userId: 'test-user-id',
+              userRole: 'EMPLOYEE',
+              isSet: true,
+            }),
+            validateTenantAccess: jest.fn().mockReturnValue(true),
+            isAdmin: jest.fn().mockReturnValue(false),
+            hasRole: jest.fn().mockReturnValue(true),
+            hasAnyRole: jest.fn().mockReturnValue(true),
+            clearContext: jest.fn(),
+            getContextSnapshot: jest.fn().mockReturnValue('Context[tenant:test-company-id,user:test-user-id,role:EMPLOYEE,set:true]'),
+          },
+        },
+        {
+          provide: DataTransformService,
+          useValue: {
+            transformEmployeeForRole: jest.fn(),
+            transformAssignmentForRole: jest.fn(),
+            transformPayrollForRole: jest.fn(),
+            encryptEmployeeData: jest.fn(),
+            encryptAssignmentData: jest.fn(),
+            encryptPayrollData: jest.fn(),
+          },
+        },
+        {
+          provide: PrismaService,
+          useValue: {
+            setTenantContext: jest.fn(),
+            $executeRaw: jest.fn(),
+            $queryRaw: jest.fn(),
+            user: {
+              findUnique: jest.fn().mockResolvedValue({
+                id: mockUser.id,
+                email: mockUser.email,
+                firstName: mockUser.firstName,
+                lastName: mockUser.lastName,
+                role: mockUser.role,
+                companyId: mockUser.companyId,
+                isActive: mockUser.isActive,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                company: {
+                  id: mockUser.companyId,
+                  name: 'Test Company',
+                  slug: 'test-company',
+                },
+              }),
+              findMany: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+          },
+        },
+        {
+          provide: EncryptionUtil,
+          useValue: {
+            encrypt: jest.fn(),
+            decrypt: jest.fn(),
+            encryptEmail: jest.fn(),
+            decryptEmail: jest.fn(),
+            encryptPhone: jest.fn(),
+            decryptPhone: jest.fn(),
+            maskData: jest.fn(),
+          },
+        },
+        {
+          provide: Reflector,
+          useValue: {
+            getAllAndOverride: jest.fn(),
+            get: jest.fn(),
+            getAll: jest.fn(),
           },
         },
       ],
@@ -155,7 +243,19 @@ describe('AuthController', () => {
       // Assert
       expect(result).toEqual({
         success: true,
-        data: mockUser,
+        data: {
+          id: mockUser.id,
+          email: mockUser.email,
+          firstName: mockUser.firstName,
+          lastName: mockUser.lastName,
+          role: mockUser.role,
+          companyId: mockUser.companyId,
+          tenantId: mockUser.companyId,
+          tenantName: 'Test Company',
+          status: 'ACTIVE',
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        },
       });
     });
   });

@@ -5,7 +5,7 @@ import { PayrollPolicyService, PayrollPolicy } from './payroll-policy.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { AttendanceStatus } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 
 /**
  * Property-Based Tests for Payroll Calculation Service

@@ -3,7 +3,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { PayrollPolicyService } from './payroll-policy.service';
 import { PayrollStatus, AttendanceStatus } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
+import { getErrorMessage, getErrorStack, formatError } from '../../common/utils/error.util';
+
 
 interface ValidationResult {
   isValid: boolean;
@@ -88,13 +90,13 @@ export class PayrollValidationService {
       };
 
     } catch (error) {
-      this.logger.error(`Payroll validation failed: ${error.message}`, error.stack);
+      this.logger.error(`Payroll validation failed: ${getErrorMessage(error)}`, getErrorStack(error));
       
       return {
         isValid: false,
         errors: [{
           code: 'VALIDATION_FAILED',
-          message: `Validation process failed: ${error.message}`,
+          message: `Validation process failed: ${getErrorMessage(error)}`,
         }],
         warnings: [],
       };
@@ -161,7 +163,7 @@ export class PayrollValidationService {
         isValid: false,
         errors: [{
           code: 'CALCULATION_VALIDATION_FAILED',
-          message: `Payroll calculation validation failed: ${error.message}`,
+          message: `Payroll calculation validation failed: ${getErrorMessage(error)}`,
         }],
         warnings: [],
       };

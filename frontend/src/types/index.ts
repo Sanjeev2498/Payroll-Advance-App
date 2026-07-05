@@ -226,6 +226,10 @@ export interface User {
   createdAt: string
   updatedAt: string
   
+  // Multi-tenant fields (for compatibility with auth store)
+  tenantId: string
+  tenantName: string
+  
   // Relations
   company?: Company
 }
@@ -240,6 +244,17 @@ export interface PaginatedResponse<T> {
     hasNext: boolean
     hasPrevious: boolean
   }
+}
+
+// Specific attendance response type
+export interface AttendancePaginatedResponse extends PaginatedResponse<Attendance> {
+  attendance: Attendance[]
+  stats: AttendanceStats
+  page: number
+  limit: number
+  total: number
+  hasNext: boolean
+  hasPrevious: boolean
 }
 
 // Dashboard types

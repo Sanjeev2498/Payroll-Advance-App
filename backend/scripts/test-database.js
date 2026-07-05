@@ -1,9 +1,16 @@
 const { PrismaClient } = require('@prisma/client');
+const { Pool } = require('pg');
+const { PrismaPg } = require('@prisma/adapter-pg');
 
 async function testDatabaseConnection() {
   console.log('🧪 Testing database connection...');
   
-  const prisma = new PrismaClient();
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL || 'postgresql://payroll_user:payroll_pass_dev_123@127.0.0.1:5432/payroll_system_dev'
+  });
+  
+  const adapter = new PrismaPg(pool);
+  const prisma = new PrismaClient({ adapter });
   
   try {
     // Test basic connection
@@ -54,6 +61,7 @@ async function testDatabaseConnection() {
     throw error;
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 }
 

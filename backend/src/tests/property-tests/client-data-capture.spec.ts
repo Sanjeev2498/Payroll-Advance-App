@@ -4,6 +4,7 @@ import * as fc from 'fast-check';
 import { randomUUID } from 'crypto';
 import { ContractStatus } from '../../clients/dto/create-client.dto';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { validateDate, parseAndValidateDate } from '../../common/utils/date-validation.util';
 
 /**
  * Property-Based Test: Client Data Capture Completeness
@@ -28,6 +29,18 @@ describe('Property Test: Client Data Capture Completeness', () => {
   afterAll(async () => {
     await prismaService.onModuleDestroy();
     await module.close();
+  });
+
+  /**
+   * Generate valid dates that won't trigger database constraint violations
+   * Respects PostgreSQL date range limits and business logic constraints
+   */
+  const validDateGenerator = fc.date({ 
+    min: new Date('2020-01-01'), 
+    max: new Date('2099-12-31') 
+  }).filter(date => {
+    const validation = validateDate(date);
+    return validation.isValid;
   });
 
   /**
@@ -82,12 +95,8 @@ describe('Property Test: Client Data Capture Completeness', () => {
               ContractStatus.EXPIRED,
               ContractStatus.TERMINATED,
             ),
-            contractStart: fc.option(
-              fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31') }),
-            ),
-            contractEnd: fc.option(
-              fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31') }),
-            ),
+            contractStart: fc.option(validDateGenerator),
+            contractEnd: fc.option(validDateGenerator),
             billingPreferences: fc.option(
               fc.record({
                 frequency: fc.constantFrom('MONTHLY', 'QUARTERLY', 'YEARLY'),
@@ -99,12 +108,30 @@ describe('Property Test: Client Data Capture Completeness', () => {
             ),
           }),
           async (clientData) => {
-            // Ensure contract dates are logical if both provided
+            // Ensure contract dates are logical and valid if both provided
             if (clientData.contractStart && clientData.contractEnd) {
-              if (clientData.contractStart >= clientData.contractEnd) {
-                // Skip this test case if dates are invalid
-                fc.pre(false);
+              // Validate both dates first
+              const startValidation = validateDate(clientData.contractStart);
+              const endValidation = validateDate(clientData.contractEnd);
+              
+              if (!startValidation.isValid || !endValidation.isValid) {
+                fc.pre(false); // Skip invalid dates
               }
+              
+              if (clientData.contractStart >= clientData.contractEnd) {
+                fc.pre(false); // Skip illogical date ranges
+              }
+            }
+
+            // Individual date validation
+            if (clientData.contractStart) {
+              const validation = validateDate(clientData.contractStart);
+              fc.pre(validation.isValid);
+            }
+
+            if (clientData.contractEnd) {
+              const validation = validateDate(clientData.contractEnd);
+              fc.pre(validation.isValid);
             }
 
             // Test: Create client through Prisma with tenant context
@@ -150,12 +177,23 @@ describe('Property Test: Client Data Capture Completeness', () => {
               }
             }
 
+            // Verify: Timestamp precision is preserved (Bug 2 fix verification)
             if (clientData.contractStart) {
               expect(createdClient.contractStart).toEqual(clientData.contractStart);
+              
+              // Verify full timestamp precision is maintained
+              const originalTime = clientData.contractStart.getTime();
+              const storedTime = createdClient.contractStart.getTime();
+              expect(storedTime).toBe(originalTime);
             }
 
             if (clientData.contractEnd) {
               expect(createdClient.contractEnd).toEqual(clientData.contractEnd);
+              
+              // Verify full timestamp precision is maintained  
+              const originalTime = clientData.contractEnd.getTime();
+              const storedTime = createdClient.contractEnd.getTime();
+              expect(storedTime).toBe(originalTime);
             }
 
             if (clientData.billingPreferences) {
@@ -255,10 +293,26 @@ describe('Property Test: Client Data Capture Completeness', () => {
           fc.record({
             name: fc.string({ minLength: 1, maxLength: 10 }), // Valid short names
             contactEmail: fc.emailAddress(),
-            contractStart: fc.option(fc.date()),
-            contractEnd: fc.option(fc.date()),
+            contractStart: fc.option(validDateGenerator),
+            contractEnd: fc.option(validDateGenerator),
           }),
           async (validData) => {
+            // Ensure dates are valid before proceeding
+            if (validData.contractStart) {
+              const validation = validateDate(validData.contractStart);
+              fc.pre(validation.isValid);
+            }
+            
+            if (validData.contractEnd) {
+              const validation = validateDate(validData.contractEnd);
+              fc.pre(validation.isValid);
+            }
+
+            // Ensure logical date ranges if both dates are provided
+            if (validData.contractStart && validData.contractEnd) {
+              fc.pre(validData.contractStart < validData.contractEnd);
+            }
+
             // Test with valid data - should succeed
             const client = await prismaService.withTenant(testTenantId, async (prisma) => {
               return prisma.client.create({
@@ -292,6 +346,91 @@ describe('Property Test: Client Data Capture Completeness', () => {
           seed: 123,
         },
       );
+    } finally {
+      // Cleanup: Remove the test company
+      await prismaService.withSystemContext(async (prisma) => {
+        await prisma.company
+          .delete({
+            where: { id: testTenantId },
+          })
+          .catch(() => {
+            // Ignore cleanup errors
+          });
+      });
+    }
+  }, 30000);
+});
+
+/**
+ * Property 6: Date Validation Edge Cases 
+ * **Validates: Requirements 2.1 - Bug 1 Fix**
+ *
+ * Additional test suite for date validation edge cases
+ */
+describe('Property Test: Date Validation Edge Cases', () => {
+  let prismaService: PrismaService;
+  let module: TestingModule;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [PrismaModule],
+    }).compile();
+
+    prismaService = module.get<PrismaService>(PrismaService);
+    await prismaService.onModuleInit();
+  });
+
+  afterAll(async () => {
+    await prismaService.onModuleDestroy();
+    await module.close();
+  });
+
+  it('should reject invalid dates that PostgreSQL cannot handle', async () => {
+    const testTenantId = randomUUID();
+
+    // Setup: Create a test company
+    await prismaService.withSystemContext(async (prisma) => {
+      await prisma.company.create({
+        data: {
+          id: testTenantId,
+          name: 'Test Company Date Validation',
+          slug: `test-date-${testTenantId.substring(0, 8)}`,
+        },
+      });
+    });
+
+    try {
+      // Test invalid dates that should be rejected by database constraints
+      const invalidDates = [
+        new Date('0000-12-31'), // Year 0000 - PostgreSQL doesn't support
+        new Date('0000-01-01'), // Year 0000  
+      ];
+
+      for (const invalidDate of invalidDates) {
+        let wasRejected = false;
+        
+        try {
+          await prismaService.withTenant(testTenantId, async (prisma) => {
+            return prisma.client.create({
+              data: {
+                name: 'Test Client',
+                contactEmail: `test-${Date.now()}@example.com`, // Unique email
+                contractStart: invalidDate,
+                company: {
+                  connect: { id: testTenantId },
+                },
+              },
+            });
+          });
+        } catch (error) {
+          wasRejected = true;
+          // Verify it's a database constraint violation, not some other error
+          expect(error.message).toMatch(/date\/time field value out of range|check constraint|valid_year/i);
+        }
+
+        // The invalid date should have been rejected
+        expect(wasRejected).toBe(true);
+      }
     } finally {
       // Cleanup: Remove the test company
       await prismaService.withSystemContext(async (prisma) => {

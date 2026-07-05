@@ -3,7 +3,6 @@ import {
   IsString,
   IsOptional,
   IsObject,
-  IsDateString,
   IsEnum,
   MaxLength,
   MinLength,
@@ -11,6 +10,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsValidDate, IsValidContractDateRange } from '../../common/decorators/date-validation.decorator';
 
 export enum ContractStatus {
   ACTIVE = 'ACTIVE',
@@ -119,8 +119,8 @@ export class CreateClientDto {
     example: '2024-01-01',
   })
   @IsOptional()
-  @IsDateString()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @IsValidDate()
+  @IsValidContractDateRange('contractEnd')
   contractStart?: Date;
 
   @ApiPropertyOptional({
@@ -128,8 +128,7 @@ export class CreateClientDto {
     example: '2024-12-31',
   })
   @IsOptional()
-  @IsDateString()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @IsValidDate()
   contractEnd?: Date;
 
   @ApiPropertyOptional({

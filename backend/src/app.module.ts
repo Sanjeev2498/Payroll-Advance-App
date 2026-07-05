@@ -15,6 +15,8 @@ import { ShiftsModule } from './shifts/shifts.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { BillingModule } from './billing/billing.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { DeploymentModule } from './deployment/deployment.module';
 import { EncryptionModule } from './common/encryption/encryption.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { TenantContextMiddleware } from './common/tenant-context.middleware';
@@ -44,6 +46,8 @@ import { PrismaService } from './prisma/prisma.service';
     AttendanceModule,
     PayrollModule,
     BillingModule,
+    DashboardModule,
+    DeploymentModule,
   ],
   controllers: [AppController],
   providers: [

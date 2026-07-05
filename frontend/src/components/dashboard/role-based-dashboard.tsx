@@ -66,7 +66,7 @@ export function RoleBasedDashboard({ className }: RoleBasedDashboardProps) {
                 <p><strong>User:</strong> {user.firstName} {user.lastName}</p>
                 <p><strong>Email:</strong> {user.email}</p>
                 <p><strong>Role:</strong> {user.role}</p>
-                <p><strong>Company:</strong> {user.company?.name || 'N/A'}</p>
+                <p><strong>Company:</strong> {user.tenantName || 'N/A'}</p>
               </div>
             </div>
           </CardContent>

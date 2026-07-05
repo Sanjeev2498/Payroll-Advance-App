@@ -8,17 +8,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
-import * as request from 'supertest';
+import request from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 
 import { AppModule } from '../../../app.module';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { TenantContextService } from '../../../common/tenant-context.service';
 
 /**
  * Mock controller for testing RBAC functionality
  */
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { TenantGuard } from '../../../common/tenant.guard';
@@ -95,7 +94,6 @@ class TestRbacController {
 
 describe('RBAC Integration Tests', () => {
   let app: INestApplication;
-  let prismaService: PrismaService;
   let jwtService: JwtService;
   let moduleRef: TestingModule;
 
@@ -146,11 +144,17 @@ describe('RBAC Integration Tests', () => {
     moduleRef = await Test.createTestingModule({
       imports: [AppModule],
       controllers: [TestRbacController],
-    }).compile();
+    })
+    .overrideGuard(TenantGuard)
+    .useValue({
+      canActivate: () => true, // Mock tenant guard for testing
+    })
+    .compile();
 
     app = moduleRef.createNestApplication();
-    prismaService = moduleRef.get<PrismaService>(PrismaService);
     jwtService = moduleRef.get<JwtService>(JwtService);
+
+    await app.init();
 
     await app.init();
   });
@@ -425,10 +429,12 @@ describe('RBAC Integration Tests', () => {
         role: testUsers.employee.role,
         companyId: testUsers.employee.tenantId,
         type: 'access',
-        exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
       };
 
-      const expiredToken = jwtService.sign(expiredPayload);
+      const expiredToken = jwtService.sign(expiredPayload, { expiresIn: '1ms' });
+
+      // Wait for token to expire
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       await request(app.getHttpServer())
         .get('/test-rbac/user-read')
@@ -471,7 +477,7 @@ describe('RBAC Integration Tests', () => {
       const responses = await Promise.all(requests);
 
       // All requests should succeed
-      responses.forEach((response) => {
+      responses.forEach((response: request.Response) => {
         expect(response.status).toBe(200);
       });
     });

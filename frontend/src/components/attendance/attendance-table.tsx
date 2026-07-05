@@ -170,7 +170,8 @@ const HoursWorked: React.FC<{
 
   const start = parseISO(clockIn)
   const end = parseISO(clockOut)
-  const hoursWorked = differenceInHours(end, start, { includeSeconds: true })
+  const minutesWorked = differenceInMinutes(end, start)
+  const hoursWorked = Math.round((minutesWorked / 60) * 100) / 100 // Round to 2 decimal places
   
   const isOvertime = scheduledHours && hoursWorked > scheduledHours
   const overtimeHours = isOvertime ? hoursWorked - scheduledHours! : 0

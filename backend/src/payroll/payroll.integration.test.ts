@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import * as request from 'supertest';
+import request from 'supertest';
 import { PrismaService } from '../prisma/prisma.service';
 import { PayrollModule } from './payroll.module';
 import { CommonModule } from '../common/common.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TenantContextService } from '../common/tenant-context.service';
 import { PayrollStatus, AttendanceStatus, EmploymentStatus, AssignmentStatus, ShiftStatus } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 
 describe('Payroll Integration Tests', () => {
   let app: INestApplication;

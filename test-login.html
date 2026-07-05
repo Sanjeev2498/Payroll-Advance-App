@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #logs {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Login Debug Test</h1>
+    <p>This page directly tests the login API without Next.js frontend complexity.</p>
+    
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="admin@demosecurity.co.in" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" value="admin123" required>
+        </div>
+        
+        <button type="submit">Login</button>
+    </form>
+    
+    <div id="logs"></div>
+
+    <script>
+        const logsDiv = document.getElementById('logs');
+        
+        function log(message) {
+            const timestamp = new Date().toISOString();
+            logsDiv.textContent += `[${timestamp}] ${message}\n`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            log('🚀 Starting login test...');
+            log(`📧 Email: ${email}`);
+            log(`🔐 Password: ${'*'.repeat(password.length)}`);
+            
+            const API_BASE_URL = 'http://localhost:3001/api/v1';
+            const loginUrl = `${API_BASE_URL}/auth/login`;
+            
+            log(`🌐 API URL: ${loginUrl}`);
+            
+            try {
+                log('📤 Sending login request...');
+                
+                const response = await fetch(loginUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                log(`📥 Response status: ${response.status} ${response.statusText}`);
+                log(`📥 Response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                log('📄 Response data:');
+                log(JSON.stringify(data, null, 2));
+                
+                if (data.success && data.data && data.data.user && data.data.tokens) {
+                    log('✅ Login successful!');
+                    log(`👤 User: ${data.data.user.firstName} ${data.data.user.lastName} (${data.data.user.email})`);
+                    log(`🔑 Token length: ${data.data.tokens.accessToken.length}`);
+                    
+                    // Test token structure
+                    const token = data.data.tokens.accessToken;
+                    const parts = token.split('.');
+                    log(`🔍 Token parts: ${parts.length}`);
+                    
+                    if (parts.length === 3) {
+                        try {
+                            const payload = JSON.parse(atob(parts[1]));
+                            log('🔍 Token payload:');
+                            log(JSON.stringify(payload, null, 2));
+                        } catch (err) {
+                            log(`❌ Failed to decode token: ${err.message}`);
+                        }
+                    }
+                    
+                } else {
+                    log('❌ Login response structure is invalid');
+                }
+                
+            } catch (error) {
+                log(`❌ Login failed: ${error.message}`);
+                log(`❌ Error details: ${JSON.stringify(error, null, 2)}`);
+            }
+        });
+        
+        log('🔧 Login test page loaded');
+        log('🔧 Ready to test login functionality');
+    </script>
+</body>
+</html>

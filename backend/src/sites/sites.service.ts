@@ -10,6 +10,8 @@ import { ClientRepository } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
 import { CreateSiteDto, UpdateSiteDto, SiteQueryDto, SiteOperationalStatus } from './dto';
 import { Site, Prisma } from '@prisma/client';
+import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+
 
 @Injectable()
 export class SitesService {
@@ -94,8 +96,9 @@ export class SitesService {
 
       return site;
     } catch (error) {
-      this.logger.error(`Failed to create site: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create site: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -123,8 +126,9 @@ export class SitesService {
       this.logger.log(`Found ${result.total} sites`);
       return result;
     } catch (error) {
-      this.logger.error(`Failed to fetch sites: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch sites: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -209,8 +213,8 @@ export class SitesService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update site: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to update site: ${error.message}`);
+      this.logger.error(`Failed to update site: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to update site: ${getErrorMessage(error)}`);
     }
   }
 
@@ -232,8 +236,8 @@ export class SitesService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to delete site: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to delete site: ${error.message}`);
+      this.logger.error(`Failed to delete site: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to delete site: ${getErrorMessage(error)}`);
     }
   }
 
@@ -248,8 +252,9 @@ export class SitesService {
       this.logger.log('Successfully fetched site statistics', stats);
       return stats;
     } catch (error) {
-      this.logger.error(`Failed to fetch stats: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch site statistics: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -270,8 +275,9 @@ export class SitesService {
       this.logger.log(`Found ${sites.length} sites for client ${clientId}`);
       return sites;
     } catch (error) {
-      this.logger.error(`Failed to fetch sites by client: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch sites by client: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -286,8 +292,9 @@ export class SitesService {
       this.logger.log(`Found ${sites.length} sites with status ${status}`);
       return sites;
     } catch (error) {
-      this.logger.error(`Failed to fetch sites by status: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch sites by status: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -307,7 +314,7 @@ export class SitesService {
 
       this.logger.log(`Setup workflow initiated for site: ${site.id}`);
     } catch (error) {
-      this.logger.error(`Setup workflow failed for site ${site.id}: ${error.message}`);
+      this.logger.error(`Setup workflow failed for site ${site.id}: ${getErrorMessage(error)}`);
       // Don't throw here - setup failure shouldn't prevent site creation
     }
   }
@@ -366,7 +373,7 @@ export class SitesService {
           break;
       }
     } catch (error) {
-      this.logger.error(`Status change handling failed for site ${site.id}: ${error.message}`);
+      this.logger.error(`Status change handling failed for site ${site.id}: ${getErrorMessage(error)}`);
       // Don't throw here - status change workflow failure shouldn't prevent the update
     }
   }
@@ -387,7 +394,7 @@ export class SitesService {
 
       this.logger.log(`Deactivation workflow completed for site: ${site.id}`);
     } catch (error) {
-      this.logger.error(`Deactivation workflow failed for site ${site.id}: ${error.message}`);
+      this.logger.error(`Deactivation workflow failed for site ${site.id}: ${getErrorMessage(error)}`);
       // Don't throw here - deactivation workflow failure shouldn't prevent the deletion
     }
   }

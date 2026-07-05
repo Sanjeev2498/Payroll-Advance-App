@@ -12,7 +12,7 @@ import {
   AttendanceStatus,
   Prisma 
 } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 import { 
   CreatePayrollRunDto, 
   PayrollCalculationResult, 

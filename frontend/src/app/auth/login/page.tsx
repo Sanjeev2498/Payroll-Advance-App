@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuthStore } from '@/stores/auth-store'
-import { authApi } from '@/lib/api/auth'
+import { useAuth } from '@/hooks/use-auth'
 import type { LoginForm as LoginFormType } from '@/types'
 
 const loginSchema = z.object({
@@ -24,9 +23,7 @@ type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { setAuth, isAuthenticated } = useAuthStore()
+  const { login, isAuthenticated, loginLoading, loginError, user } = useAuth()
 
   const {
     register,
@@ -39,32 +36,29 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('🔄 Already authenticated, redirecting to dashboard...')
       router.push('/dashboard')
     }
   }, [isAuthenticated, router])
 
-  const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const credentials: LoginFormType = {
-        email: data.email,
-        password: data.password,
-      }
-
-      const response = await authApi.login(credentials)
-      setAuth(response.user, response.token)
-      router.push('/dashboard')
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.error?.message || 
-        err?.message || 
-        'Invalid credentials. Please try again.'
-      )
-    } finally {
-      setIsLoading(false)
+  const onSubmit = (data: LoginForm) => {
+    console.log('🚀 Login form submitted with:', { email: data.email, password: '***' })
+    console.log('🚀 Current auth state before login:', {
+      isAuthenticated,
+      loginLoading,
+      hasUser: !!user
+    })
+    
+    const credentials: LoginFormType = {
+      email: data.email,
+      password: data.password,
     }
+
+    console.log('🚀 Calling login function from useAuth...')
+    // Use the useAuth hook's login function which handles the response structure correctly
+    login(credentials)
+    
+    console.log('🚀 Login function called, mutation should start...')
   }
 
   return (
@@ -88,9 +82,11 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
+              {loginError && (
                 <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                  {error}
+                  {loginError?.response?.data?.error?.message || 
+                   loginError?.message || 
+                   'Invalid credentials. Please try again.'}
                 </div>
               )}
 
@@ -138,9 +134,9 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={loginLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {loginLoading ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>
 

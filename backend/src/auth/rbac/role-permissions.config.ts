@@ -10,6 +10,7 @@ import {
   PayrollPermissions,
   BillingPermissions,
   ReportingPermissions,
+  OperationsPermissions,
   SystemPermissions,
   Permission,
 } from '../enums/permissions.enum';
@@ -68,6 +69,7 @@ export class RolePermissionsConfig {
       ...Object.values(PayrollPermissions),
       ...Object.values(BillingPermissions),
       ...Object.values(ReportingPermissions),
+      ...Object.values(OperationsPermissions),
       ...Object.values(SystemPermissions),
     ],
   };
@@ -105,6 +107,9 @@ export class RolePermissionsConfig {
 
       // Basic reporting
       ReportingPermissions.VIEW_OPERATIONAL_REPORTS,
+
+      // Operations (basic viewing)
+      OperationsPermissions.VIEW_SITE_DEPLOYMENTS,
     ];
 
     // Manager: Supervisor permissions + broader operational management
@@ -164,6 +169,11 @@ export class RolePermissionsConfig {
       ReportingPermissions.VIEW_FINANCIAL_REPORTS,
       ReportingPermissions.VIEW_COMPLIANCE_REPORTS,
       ReportingPermissions.EXPORT_REPORTS,
+
+      // Operations management
+      OperationsPermissions.VIEW_ASSIGNMENT_CONFLICTS,
+      OperationsPermissions.RESOLVE_CONFLICTS,
+      OperationsPermissions.EMERGENCY_ASSIGNMENTS,
     ];
 
     // Company Admin: Manager permissions + company-wide administration
@@ -204,6 +214,10 @@ export class RolePermissionsConfig {
       // Advanced reporting
       ReportingPermissions.CREATE_CUSTOM_REPORTS,
       ReportingPermissions.MANAGE_DASHBOARDS,
+
+      // Full operations management
+      OperationsPermissions.MANAGE_SITE_REQUIREMENTS,
+      OperationsPermissions.OPTIMIZE_DEPLOYMENTS,
 
       // System administration (limited)
       SystemPermissions.VIEW_AUDIT_LOGS,

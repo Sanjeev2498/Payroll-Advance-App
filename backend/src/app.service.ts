@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
+import { getErrorMessage, getErrorStack, formatError } from './common/utils/error.util';
+
 
 @Injectable()
 export class AppService {
@@ -35,7 +37,7 @@ export class AppService {
     } catch (error) {
       return {
         status: 'error',
-        error: error.message,
+        error: getErrorMessage(error),
         timestamp: new Date().toISOString(),
       };
     }

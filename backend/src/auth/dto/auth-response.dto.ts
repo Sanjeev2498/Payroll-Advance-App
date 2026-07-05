@@ -8,6 +8,12 @@ export class AuthResponseDto {
       lastName: string;
       role: string;
       companyId: string;
+      // Add tenant fields for frontend compatibility
+      tenantId: string;
+      tenantName: string;
+      status: string;
+      createdAt: string;
+      updatedAt: string;
     };
     tokens: {
       accessToken: string;

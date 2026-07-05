@@ -9,6 +9,8 @@ import { ClientRepository } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
 import { CreateClientDto, UpdateClientDto, ClientQueryDto, ContractStatus } from './dto';
 import { Client } from '@prisma/client';
+import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+
 
 @Injectable()
 export class ClientsService {
@@ -49,8 +51,9 @@ export class ClientsService {
 
       return client;
     } catch (error) {
-      this.logger.error(`Failed to create client: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create client: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -78,8 +81,9 @@ export class ClientsService {
       this.logger.log(`Found ${result.total} clients`);
       return result;
     } catch (error) {
-      this.logger.error(`Failed to fetch clients: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch clients: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -129,8 +133,8 @@ export class ClientsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update client: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to update client: ${error.message}`);
+      this.logger.error(`Failed to update client: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to update client: ${getErrorMessage(error)}`);
     }
   }
 
@@ -152,8 +156,8 @@ export class ClientsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to delete client: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to delete client: ${error.message}`);
+      this.logger.error(`Failed to delete client: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to delete client: ${getErrorMessage(error)}`);
     }
   }
 
@@ -168,8 +172,9 @@ export class ClientsService {
       this.logger.log('Successfully fetched client statistics', stats);
       return stats;
     } catch (error) {
-      this.logger.error(`Failed to fetch stats: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch client statistics: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -184,8 +189,9 @@ export class ClientsService {
       this.logger.log(`Found ${clients.length} contracts expiring soon`);
       return clients;
     } catch (error) {
-      this.logger.error(`Failed to fetch expiring contracts: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch expiring contracts: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -200,8 +206,9 @@ export class ClientsService {
       this.logger.log(`Found ${clients.length} clients with status ${status}`);
       return clients;
     } catch (error) {
-      this.logger.error(`Failed to fetch clients by status: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch clients by status: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -221,7 +228,7 @@ export class ClientsService {
 
       this.logger.log(`Onboarding workflow initiated for client: ${client.id}`);
     } catch (error) {
-      this.logger.error(`Onboarding workflow failed for client ${client.id}: ${error.message}`);
+      this.logger.error(`Onboarding workflow failed for client ${client.id}: ${getErrorMessage(error)}`);
       // Don't throw here - onboarding failure shouldn't prevent client creation
     }
   }
@@ -251,7 +258,7 @@ export class ClientsService {
           break;
       }
     } catch (error) {
-      this.logger.error(`Status change handling failed for client ${client.id}: ${error.message}`);
+      this.logger.error(`Status change handling failed for client ${client.id}: ${getErrorMessage(error)}`);
       // Don't throw here - status change workflow failure shouldn't prevent the update
     }
   }
@@ -272,7 +279,7 @@ export class ClientsService {
 
       this.logger.log(`Termination workflow completed for client: ${client.id}`);
     } catch (error) {
-      this.logger.error(`Termination workflow failed for client ${client.id}: ${error.message}`);
+      this.logger.error(`Termination workflow failed for client ${client.id}: ${getErrorMessage(error)}`);
       // Don't throw here - termination workflow failure shouldn't prevent the deletion
     }
   }

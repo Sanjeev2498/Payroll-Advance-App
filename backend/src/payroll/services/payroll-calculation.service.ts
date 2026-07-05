@@ -7,7 +7,7 @@ import {
   Prisma,
   PayrollItemType
 } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 import { PayrollItemCalculation } from '../dto';
 
 interface AttendanceRecord {

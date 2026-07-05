@@ -18,6 +18,8 @@ import {
 } from './dto';
 import { EmployeeRoleResponse } from '../common/dto/encrypted-field.dto';
 import { Employee } from '@prisma/client';
+import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+
 
 @Injectable()
 export class EmployeesService {
@@ -88,8 +90,9 @@ export class EmployeesService {
       // Return role-based view of the employee data
       return this.dataTransform.transformEmployeeForRole(employee, userRole, false);
     } catch (error) {
-      this.logger.error(`Failed to create employee: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create employee: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -170,8 +173,9 @@ export class EmployeesService {
         pages: Math.ceil(total / (queryDto.limit || 10)),
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch employees: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch employees: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -279,8 +283,8 @@ export class EmployeesService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update employee: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to update employee: ${error.message}`);
+      this.logger.error(`Failed to update employee: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to update employee: ${getErrorMessage(error)}`);
     }
   }
 
@@ -314,8 +318,9 @@ export class EmployeesService {
 
       return this.dataTransform.transformEmployeeForRole(deletedEmployee, userRole, false);
     } catch (error) {
-      this.logger.error(`Failed to delete employee: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to delete employee: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -367,8 +372,9 @@ export class EmployeesService {
       this.logger.log(`Found ${results.length} matching employees`);
       return results;
     } catch (error) {
-      this.logger.error(`Failed to search employees: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to search employees: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -401,8 +407,9 @@ export class EmployeesService {
       this.logger.log(`Found ${transformedEmployees.length} employees with required skills`);
       return transformedEmployees;
     } catch (error) {
-      this.logger.error(`Failed to find employees by skills: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to find employees by skills: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -441,8 +448,9 @@ export class EmployeesService {
 
       return employees;
     } catch (error) {
-      this.logger.error(`Failed to find available employees: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to find available employees: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -480,8 +488,9 @@ export class EmployeesService {
       this.logger.log('Successfully fetched employee statistics', stats);
       return stats;
     } catch (error) {
-      this.logger.error(`Failed to fetch stats: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch employee statistics: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -515,8 +524,9 @@ export class EmployeesService {
       this.logger.log(`Found ${transformedEmployees.length} employees with certifications`);
       return transformedEmployees;
     } catch (error) {
-      this.logger.error(`Failed to find expiring certifications: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to find expiring certifications: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -575,7 +585,7 @@ export class EmployeesService {
 
       this.logger.log(`Onboarding workflow initiated for employee: ${employee.id}`);
     } catch (error) {
-      this.logger.error(`Onboarding workflow failed for employee ${employee.id}: ${error.message}`);
+      this.logger.error(`Onboarding workflow failed for employee ${employee.id}: ${getErrorMessage(error)}`);
       // Don't throw here - onboarding failure shouldn't prevent employee creation
     }
   }
@@ -605,7 +615,7 @@ export class EmployeesService {
           break;
       }
     } catch (error) {
-      this.logger.error(`Status change handling failed for employee ${employee.id}: ${error.message}`);
+      this.logger.error(`Status change handling failed for employee ${employee.id}: ${getErrorMessage(error)}`);
       // Don't throw here - status change workflow failure shouldn't prevent the update
     }
   }
@@ -627,7 +637,7 @@ export class EmployeesService {
 
       this.logger.log(`Termination workflow completed for employee: ${employee.id}`);
     } catch (error) {
-      this.logger.error(`Termination workflow failed for employee ${employee.id}: ${error.message}`);
+      this.logger.error(`Termination workflow failed for employee ${employee.id}: ${getErrorMessage(error)}`);
       // Don't throw here - termination workflow failure shouldn't prevent the deletion
     }
   }

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PayrollItemType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 
 export class PayrollCalculationResult {
   @ApiProperty({ description: 'Employee ID' })

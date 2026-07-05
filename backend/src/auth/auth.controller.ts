@@ -7,6 +7,7 @@ import {
   HttpStatus,
   ValidationPipe,
   Get,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -16,10 +17,14 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto, TokenResponseDto } from './dto/auth-response.dto';
 import { AuthenticatedUser } from './interfaces/jwt-payload.interface';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Public()
   @UseGuards(LocalAuthGuard)
@@ -61,11 +66,42 @@ export class AuthController {
   @Get('profile')
   async getProfile(@CurrentUser() user: AuthenticatedUser): Promise<{
     success: boolean;
-    data: AuthenticatedUser;
+    data: any; // Updated to return full user info with tenant fields
   }> {
+    // Get full user data with company info for tenant fields
+    const fullUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!fullUser) {
+      throw new UnauthorizedException('User not found');
+    }
+
     return {
       success: true,
-      data: user,
+      data: {
+        id: fullUser.id,
+        email: fullUser.email,
+        firstName: fullUser.firstName,
+        lastName: fullUser.lastName,
+        role: fullUser.role,
+        companyId: fullUser.companyId,
+        // Add tenant fields for frontend compatibility
+        tenantId: fullUser.companyId,
+        tenantName: fullUser.company?.name || 'Unknown Company',
+        status: fullUser.isActive ? 'ACTIVE' : 'INACTIVE',
+        createdAt: fullUser.createdAt.toISOString(),
+        updatedAt: fullUser.updatedAt.toISOString(),
+      },
     };
   }
 

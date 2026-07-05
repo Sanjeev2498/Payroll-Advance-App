@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from './tenant-context.service';
+import { getErrorMessage, getErrorStack, formatError } from './utils/error.util';
+
 
 /**
  * Base repository class that provides tenant-aware database operations
@@ -106,7 +108,7 @@ export abstract class TenantAwareRepository {
         return modelOperation();
       });
     } catch (error) {
-      this.logger.error(`Database operation failed: ${error.message}`, error.stack);
+      this.logger.error(`Database operation failed: ${getErrorMessage(error)}`, getErrorStack(error));
       throw error;
     }
   }
@@ -120,7 +122,7 @@ export abstract class TenantAwareRepository {
         return modelOperation();
       });
     } catch (error) {
-      this.logger.error(`Database write operation failed: ${error.message}`, error.stack);
+      this.logger.error(`Database write operation failed: ${getErrorMessage(error)}`, getErrorStack(error));
       throw error;
     }
   }

@@ -9,6 +9,7 @@ import {
 import { AttendanceRepository } from '../common/repositories/attendance.repository';
 import { TenantContextService } from '../common/tenant-context.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
 import {
   CreateAttendanceDto,
   UpdateAttendanceDto,
@@ -103,8 +104,9 @@ export class AttendanceService {
 
       return attendance;
     } catch (error) {
-      this.logger.error(`Failed to create attendance record: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create attendance record: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
   /**
@@ -195,8 +197,9 @@ export class AttendanceService {
         nextExpectedAction: 'CLOCK_OUT' as const,
       };
     } catch (error) {
-      this.logger.error(`Failed to process clock-in: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to process clock-in: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
   /**
@@ -310,8 +313,9 @@ export class AttendanceService {
         overtimeHours: parseFloat(overtimeHours.toFixed(2)),
       };
     } catch (error) {
-      this.logger.error(`Failed to process clock-out: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to process clock-out: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`Failed to process clock-out: ${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`Failed to process clock-out: ${errorInfo.message}`);
     }
   }
   /**
@@ -367,8 +371,9 @@ export class AttendanceService {
         stats,
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch attendance records: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch attendance records: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -446,8 +451,8 @@ export class AttendanceService {
       if (error instanceof NotFoundException || error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(`Failed to update attendance record: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to update attendance record: ${error.message}`);
+      this.logger.error(`Failed to update attendance record: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to update attendance record: ${getErrorMessage(error)}`);
     }
   }
   /**
@@ -525,8 +530,9 @@ export class AttendanceService {
         attendance: updatedRecord,
       };
     } catch (error) {
-      this.logger.error(`Failed to request correction: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to request correction: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -614,8 +620,9 @@ export class AttendanceService {
         attendance: updatedRecord,
       };
     } catch (error) {
-      this.logger.error(`Failed to process correction: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to process correction: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
   /**
@@ -656,8 +663,9 @@ export class AttendanceService {
         },
       };
     } catch (error) {
-      this.logger.error(`Failed to detect anomalies: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to detect anomalies: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -683,8 +691,9 @@ export class AttendanceService {
       this.logger.log('Successfully fetched attendance statistics');
       return stats;
     } catch (error) {
-      this.logger.error(`Failed to fetch statistics: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch statistics: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -766,8 +775,9 @@ export class AttendanceService {
         reason: bulkUpdateDto.reason,
       };
     } catch (error) {
-      this.logger.error(`Failed to process bulk update: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to process bulk update: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
   // ============================================================================

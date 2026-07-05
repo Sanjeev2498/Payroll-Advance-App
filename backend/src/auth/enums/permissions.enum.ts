@@ -121,6 +121,16 @@ export enum ReportingPermissions {
   MANAGE_DASHBOARDS = 'reporting:manage_dashboards',
 }
 
+// Operations Management Permissions
+export enum OperationsPermissions {
+  VIEW_SITE_DEPLOYMENTS = 'operations:view_site_deployments',
+  VIEW_ASSIGNMENT_CONFLICTS = 'operations:view_assignment_conflicts',
+  MANAGE_SITE_REQUIREMENTS = 'operations:manage_site_requirements',
+  RESOLVE_CONFLICTS = 'operations:resolve_conflicts',
+  OPTIMIZE_DEPLOYMENTS = 'operations:optimize_deployments',
+  EMERGENCY_ASSIGNMENTS = 'operations:emergency_assignments',
+}
+
 // System Administration Permissions
 export enum SystemPermissions {
   MANAGE_SYSTEM_SETTINGS = 'system:manage_settings',
@@ -143,6 +153,7 @@ export type Permission =
   | PayrollPermissions
   | BillingPermissions
   | ReportingPermissions
+  | OperationsPermissions
   | SystemPermissions;
 
 // Helper to get all permissions as an array
@@ -158,5 +169,6 @@ export const ALL_PERMISSIONS: Permission[] = [
   ...Object.values(PayrollPermissions),
   ...Object.values(BillingPermissions),
   ...Object.values(ReportingPermissions),
+  ...Object.values(OperationsPermissions),
   ...Object.values(SystemPermissions),
 ];

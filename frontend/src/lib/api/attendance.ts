@@ -45,7 +45,15 @@ export interface AttendanceCorrectionData {
 
 export const attendanceService = {
   // Get attendance records with filtering and pagination
-  async getAttendance(params: AttendanceQueryParams = {}): Promise<PaginatedResponse<Attendance> & { stats: AttendanceStats }> {
+  async getAttendance(params: AttendanceQueryParams = {}): Promise<{
+    attendance: Attendance[]
+    stats: AttendanceStats
+    total: number
+    page: number
+    limit: number
+    hasNext: boolean
+    hasPrevious: boolean
+  }> {
     const searchParams = new URLSearchParams()
     
     Object.entries(params).forEach(([key, value]) => {

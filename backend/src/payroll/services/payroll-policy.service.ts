@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 
 export interface PayrollPolicy {
   // Basic configuration

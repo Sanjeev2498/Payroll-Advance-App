@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 import { InvoiceStatus } from '@prisma/client';
 import { GstCalculationResult } from './gst-calculation.dto';
 import { DeploymentHours, SiteDeploymentSummary } from './billing-calculation.dto';

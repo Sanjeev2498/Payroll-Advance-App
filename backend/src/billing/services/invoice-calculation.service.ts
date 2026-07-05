@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { GstCalculationService } from './gst-calculation.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 import { Prisma, AttendanceStatus, ShiftType } from '@prisma/client';
 import {
   BillingCalculationResult,

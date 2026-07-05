@@ -7,7 +7,7 @@ import { PayrollModule } from './payroll.module';
 import { PayrollRunManagementService } from './services/payroll-run-management.service';
 import { PayrollBatchProcessingDto, PayrollRunFilterDto } from './dto';
 import { PayrollStatus, EmploymentStatus, AssignmentStatus, AttendanceStatus } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 
 describe('PayrollRunManagementService Integration', () => {
   let app: INestApplication;

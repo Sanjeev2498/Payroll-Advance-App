@@ -23,6 +23,8 @@ import {
   NotificationType 
 } from '@prisma/client';
 import { ShiftPriority as DtoShiftPriority } from './dto/create-shift.dto';
+import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+
 
 export enum RecurrenceType {
   DAILY = 'DAILY',
@@ -118,8 +120,9 @@ export class ShiftsService {
 
       return shift;
     } catch (error) {
-      this.logger.error(`Failed to create shift: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create shift: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -144,7 +147,7 @@ export class ShiftsService {
           } catch (error) {
             errors.push({
               shiftData: shiftDto,
-              error: error.message,
+              error: getErrorMessage(error),
             });
           }
         }
@@ -178,7 +181,7 @@ export class ShiftsService {
           } catch (error) {
             errors.push({
               date: date.toISOString().split('T')[0],
-              error: error.message,
+              error: getErrorMessage(error),
             });
           }
         }
@@ -188,8 +191,9 @@ export class ShiftsService {
 
       return { created, errors };
     } catch (error) {
-      this.logger.error(`Bulk shift creation failed: ${error.message}`, error.stack);
-      throw new BadRequestException(`Bulk shift creation failed: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -236,8 +240,9 @@ export class ShiftsService {
         stats,
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch shifts: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch shifts: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -328,8 +333,8 @@ export class ShiftsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update shift: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to update shift: ${error.message}`);
+      this.logger.error(`Failed to update shift: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to update shift: ${getErrorMessage(error)}`);
     }
   }
 
@@ -359,8 +364,9 @@ export class ShiftsService {
 
       return cancelledShift;
     } catch (error) {
-      this.logger.error(`Failed to cancel shift: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to cancel shift: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -375,8 +381,9 @@ export class ShiftsService {
       this.logger.log(`Found ${shifts.length} shifts for assignment: ${assignmentId}`);
       return shifts;
     } catch (error) {
-      this.logger.error(`Failed to find shifts for assignment: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to find shifts for assignment: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -395,8 +402,9 @@ export class ShiftsService {
       this.logger.log(`Found ${shifts.length} shifts for site: ${siteId}`);
       return shifts;
     } catch (error) {
-      this.logger.error(`Failed to find shifts for site: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to find shifts for site: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -411,8 +419,9 @@ export class ShiftsService {
       this.logger.log(`Found ${shifts.length} shifts needing coverage`);
       return shifts;
     } catch (error) {
-      this.logger.error(`Failed to find shifts needing coverage: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to find shifts needing coverage: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -442,8 +451,9 @@ export class ShiftsService {
 
       this.logger.log(`Successfully requested coverage for shift: ${coverageRequest.shiftId}`);
     } catch (error) {
-      this.logger.error(`Failed to request coverage: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to request coverage: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -462,8 +472,9 @@ export class ShiftsService {
       this.logger.log('Successfully fetched shift statistics', stats);
       return stats;
     } catch (error) {
-      this.logger.error(`Failed to fetch shift statistics: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch shift statistics: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -686,7 +697,7 @@ export class ShiftsService {
         recurringShifts.push(recurringShift);
         occurrenceCount++;
       } catch (error) {
-        this.logger.warn(`Failed to create recurring shift for ${currentDate.toDateString()}: ${error.message}`);
+        this.logger.warn(`Failed to create recurring shift for ${currentDate.toDateString()}: ${getErrorMessage(error)}`);
         // Continue with next occurrence
       }
     }

@@ -100,8 +100,8 @@ describe('AssignmentsService', () => {
       siteId: 'site-1',
       role: 'Security Guard',
       hourlyRate: 250.00, // ₹250 per hour
-      startDate: '2026-07-01',
-      endDate: '2026-12-31',
+      startDate: '2027-07-01',  // Future date
+      endDate: '2027-12-31',    // Future date
     };
 
     it('should create an assignment successfully', async () => {
@@ -143,6 +143,12 @@ describe('AssignmentsService', () => {
     });
 
     it('should reject assignment with critical conflicts', async () => {
+      const futureDto = {
+        ...createAssignmentDto,
+        startDate: '2027-07-01',  // Ensure future date
+        endDate: '2027-12-31',    // Ensure future date
+      };
+      
       const criticalConflicts = [
         {
           type: 'EMPLOYEE_DOUBLE_BOOKING',
@@ -154,7 +160,7 @@ describe('AssignmentsService', () => {
       
       assignmentRepository.detectConflicts.mockResolvedValue(criticalConflicts);
 
-      await expect(service.create(createAssignmentDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(futureDto)).rejects.toThrow(ConflictException);
       expect(assignmentRepository.create).not.toHaveBeenCalled();
     });
   });

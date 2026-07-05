@@ -1,10 +1,29 @@
 import { PrismaClient, UserRole, ContractStatus, EmploymentStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const prisma = new PrismaClient();
+// Create PostgreSQL connection pool for Prisma 7.x
+const connectionString = process.env.DATABASE_URL || 'postgresql://payroll_user:payroll_pass_dev_123@localhost:5432/payroll_system_dev';
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({
+  adapter,
+  log: ['query', 'info', 'warn', 'error'],
+});
 
 async function main() {
   console.log('🌱 Starting database seeding...');
+
+  // Clear existing data first (for clean seeding)
+  await prisma.employee.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.site.deleteMany({});
+  await prisma.client.deleteMany({});
+  await prisma.company.deleteMany({});
+
+  console.log('✅ Cleared existing data');
 
   // Create a demo company
   const company = await prisma.company.create({
@@ -41,6 +60,49 @@ async function main() {
   });
 
   console.log(`✅ Created admin user: ${adminUser.email}`);
+
+  // Create supervisor user
+  const supervisorUser = await prisma.user.create({
+    data: {
+      companyId: company.id,
+      email: 'supervisor@demosecurity.co.in',
+      firstName: 'Rahul',
+      lastName: 'Sharma',
+      passwordHash: hashedPassword, // Same password for demo: admin123
+      role: UserRole.SUPERVISOR,
+      isActive: true
+    }
+  });
+
+  console.log(`✅ Created supervisor user: ${supervisorUser.email}`);
+
+  // Create employee user 1
+  const employeeUser1 = await prisma.user.create({
+    data: {
+      companyId: company.id,
+      email: 'arjun.singh@demosecurity.co.in',
+      firstName: 'Arjun',
+      lastName: 'Singh',
+      passwordHash: hashedPassword, // Same password for demo: admin123
+      role: UserRole.EMPLOYEE,
+      isActive: true
+    }
+  });
+
+  // Create employee user 2
+  const employeeUser2 = await prisma.user.create({
+    data: {
+      companyId: company.id,
+      email: 'priya.reddy@demosecurity.co.in',
+      firstName: 'Priya',
+      lastName: 'Reddy',
+      passwordHash: hashedPassword, // Same password for demo: admin123
+      role: UserRole.EMPLOYEE,
+      isActive: true
+    }
+  });
+
+  console.log(`✅ Created employee users: ${employeeUser1.email}, ${employeeUser2.email}`);
 
   // Create a demo client
   const client = await prisma.client.create({

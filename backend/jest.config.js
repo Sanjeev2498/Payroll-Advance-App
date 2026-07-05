@@ -22,7 +22,7 @@ module.exports = {
     '!src/**/*.test.ts',
   ],
   testTimeout: 30000,
-  setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   moduleNameMapper: {
     ...pathsToModuleNameMapper(compilerOptions.paths || {}, { 
       prefix: '<rootDir>/'

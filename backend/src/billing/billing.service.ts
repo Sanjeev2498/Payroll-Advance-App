@@ -13,6 +13,8 @@ import {
   InvoicePdfResponse,
   BillingCalculationResult,
 } from './dto';
+import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+
 
 @Injectable()
 export class BillingService {
@@ -180,7 +182,7 @@ export class BillingService {
         results.push(result);
       } catch (error) {
         // Continue with other invoices even if one fails
-        console.error(`Failed to mark invoice ${id} as sent:`, error.message);
+        console.error(`Failed to mark invoice ${id} as sent:`, getErrorMessage(error));
       }
     }
     return results;

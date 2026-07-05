@@ -75,6 +75,14 @@ const allNavigation: NavigationItem[] = [
   
   // Manager/HR-focused items
   {
+    name: 'Deployment Ops',
+    href: '/dashboard/deployment',
+    icon: '🎯',
+    description: 'Workforce deployment',
+    roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
+    priority: 5.5,
+  },
+  {
     name: 'Clients',
     href: '/dashboard/clients',
     icon: '🏢',
@@ -323,10 +331,10 @@ export function RoleSpecificSidebar() {
         {!sidebarCollapsed && user && (
           <div className="bg-gray-50 rounded-lg p-3 mb-3">
             <div className="text-xs font-medium text-gray-900 truncate">
-              {user.company?.name || 'Company Name'}
+              {user.tenantName || user.companyId || 'Company Name'}
             </div>
             <div className="text-xs text-gray-500 truncate">
-              ID: {user.companyId.slice(0, 8)}...
+              ID: {(user.tenantId || user.companyId || 'unknown').slice(0, 8)}...
             </div>
           </div>
         )}

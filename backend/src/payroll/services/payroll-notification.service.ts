@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { PayrollSummary } from '../dto';
+import { getErrorMessage, getErrorStack, formatError } from '../../common/utils/error.util';
+
 
 interface NotificationRecipient {
   id: string;
@@ -84,7 +86,7 @@ export class PayrollNotificationService {
       this.logger.log(`Payroll notifications sent successfully for run ${payrollRunId}`);
 
     } catch (error) {
-      this.logger.error(`Failed to send payroll notifications: ${error.message}`, error.stack);
+      this.logger.error(`Failed to send payroll notifications: ${(error as Error).message}`, (error as Error).stack);
       // Don't throw error - notifications are not critical for payroll processing
     }
   }
@@ -132,7 +134,7 @@ export class PayrollNotificationService {
       this.logger.log(`Payroll error notifications sent for run ${payrollRunId}`);
 
     } catch (error) {
-      this.logger.error(`Failed to send payroll error notifications: ${error.message}`, error.stack);
+      this.logger.error(`Failed to send payroll error notifications: ${getErrorMessage(error)}`, getErrorStack(error));
     }
   }
 
@@ -177,7 +179,7 @@ export class PayrollNotificationService {
       this.logger.log(`Pay slip notifications sent for ${employeeResults.length} employees`);
 
     } catch (error) {
-      this.logger.error(`Failed to send pay slip notifications: ${error.message}`, error.stack);
+      this.logger.error(`Failed to send pay slip notifications: ${getErrorMessage(error)}`, getErrorStack(error));
     }
   }
 

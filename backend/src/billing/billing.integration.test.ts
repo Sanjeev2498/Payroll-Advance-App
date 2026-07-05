@@ -37,7 +37,7 @@ describe('Billing Integration Tests', () => {
 
     billingService = await moduleRef.resolve<BillingService>(BillingService);
     prismaService = moduleRef.get<PrismaService>(PrismaService);
-    tenantContextService = moduleRef.get<TenantContextService>(TenantContextService);
+    tenantContextService = await moduleRef.resolve<TenantContextService>(TenantContextService);
   });
 
   beforeEach(async () => {
@@ -289,7 +289,9 @@ describe('Billing Integration Tests', () => {
         siteId: testSiteId,
         role: 'Security Guard',
         responsibilities: {},
-        hourlyRate: 250, // INR 250 per hour
+        hourlyRate: '250', // Must be string for encrypted field
+        hourlyRateIv: 'test_iv', // Add required encryption IV
+        hourlyRateTag: 'test_tag', // Add required encryption tag
         status: 'ACTIVE',
         startDate: new Date('2023-01-01'),
       },

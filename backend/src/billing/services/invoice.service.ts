@@ -4,7 +4,7 @@ import { TenantContextService } from '../../common/tenant-context.service';
 import { InvoiceCalculationService } from './invoice-calculation.service';
 import { BillingValidationService } from './billing-validation.service';
 import { Prisma, Invoice, InvoiceStatus } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 import {
   CreateInvoiceDto,
   UpdateInvoiceDto,

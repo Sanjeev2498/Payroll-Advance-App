@@ -16,7 +16,7 @@ import {
   PayrollItem,
   Prisma 
 } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from 'decimal.js';
 import { 
   PayrollRunFilterDto,
   PayrollRunApprovalDto,
@@ -28,6 +28,8 @@ import {
   PayrollProcessingError,
   PayrollRunWithDetails
 } from '../dto';
+import { getErrorMessage, getErrorStack, formatError } from '../../common/utils/error.util';
+
 
 @Injectable()
 export class PayrollRunManagementService {
@@ -367,7 +369,7 @@ export class PayrollRunManagementService {
     const validationResult = await this.payrollValidationService.validatePayrollRun(validationContext);
     
     if (!validationResult.isValid && !dto.skipErrors) {
-      const errorMessages = validationResult.errors.map(error => error.message).join('; ');
+      const errorMessages = validationResult.errors.map(error => getErrorMessage(error)).join('; ');
       throw new BadRequestException(`Payroll validation failed: ${errorMessages}`);
     }
 
@@ -450,7 +452,7 @@ export class PayrollRunManagementService {
         summary
       );
     } catch (error) {
-      this.logger.error(`Failed to send payroll notifications: ${error.message}`, error.stack);
+      this.logger.error(`Failed to send payroll notifications: ${getErrorMessage(error)}`, getErrorStack(error));
       // Don't throw - notifications shouldn't block payroll processing
     }
   }

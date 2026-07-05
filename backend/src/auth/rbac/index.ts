@@ -4,12 +4,16 @@ export { RbacService } from './rbac.service';
 export { RolePermissionsConfig } from './role-permissions.config';
 export {
   ResourceAuthorizationService,
+} from './resource-authorization.service';
+export type {
   ResourceAuthConfig,
   ResourceAuthContext,
   ResourceAuthConfigs,
 } from './resource-authorization.service';
 export {
   RbacUtilitiesService,
+} from './rbac-utilities.service';
+export type {
   PermissionValidationResult,
   DynamicPermissionRule,
   PermissionRuleContext,
@@ -31,7 +35,8 @@ export * from '../decorators/resource-owner.decorator';
 export * from '../decorators/resource-authorization.decorator';
 
 // Middleware
-export { TenantPermissionMiddleware, AuthenticatedRequest } from './tenant-permission.middleware';
+export { TenantPermissionMiddleware } from './tenant-permission.middleware';
+export type { AuthenticatedRequest } from './tenant-permission.middleware';
 
 // Re-export commonly used items from existing auth system
 export { JwtAuthGuard } from '../guards/jwt-auth.guard';

@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ============================================================================
@@ -73,8 +72,8 @@ model Client {
   contactEmail       String         @map("contact_email") @db.VarChar(255)
   contactInfo        Json?          @map("contact_info") @db.JsonB
   contractStatus     ContractStatus @default(ACTIVE) @map("contract_status")
-  contractStart      DateTime?      @map("contract_start") @db.Date
-  contractEnd        DateTime?      @map("contract_end") @db.Date
+  contractStart      DateTime?      @map("contract_start") @db.Timestamptz
+  contractEnd        DateTime?      @map("contract_end") @db.Timestamptz
   billingPreferences Json?          @map("billing_preferences") @db.JsonB
   createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz
@@ -213,8 +212,8 @@ model Employee {
   skills           String[]         @db.VarChar(50)
   metadata         Json?            @db.JsonB
   employmentStatus EmploymentStatus @default(ACTIVE) @map("employment_status")
-  hireDate         DateTime         @map("hire_date") @db.Date
-  terminationDate  DateTime?        @map("termination_date") @db.Date
+  hireDate         DateTime         @map("hire_date") @db.Timestamptz
+  terminationDate  DateTime?        @map("termination_date") @db.Timestamptz
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -263,8 +262,8 @@ model Assignment {
   hourlyRateTag    String           @map("hourly_rate_tag") @db.VarChar(32)
   
   status           AssignmentStatus @default(ACTIVE)
-  startDate        DateTime         @map("start_date") @db.Date
-  endDate          DateTime?        @map("end_date") @db.Date
+  startDate        DateTime         @map("start_date") @db.Timestamptz
+  endDate          DateTime?        @map("end_date") @db.Timestamptz
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
 

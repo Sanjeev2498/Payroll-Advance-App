@@ -17,6 +17,8 @@ import {
   SkillMatchingRequestDto,
 } from './dto';
 import { Assignment } from '@prisma/client';
+import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+
 
 @Injectable()
 export class AssignmentsService {
@@ -98,8 +100,9 @@ export class AssignmentsService {
 
       return assignment;
     } catch (error) {
-      this.logger.error(`Failed to create assignment: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create assignment: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
   /**
@@ -141,8 +144,9 @@ export class AssignmentsService {
       this.logger.log(`Found ${result.total} assignments`);
       return result;
     } catch (error) {
-      this.logger.error(`Failed to fetch assignments: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch assignments: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -223,8 +227,8 @@ export class AssignmentsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update assignment: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to update assignment: ${error.message}`);
+      this.logger.error(`Failed to update assignment: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to update assignment: ${getErrorMessage(error)}`);
     }
   }
   /**
@@ -245,8 +249,8 @@ export class AssignmentsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to cancel assignment: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to cancel assignment: ${error.message}`);
+      this.logger.error(`Failed to cancel assignment: ${getErrorMessage(error)}`, getErrorStack(error));
+      throw new BadRequestException(`Failed to cancel assignment: ${getErrorMessage(error)}`);
     }
   }
 
@@ -261,8 +265,9 @@ export class AssignmentsService {
       this.logger.log(`Found ${assignments.length} assignments for employee: ${employeeId}`);
       return assignments;
     } catch (error) {
-      this.logger.error(`Failed to find assignments for employee: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to find assignments for employee: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -277,8 +282,9 @@ export class AssignmentsService {
       this.logger.log(`Found ${assignments.length} assignments for site: ${siteId}`);
       return assignments;
     } catch (error) {
-      this.logger.error(`Failed to find assignments for site: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to find assignments for site: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -345,8 +351,9 @@ export class AssignmentsService {
       this.logger.log(`Generated ${response.recommendationsCount} recommendations for site: ${requestDto.siteId}`);
       return response;
     } catch (error) {
-      this.logger.error(`Failed to generate recommendations: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to generate recommendations: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
   /**
@@ -407,8 +414,9 @@ export class AssignmentsService {
       this.logger.log(`Conflict detection completed. Found ${conflicts.length} conflicts`);
       return result;
     } catch (error) {
-      this.logger.error(`Failed to detect conflicts: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to detect conflicts: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -432,8 +440,9 @@ export class AssignmentsService {
       this.logger.log('Successfully fetched assignment statistics', enhancedStats);
       return enhancedStats;
     } catch (error) {
-      this.logger.error(`Failed to fetch stats: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to fetch assignment statistics: ${error.message}`);
+      const errorInfo = formatError(error);
+      this.logger.error(`${errorInfo.message}`, errorInfo.stack);
+      throw new BadRequestException(`${errorInfo.message}`);
     }
   }
 
@@ -654,7 +663,7 @@ export class AssignmentsService {
         });
       }
     } catch (error) {
-      this.logger.error(`Failed to validate skill requirements: ${error.message}`);
+      this.logger.error(`Failed to validate skill requirements: ${getErrorMessage(error)}`);
     }
     
     return conflicts;
@@ -710,7 +719,7 @@ export class AssignmentsService {
         });
       }
     } catch (error) {
-      this.logger.error(`Failed to validate certification requirements: ${error.message}`);
+      this.logger.error(`Failed to validate certification requirements: ${getErrorMessage(error)}`);
     }
     
     return conflicts;
@@ -951,7 +960,7 @@ export class AssignmentsService {
 
       this.logger.log(`Workflow initiated for assignment: ${assignment.id}`);
     } catch (error) {
-      this.logger.error(`Workflow initiation failed for assignment ${assignment.id}: ${error.message}`);
+      this.logger.error(`Workflow initiation failed for assignment ${assignment.id}: ${getErrorMessage(error)}`);
       // Don't throw here - workflow failure shouldn't prevent assignment creation
     }
   }
@@ -978,7 +987,7 @@ export class AssignmentsService {
           break;
       }
     } catch (error) {
-      this.logger.error(`Status change handling failed for assignment ${assignment.id}: ${error.message}`);
+      this.logger.error(`Status change handling failed for assignment ${assignment.id}: ${getErrorMessage(error)}`);
       // Don't throw here - status change workflow failure shouldn't prevent the update
     }
   }
@@ -1000,7 +1009,7 @@ export class AssignmentsService {
 
       this.logger.log(`Cancellation workflow completed for assignment: ${assignment.id}`);
     } catch (error) {
-      this.logger.error(`Cancellation workflow failed for assignment ${assignment.id}: ${error.message}`);
+      this.logger.error(`Cancellation workflow failed for assignment ${assignment.id}: ${getErrorMessage(error)}`);
       // Don't throw here - workflow failure shouldn't prevent the cancellation
     }
   }

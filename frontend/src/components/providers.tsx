@@ -2,8 +2,9 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuthProvider } from '@/components/auth/auth-provider'
+import { validateAndCleanupAuthStorage } from '@/lib/utils/auth-cleanup'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -25,6 +26,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       })
   )
+
+  // Clean up any corrupted auth data on app startup
+  useEffect(() => {
+    validateAndCleanupAuthStorage()
+  }, [])
 
   return (
     <QueryClientProvider client={queryClient}>
