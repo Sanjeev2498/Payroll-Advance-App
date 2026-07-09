@@ -41,6 +41,7 @@ model User {
   passwordHash String    @map("password_hash") @db.VarChar(255)
   role         UserRole  @default(EMPLOYEE)
   isActive     Boolean   @default(true) @map("is_active")
+  settings     Json?     @db.JsonB
   lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
@@ -48,6 +49,7 @@ model User {
   // Relationships
   company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   shiftNotifications ShiftNotification[]
+  managedClients    Client[]            @relation("ClientAccountManager")
 
   @@index([companyId])
   @@map("users")
@@ -75,16 +77,41 @@ model Client {
   contractStart      DateTime?      @map("contract_start") @db.Timestamptz
   contractEnd        DateTime?      @map("contract_end") @db.Timestamptz
   billingPreferences Json?          @map("billing_preferences") @db.JsonB
+  
+  // Enhanced client management fields
+  industry                   String?  @db.VarChar(100)
+  companySize               String?  @map("company_size") @db.VarChar(50)
+  serviceLevelAgreement     Json?    @map("service_level_agreement") @db.JsonB
+  documentRequirements      Json?    @map("document_requirements") @db.JsonB
+  onboardingChecklist       Json?    @map("onboarding_checklist") @db.JsonB
+  renewalNotificationDays   Int?     @default(90) @map("renewal_notification_days")
+  autoRenewalEnabled        Boolean  @default(false) @map("auto_renewal_enabled")
+  tags                      String[] @db.VarChar(50)
+  accountManagerId          String?  @map("account_manager_id") @db.Uuid
+  
+  // Performance and relationship tracking
+  performanceMetrics        Json?    @map("performance_metrics") @db.JsonB
+  contractHistory          Json?     @map("contract_history") @db.JsonB
+  relationshipNotes        String?   @map("relationship_notes") @db.Text
+  lastContactDate          DateTime? @map("last_contact_date") @db.Timestamptz
+  nextFollowUpDate         DateTime? @map("next_follow_up_date") @db.Timestamptz
+  
   createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
   company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  accountManager User? @relation("ClientAccountManager", fields: [accountManagerId], references: [id], onDelete: SetNull)
   sites    Site[]
   invoices Invoice[]
+  clientDocuments ClientDocument[]
+  clientInteractions ClientInteraction[]
 
   @@index([companyId])
   @@index([companyId, contractStatus])
+  @@index([contractEnd])
+  @@index([accountManagerId])
+  @@index([tags])
   @@map("clients")
 }
 
@@ -586,4 +613,107 @@ model ShiftNotification {
   @@index([status])
   @@index([scheduledFor])
   @@map("shift_notifications")
+}
+
+// ============================================================================
+// CLIENT DOCUMENT AND INTERACTION MANAGEMENT
+// ============================================================================
+
+model ClientDocument {
+  id             String            @id @default(uuid()) @db.Uuid
+  clientId       String            @map("client_id") @db.Uuid
+  documentType   String            @map("document_type") @db.VarChar(100)
+  documentName   String            @map("document_name") @db.VarChar(255)
+  fileName       String            @map("file_name") @db.VarChar(255)
+  filePath       String            @map("file_path") @db.VarChar(500)
+  fileSize       Int               @map("file_size")
+  mimeType       String            @map("mime_type") @db.VarChar(100)
+  status         DocumentStatus    @default(PENDING)
+  version        Int               @default(1)
+  isRequired     Boolean           @default(false) @map("is_required")
+  expiryDate     DateTime?         @map("expiry_date") @db.Date
+  uploadedBy     String            @map("uploaded_by") @db.Uuid
+  reviewedBy     String?           @map("reviewed_by") @db.Uuid
+  reviewedAt     DateTime?         @map("reviewed_at") @db.Timestamptz
+  reviewNotes    String?           @map("review_notes") @db.Text
+  metadata       Json?             @db.JsonB
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([documentType])
+  @@index([status])
+  @@index([expiryDate])
+  @@map("client_documents")
+}
+
+enum DocumentStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+  ARCHIVED
+}
+
+model ClientInteraction {
+  id              String            @id @default(uuid()) @db.Uuid
+  clientId        String            @map("client_id") @db.Uuid
+  interactionType InteractionType
+  subject         String            @db.VarChar(255)
+  description     String            @db.Text
+  method          String            @db.VarChar(50) // EMAIL, PHONE, MEETING, etc.
+  participantIds  String[]          @map("participant_ids") @db.Uuid
+  scheduledAt     DateTime?         @map("scheduled_at") @db.Timestamptz
+  completedAt     DateTime?         @map("completed_at") @db.Timestamptz
+  outcome         String?           @db.Text
+  followUpDate    DateTime?         @map("follow_up_date") @db.Timestamptz
+  priority        InteractionPriority @default(NORMAL)
+  status          InteractionStatus @default(SCHEDULED)
+  metadata        Json?             @db.JsonB
+  attachments     Json?             @db.JsonB
+  createdBy       String            @map("created_by") @db.Uuid
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([interactionType])
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([priority])
+  @@map("client_interactions")
+}
+
+enum InteractionType {
+  ONBOARDING_CALL
+  REGULAR_CHECKIN
+  ISSUE_RESOLUTION
+  CONTRACT_RENEWAL
+  BILLING_DISCUSSION
+  PERFORMANCE_REVIEW
+  COMPLAINT_HANDLING
+  SERVICE_UPGRADE
+  TERMINATION_DISCUSSION
+  OTHER
+}
+
+enum InteractionPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum InteractionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
 }

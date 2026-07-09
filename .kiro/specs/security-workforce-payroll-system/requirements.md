@@ -61,7 +61,10 @@ The platform provides operations visibility, workforce monitoring, staffing gap 
 3. THE System SHALL track Site operational status and enable real-time monitoring of workforce deployment
 4. THE System SHALL maintain Site safety protocols, compliance requirements, and emergency contacts
 5. WHEN Site requirements change, THE System SHALL trigger workforce reallocation workflows
-
+6.THE System SHALL maintain required workforce strength, minimum staffing levels, and maximum staffing capacity for every Site.
+7.THE System SHALL calculate Site health based on Attendance, Assignment coverage, and operational incidents.
+8.THE System SHALL display Site staffing shortages and operational alerts in real time.
+9.THE System SHALL maintain Site supervisors, emergency contacts, and escalation workflows.
 ### Requirement 4: Employee Lifecycle Management
 
 **User Story:** As an HR manager, I want to manage employee records from hiring to termination, so that I can maintain compliance and optimize workforce utilization.
@@ -85,6 +88,10 @@ The platform provides operations visibility, workforce monitoring, staffing gap 
 3. THE System SHALL generate optimized Assignment recommendations based on proximity, skills, and preferences
 4. THE System SHALL track Assignment history and enable bulk Assignment modifications
 5. WHEN staffing gaps are detected, THE System SHALL generate alerts and suggest replacement options
+6.THE System SHALL provide a visual Deployment Board for workforce allocation.
+7.THE System SHALL support bulk Assignment and reassignment of Employees.
+8.THE System SHALL recommend replacement Employees when staffing gaps are detected.
+9.THE System SHALL maintain complete Assignment timelines and historical Deployment records.
 
 ### Requirement 6: Shift Management and Scheduling
 
@@ -109,6 +116,10 @@ The platform provides operations visibility, workforce monitoring, staffing gap 
 3. THE System SHALL detect Attendance anomalies including late arrivals, early departures, and missed shifts
 4. THE System SHALL enable Attendance corrections with supervisor approval and audit trails
 5. THE System SHALL generate real-time Attendance dashboards for operational monitoring
+6.THE System SHALL provide live Attendance dashboards for operational monitoring.
+7.THE System SHALL support GPS, QR Code, Biometric, NFC, and manual Attendance methods.
+8.THE System SHALL notify supervisors when Attendance anomalies are detected.
+9.THE System SHALL display Site-wise Attendance summaries and Shift coverage.
 
 ### Requirement 8: Payroll Processing Engine
 
@@ -205,3 +216,101 @@ The platform provides operations visibility, workforce monitoring, staffing gap 
 3. THE System SHALL enable integration with third-party systems including accounting software, HR systems, and payroll providers
 4. THE System SHALL implement API rate limiting, authentication, and monitoring for security and performance
 5. THE System SHALL provide data import/export capabilities in standard formats including CSV, Excel, and JSON
+
+
+Requirement 16: Deployment Operations Management
+
+User Story:
+As an Operations Manager, I want to monitor and manage workforce deployment across all client sites, so that every site is adequately staffed and operational issues are resolved quickly.
+
+Acceptance Criteria
+THE System SHALL provide a live Deployment Board displaying all active Sites and their current staffing status.
+THE System SHALL compare required workforce strength against assigned Employees for every Site.
+THE System SHALL identify staffing shortages, overstaffing, and vacant positions in real time.
+THE System SHALL recommend suitable replacement Employees based on skills, availability, location, and shift compatibility.
+WHEN deployment changes occur, THE System SHALL maintain complete Assignment history and Deployment timelines.
+
+Requirement 17: Enterprise Operations Command Center
+
+User Story:
+As an Operations Manager, I want a centralized operations dashboard, so that I can monitor the overall health of workforce operations and respond to issues immediately.
+
+Acceptance Criteria
+THE System SHALL display real-time operational metrics including Active Sites, Active Employees, Attendance Status, Payroll Status, and Billing Status.
+THE System SHALL display Site health indicators including staffing shortages, attendance anomalies, and operational alerts.
+THE System SHALL provide drill-down navigation from dashboard widgets to detailed operational views.
+THE System SHALL display pending approvals, compliance alerts, and operational notifications.
+THE System SHALL support role-based dashboard customization based on user responsibilities.
+
+
+Requirement 18: Employee Self-Service Portal
+User Story:
+As an Employee, I want to access my work-related information through a self-service portal, so that I can manage my daily work activities without depending on HR.
+
+Acceptance Criteria
+THE Employee SHALL view personal profile information and assigned Sites.
+THE Employee SHALL view Attendance history, Shift schedules, and Leave balances.
+THE Employee SHALL download Payslips and payroll history.
+THE Employee SHALL submit Leave requests and update permitted profile information.
+THE System SHALL notify Employees regarding Assignment changes, Payroll completion, and important announcements.
+
+Requirement 19: Client Self-Service Portal
+
+User Story:
+As a Client, I want secure access to operational information related to my Sites, so that I can monitor service delivery and communicate with the service provider efficiently.
+
+Acceptance Criteria
+THE Client SHALL view deployed Employees assigned to their Sites.
+THE Client SHALL monitor Attendance, Shift coverage, and Site operational status.
+THE Client SHALL download Invoices, Reports, and Deployment summaries.
+THE Client SHALL raise complaints, service requests, and replacement requests.
+THE System SHALL restrict Clients to accessing only their own Sites and business data.
+
+Requirement 20: Asset Management
+
+User Story:
+As an Operations Manager, I want to manage company-issued assets, so that all equipment assigned to Employees is properly tracked throughout its lifecycle.
+
+Acceptance Criteria
+THE System SHALL maintain an inventory of company-issued assets.
+THE System SHALL assign assets to Employees with issue and return records.
+THE System SHALL track asset condition, maintenance history, and replacement history.
+THE System SHALL generate alerts for overdue asset returns and damaged assets.
+THE System SHALL maintain a complete audit trail of all asset transactions.
+
+Requirement 21: Incident Management
+
+User Story:
+As a Site Supervisor, I want to report and manage operational incidents, so that issues are documented, investigated, and resolved efficiently.
+
+Acceptance Criteria
+THE System SHALL allow authorized users to create Incident reports for Sites and Employees.
+THE System SHALL support Incident categorization, severity levels, and evidence attachments.
+THE System SHALL assign Incidents to responsible personnel for investigation.
+THE System SHALL maintain Incident status, investigation history, and resolution records.
+THE System SHALL notify relevant stakeholders whenever critical Incidents are reported or updated.
+
+Requirement 22: Operations Reporting
+(This replaces the reporting part of your current Requirement 11.)
+
+User Story:
+As a Business Manager, I want comprehensive operational reports, so that I can evaluate workforce performance and business operations.
+
+Acceptance Criteria
+THE System SHALL generate Attendance reports by Employee, Site, Shift, and Company.
+THE System SHALL generate Payroll reports including salary summaries and statutory deductions.
+THE System SHALL generate Client Billing reports and revenue summaries.
+THE System SHALL support report filtering by date range, Site, Client, Employee, Department, and Shift.
+THE System SHALL export reports in PDF, Excel, and CSV formats.
+
+Requirement 23: Business Analytics (Future Enhancement)
+
+User Story:
+As a Business Executive, I want advanced analytics and forecasting, so that I can optimize workforce planning and improve business performance.
+
+Acceptance Criteria
+THE System SHALL analyze historical Attendance and Payroll data to identify operational trends.
+THE System SHALL generate workforce utilization and Site profitability insights.
+THE System SHALL provide predictive staffing recommendations based on historical demand.
+THE System SHALL provide executive dashboards with configurable KPIs and trend analysis.
+THE System SHALL support future AI-powered workforce planning and business forecasting.

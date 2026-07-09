@@ -10,3 +10,7 @@ export * from './resolve-conflict.dto';
 export * from './optimize-deployments.dto';
 export * from './assignment-recommendations.dto';
 export * from './site-health.dto';
+export * from './muster-roll.dto';
+export * from './deployment-timeline.dto';
+export * from './coverage-matrix.dto';
+export * from './vacancy-tracking.dto';

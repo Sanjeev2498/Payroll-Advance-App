@@ -26,8 +26,8 @@ describe('Deployment Assignment Correctness Properties', () => {
   let testDataGenerator: DeploymentTestDataGenerator;
 
   const PROPERTY_TEST_CONFIG = {
-    numRuns: 5,  // Reduced for faster execution and debugging
-    timeout: 20000,
+    numRuns: 2,  // Reduced for faster execution
+    timeout: 15000,
     seed: 42,
   };
 

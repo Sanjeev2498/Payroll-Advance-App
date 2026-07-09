@@ -24,50 +24,107 @@ const navigation: NavigationItem[] = [
     icon: '📊',
     description: 'Overview and metrics',
   },
+  
+  // ADMIN-ONLY SECTIONS
   {
     name: 'Clients',
     href: '/dashboard/clients',
     icon: '🏢',
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN'],
     description: 'Client management',
   },
   {
     name: 'Sites',
     href: '/dashboard/sites', 
     icon: '📍',
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN'],
     description: 'Site operations',
   },
   {
     name: 'Employees',
     href: '/dashboard/employees',
     icon: '👥',
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'SUPERVISOR'],
     description: 'Workforce management',
   },
+  
+  // SUPERVISOR & ADMIN SECTIONS
   {
     name: 'Assignments',
     href: '/dashboard/assignments',
     icon: '📋',
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'SUPERVISOR'],
     description: 'Work assignments',
   },
   {
     name: 'Attendance',
     href: '/dashboard/attendance',
     icon: '⏰',
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'SUPERVISOR'],
     description: 'Time tracking',
   },
+  
+  // ADMIN-ONLY FINANCIAL SECTIONS
   {
     name: 'Payroll',
     href: '/dashboard/payroll',
     icon: '💰',
-    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'],
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN'],
     description: 'Salary processing',
+  },
+  {
+    name: 'Billing',
+    href: '/dashboard/billing',
+    icon: '🧾',
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+    description: 'Client billing & invoicing',
+  },
+  {
+    name: 'Financial',
+    href: '/dashboard/financial',
+    icon: '📊',
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+    description: 'Financial reports & analytics',
   },
   {
     name: 'Reports',
     href: '/dashboard/reports',
     icon: '📈',
-    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'],
+    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'SUPERVISOR'],
     description: 'Analytics & reports',
   },
+  
+  // GUARD/EMPLOYEE-ONLY SECTIONS
+  {
+    name: 'My Schedule',
+    href: '/dashboard/my-schedule',
+    icon: '📅',
+    requiredRoles: ['EMPLOYEE'],
+    description: 'Your shifts and assignments',
+  },
+  {
+    name: 'My Attendance',
+    href: '/dashboard/my-attendance',
+    icon: '🕐',
+    requiredRoles: ['EMPLOYEE'],
+    description: 'Clock in/out and history',
+  },
+  {
+    name: 'My Payslips',
+    href: '/dashboard/my-payslips',
+    icon: '💳',
+    requiredRoles: ['EMPLOYEE'],
+    description: 'Salary slips and history',
+  },
+  {
+    name: 'My Profile',
+    href: '/dashboard/profile',
+    icon: '👤',
+    requiredRoles: ['EMPLOYEE'],
+    description: 'Personal information',
+  },
+  
+  // ADMIN-ONLY SYSTEM SECTIONS
   {
     name: 'Settings',
     href: '/dashboard/settings',
@@ -163,7 +220,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto sidebar-scroll">
         {navigation.map((item) => (
           <NavigationItem key={item.name} item={item} />
         ))}

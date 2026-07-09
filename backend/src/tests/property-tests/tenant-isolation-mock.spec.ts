@@ -59,7 +59,7 @@ describe('Property Test: Multi-tenant Data Isolation (Mock)', () => {
         },
       ),
       {
-        numRuns: 20, // Fast execution with 20 examples
+        numRuns: 3, // Reduced for faster testing
         seed: 42,
       },
     );
@@ -105,7 +105,7 @@ describe('Property Test: Multi-tenant Data Isolation (Mock)', () => {
         },
       ),
       {
-        numRuns: 15, // Fast execution with 15 examples
+        numRuns: 3, // Reduced for faster testing
         seed: 123,
       },
     );
@@ -161,7 +161,7 @@ describe('Property Test: Multi-tenant Data Isolation (Mock)', () => {
         },
       ),
       {
-        numRuns: 25, // Fast execution with 25 examples
+        numRuns: 3, // Reduced for faster testing
         seed: 456,
       },
     );

@@ -76,14 +76,24 @@ export interface Assignment {
 
 export interface Shift {
   id: string
-  assignmentId: string
+  assignmentId?: string | null
   siteId: string
+  templateId?: string | null
   shiftDate: string
   startTime: string
   endTime: string
-  shiftType: 'REGULAR' | 'OVERTIME' | 'HOLIDAY'
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  shiftType: 'REGULAR' | 'OVERTIME' | 'HOLIDAY' | 'EMERGENCY'
+  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NEEDS_COVERAGE'
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
+  isRecurring: boolean
+  recurringPattern?: Record<string, any>
+  coverageRequired: number
+  coverageAssigned: number
+  skillRequirements?: string[] | Record<string, any>
+  shiftRequirements?: Record<string, any>
+  breakSchedule?: Record<string, any>
   notes: Record<string, any>
+  modificationLog?: Array<Record<string, any>>
   createdAt: string
   updatedAt: string
   
@@ -214,13 +224,21 @@ export interface Invoice {
 }
 
 // User management
+export enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  COMPANY_ADMIN = 'COMPANY_ADMIN',
+  MANAGER = 'MANAGER',
+  SUPERVISOR = 'SUPERVISOR',
+  EMPLOYEE = 'EMPLOYEE',
+}
+
 export interface User {
   id: string
   companyId: string
   email: string
   firstName: string
   lastName: string
-  role: 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'MANAGER' | 'SUPERVISOR' | 'EMPLOYEE'
+  role: UserRole
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
   lastLoginAt?: string
   createdAt: string

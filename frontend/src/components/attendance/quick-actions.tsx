@@ -176,7 +176,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         {/* Quick Filter Actions */}
         <div>
           <Label className="text-sm font-medium mb-2 block">Quick Filters</Label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {quickFilterActions.map((action) => {
               const Icon = action.icon
               return (
@@ -185,12 +185,12 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => handleQuickFilter(action.id)}
-                  className={`flex items-center gap-2 h-auto p-3 ${action.color}`}
+                  className={`flex items-center gap-2 h-auto p-2 text-left justify-start ${action.color}`}
                 >
-                  <Icon className="h-4 w-4" />
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm font-medium">{action.label}</span>
-                    <span className="text-xs opacity-75">{action.description}</span>
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <div className="flex flex-col items-start min-w-0 flex-1">
+                    <span className="text-sm font-medium truncate w-full">{action.label}</span>
+                    <span className="text-xs opacity-75 truncate w-full">{action.description}</span>
                   </div>
                 </Button>
               )

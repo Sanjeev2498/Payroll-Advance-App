@@ -13,7 +13,19 @@ import {
   ResolveConflictDto,
   OptimizeDeploymentsDto,
   AssignmentRecommendationsDto,
-  SiteHealthDto
+  SiteHealthDto,
+  MusterRollDto,
+  GenerateMusterRollDto,
+  DeploymentTimelineDto,
+  GetDeploymentTimelineDto,
+  AssignmentHistoryDto,
+  CoverageAnalysisDto,
+  GetCoverageMatrixDto,
+  VacancyAnalyticsDto,
+  VacancyDto,
+  CreateVacancyDto,
+  UpdateVacancyStatusDto,
+  VacancyAlertDto
 } from './dto';
 
 @Injectable()

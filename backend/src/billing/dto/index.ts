@@ -4,3 +4,4 @@ export * from './billing-calculation.dto';
 export * from './gst-calculation.dto';
 export * from './invoice-filter.dto';
 export * from './invoice-response.dto';
+export * from './financial-reports.dto';

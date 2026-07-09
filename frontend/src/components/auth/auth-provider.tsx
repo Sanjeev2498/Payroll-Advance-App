@@ -38,7 +38,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await authApi.refreshToken()
       if (user) {
-        setAuth(user, response.accessToken)
+        setAuth(user, response.accessToken, response.refreshToken)
       }
     } catch (error) {
       console.error('Token refresh failed:', error)

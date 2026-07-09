@@ -34,6 +34,9 @@ import {
   ClientResponseDto,
   ClientListResponseDto,
   ClientStatsResponseDto,
+  ClientPerformanceMetricsDto,
+  OnboardingStatusDto,
+  ContractRenewalInfoDto,
   ContractStatus,
 } from './dto';
 
@@ -332,5 +335,121 @@ export class ClientsController {
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
     };
+  }
+
+  @Get(':id/performance')
+  @RequirePermissions(ClientPermissions.READ_CLIENT)
+  @ApiOperation({
+    summary: 'Get client performance metrics',
+    description: 'Retrieve detailed performance metrics and KPIs for a specific client',
+  })
+  @ApiParam({ name: 'id', description: 'Client UUID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Client performance metrics',
+    type: ClientPerformanceMetricsDto,
+  })
+  async getPerformanceMetrics(@Param('id', ParseUUIDPipe) id: string) {
+    this.logger.log(`GET /clients/${id}/performance - Fetching performance metrics`);
+    return await this.clientsService.getClientPerformanceMetrics(id);
+  }
+
+  @Get(':id/renewal')
+  @RequirePermissions(ClientPermissions.READ_CLIENT)
+  @ApiOperation({
+    summary: 'Get contract renewal information',
+    description: 'Retrieve contract renewal status and recommendations for a client',
+  })
+  @ApiParam({ name: 'id', description: 'Client UUID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Contract renewal information',
+    type: ContractRenewalInfoDto,
+  })
+  async getContractRenewalInfo(@Param('id', ParseUUIDPipe) id: string) {
+    this.logger.log(`GET /clients/${id}/renewal - Fetching renewal info`);
+    return await this.clientsService.getContractRenewalInfo(id);
+  }
+
+  @Get(':id/onboarding')
+  @RequirePermissions(ClientPermissions.READ_CLIENT)
+  @ApiOperation({
+    summary: 'Get client onboarding status',
+    description: 'Retrieve onboarding progress and checklist status for a client',
+  })
+  @ApiParam({ name: 'id', description: 'Client UUID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Onboarding status',
+    type: OnboardingStatusDto,
+  })
+  async getOnboardingStatus(@Param('id', ParseUUIDPipe) id: string) {
+    this.logger.log(`GET /clients/${id}/onboarding - Fetching onboarding status`);
+    return await this.clientsService.getOnboardingStatus(id);
+  }
+
+  @Get(':id/dashboard')
+  @RequirePermissions(ClientPermissions.READ_CLIENT)
+  @ApiOperation({
+    summary: 'Get comprehensive client dashboard data',
+    description: 'Retrieve all client information including metrics, renewal info, and onboarding status',
+  })
+  @ApiParam({ name: 'id', description: 'Client UUID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Comprehensive client dashboard data',
+  })
+  async getClientDashboard(@Param('id', ParseUUIDPipe) id: string) {
+    this.logger.log(`GET /clients/${id}/dashboard - Fetching dashboard data`);
+    return await this.clientsService.getClientDashboard(id);
+  }
+
+  @Patch(':id/notes')
+  @RequirePermissions(ClientPermissions.UPDATE_CLIENT)
+  @ApiOperation({
+    summary: 'Update client relationship notes',
+    description: 'Add or update relationship notes and contact history for a client',
+  })
+  @ApiParam({ name: 'id', description: 'Client UUID' })
+  @ApiBody({ 
+    schema: { 
+      type: 'object', 
+      properties: { 
+        notes: { type: 'string', description: 'Relationship notes' }
+      },
+      required: ['notes']
+    } 
+  })
+  async updateRelationshipNotes(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('notes') notes: string,
+  ) {
+    this.logger.log(`PATCH /clients/${id}/notes - Updating relationship notes`);
+    return await this.clientsService.updateRelationshipNotes(id, notes);
+  }
+
+  @Post(':id/follow-up')
+  @RequirePermissions(ClientPermissions.UPDATE_CLIENT)
+  @ApiOperation({
+    summary: 'Schedule client follow-up',
+    description: 'Schedule next follow-up date and add notes for client relationship management',
+  })
+  @ApiParam({ name: 'id', description: 'Client UUID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        followUpDate: { type: 'string', format: 'date-time', description: 'Follow-up date' },
+        notes: { type: 'string', description: 'Follow-up notes' },
+      },
+      required: ['followUpDate'],
+    },
+  })
+  async scheduleFollowUp(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { followUpDate: string; notes?: string },
+  ) {
+    this.logger.log(`POST /clients/${id}/follow-up - Scheduling follow-up`);
+    return await this.clientsService.scheduleFollowUp(id, new Date(body.followUpDate), body.notes);
   }
 }

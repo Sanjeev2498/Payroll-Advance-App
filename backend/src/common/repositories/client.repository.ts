@@ -74,6 +74,17 @@ export class ClientRepository extends TenantAwareRepository {
               },
             },
           },
+          invoices: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              totalAmount: true,
+              status: true,
+              dueDate: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+          },
         },
       }),
     );
@@ -337,5 +348,117 @@ export class ClientRepository extends TenantAwareRepository {
     }
 
     return conditions.length > 0 ? { AND: conditions } : {};
+  }
+
+  /**
+   * Get client performance metrics
+   */
+  async getClientPerformanceMetrics(clientId: string): Promise<{
+    serviceQualityScore: number;
+    paymentTimelinessScore: number;
+    contractComplianceScore: number;
+    satisfactionRating: number;
+    complaintsThisYear: number;
+    escalationsThisYear: number;
+    avgResponseTime: number;
+  }> {
+    this.logOperation('METRICS', 'Client', clientId);
+
+    // For now, return mock data since the interaction and document models aren't available yet
+    return {
+      serviceQualityScore: 8.5,
+      paymentTimelinessScore: 9.0,
+      contractComplianceScore: 8.8,
+      satisfactionRating: 4.2,
+      complaintsThisYear: 0,
+      escalationsThisYear: 0,
+      avgResponseTime: 2.5,
+    };
+  }
+
+  /**
+   * Get contract renewal information
+   */
+  async getContractRenewalInfo(clientId: string): Promise<{
+    daysUntilExpiry: number;
+    renewalStatus: string;
+    notificationSent: boolean;
+    lastDiscussionDate?: Date;
+    renewalProbability: number;
+  }> {
+    this.logOperation('RENEWAL', 'Client', clientId);
+
+    const client = await this.findById(clientId);
+    if (!client || !client.contractEnd) {
+      throw new Error('Client not found or no contract end date');
+    }
+
+    const now = new Date();
+    const contractEnd = new Date(client.contractEnd);
+    const daysUntilExpiry = Math.ceil((contractEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Determine renewal status
+    let renewalStatus = 'NOT_STARTED';
+    if (daysUntilExpiry <= 90 && daysUntilExpiry > 60) {
+      renewalStatus = 'PENDING_REVIEW';
+    } else if (daysUntilExpiry <= 60 && daysUntilExpiry > 30) {
+      renewalStatus = 'IN_DISCUSSION';
+    } else if (daysUntilExpiry <= 30) {
+      renewalStatus = 'URGENT';
+    }
+
+    return {
+      daysUntilExpiry,
+      renewalStatus,
+      notificationSent: daysUntilExpiry <= 90, // Default notification threshold
+      renewalProbability: 8, // Default probability score
+    };
+  }
+
+  /**
+   * Get onboarding status for a client
+   */
+  async getOnboardingStatus(clientId: string): Promise<{
+    completionPercentage: number;
+    completedItems: number;
+    totalItems: number;
+    documentsCollected: number;
+    documentsRequired: number;
+    status: string;
+    expectedCompletion?: Date;
+  }> {
+    this.logOperation('ONBOARDING', 'Client', clientId);
+
+    const client = await this.findById(clientId);
+    if (!client) {
+      throw new Error('Client not found');
+    }
+
+    // For now, return mock data since document management models aren't available yet
+    const totalItems = 5;
+    const completedItems = client.contractStatus === 'ACTIVE' ? 5 : 2;
+    const completionPercentage = Math.round((completedItems / totalItems) * 100);
+
+    let status = 'NOT_STARTED';
+    if (completionPercentage > 0 && completionPercentage < 100) {
+      status = 'IN_PROGRESS';
+    } else if (completionPercentage === 100) {
+      status = 'COMPLETED';
+    }
+
+    // Calculate expected completion (30 days from contract start by default)
+    const expectedCompletion = client.contractStart 
+      ? new Date(new Date(client.contractStart).getTime() + (30 * 24 * 60 * 60 * 1000))
+      : undefined;
+
+    return {
+      completionPercentage,
+      completedItems,
+      totalItems,
+      documentsCollected: client.contractStatus === 'ACTIVE' ? 4 : 1,
+      documentsRequired: 4,
+      status,
+      expectedCompletion,
+    };
   }
 }

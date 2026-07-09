@@ -18,10 +18,11 @@ interface User {
 interface AuthState {
   user: User | null
   token: string | null
+  refreshToken: string | null
   isAuthenticated: boolean
   
   // Actions
-  setAuth: (user: User, token: string) => void
+  setAuth: (user: User, token: string, refreshToken: string) => void
   logout: () => void
   updateUser: (user: Partial<User>) => void
   validateStoredAuth: () => void
@@ -54,12 +55,14 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       token: null,
+      refreshToken: null,
       isAuthenticated: false,
 
-      setAuth: (user, token) => {
+      setAuth: (user, token, refreshToken) => {
         console.log('🔍 Auth Store - setAuth called with:', { 
           user: user ? { id: user.id, email: user.email } : 'NO_USER', 
           token: token ? 'TOKEN_PROVIDED' : 'NO_TOKEN',
+          refreshToken: refreshToken ? 'REFRESH_TOKEN_PROVIDED' : 'NO_REFRESH_TOKEN',
           tokenLength: token ? token.length : 0
         })
         
@@ -75,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user,
           token,
+          refreshToken,
           isAuthenticated: true,
         })
         
@@ -90,6 +94,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: newState.isAuthenticated,
           hasUser: !!newState.user,
           hasToken: !!newState.token,
+          hasRefreshToken: !!newState.refreshToken,
           userEmail: newState.user?.email || 'NO_EMAIL'
         })
       },
@@ -106,6 +111,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: null,
           token: null,
+          refreshToken: null,
           isAuthenticated: false,
         })
         
@@ -145,6 +151,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         token: state.token,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {

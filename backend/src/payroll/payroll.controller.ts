@@ -327,6 +327,82 @@ export class PayrollController {
     };
   }
 
+  @Get('analytics')
+  @ApiOperation({ 
+    summary: 'Get general payroll analytics',
+    description: 'Get overview analytics for payroll operations dashboard'
+  })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Payroll analytics retrieved successfully' 
+  })
+  @RequirePermissions(PayrollPermissions.READ_PAYROLL)
+  async getPayrollAnalytics() {
+    // Mock data for now - would be implemented with actual database queries
+    const analytics = {
+      totalEmployees: 3,
+      monthlyPayroll: 475000,
+      pendingApprovals: 1,
+      avgProcessingTime: '2.5'
+    };
+
+    return {
+      success: true,
+      data: analytics,
+    };
+  }
+
+  @Get('analytics/detailed')
+  @ApiOperation({ 
+    summary: 'Get detailed payroll analytics',
+    description: 'Get comprehensive analytics with trends and breakdowns'
+  })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Detailed payroll analytics retrieved successfully' 
+  })
+  @RequirePermissions(PayrollPermissions.READ_PAYROLL)
+  async getDetailedPayrollAnalytics(
+    @Query('period') period: string = '6months'
+  ) {
+    // Mock data for now - would be implemented with actual database queries
+    const detailedAnalytics = {
+      overview: {
+        totalPayrollThisMonth: 475000,
+        totalPayrollLastMonth: 450000,
+        employeeCount: 3,
+        avgSalaryPerEmployee: 158333,
+        growthPercentage: 5.6
+      },
+      trends: [
+        { month: 'Oct 2024', totalPayroll: 420000, employeeCount: 3, avgSalary: 140000 },
+        { month: 'Nov 2024', totalPayroll: 435000, employeeCount: 3, avgSalary: 145000 },
+        { month: 'Dec 2024', totalPayroll: 450000, employeeCount: 3, avgSalary: 150000 },
+        { month: 'Jan 2024', totalPayroll: 475000, employeeCount: 3, avgSalary: 158333 }
+      ],
+      departmentBreakdown: [
+        { department: 'Security Operations', totalPayroll: 285000, employeeCount: 2, percentage: 60 },
+        { department: 'Administration', totalPayroll: 190000, employeeCount: 1, percentage: 40 }
+      ],
+      costBreakdown: {
+        basicSalary: 380000,
+        overtime: 71250,
+        bonuses: 23750,
+        deductions: 95000
+      },
+      topExpenses: [
+        { category: 'Basic Salary', amount: 380000, percentage: 80 },
+        { category: 'Overtime Pay', amount: 71250, percentage: 15 },
+        { category: 'Bonuses', amount: 23750, percentage: 5 }
+      ]
+    };
+
+    return {
+      success: true,
+      data: detailedAnalytics,
+    };
+  }
+
   /**
    * Helper method to calculate item breakdown from payroll items
    */

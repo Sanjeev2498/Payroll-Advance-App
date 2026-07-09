@@ -141,8 +141,8 @@ export default function RegisterPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="companyName" required>
-                    Company Name
+                  <Label htmlFor="companyName">
+                    Company Name *
                   </Label>
                   <Input
                     id="companyName"
@@ -165,8 +165,8 @@ export default function RegisterPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName" required>
-                      First Name
+                    <Label htmlFor="firstName">
+                      First Name *
                     </Label>
                     <Input
                       id="firstName"
@@ -180,8 +180,8 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="lastName" required>
-                      Last Name
+                    <Label htmlFor="lastName">
+                      Last Name *
                     </Label>
                     <Input
                       id="lastName"
@@ -196,8 +196,8 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" required>
-                    Email Address
+                  <Label htmlFor="email">
+                    Email Address *
                   </Label>
                   <Input
                     id="email"
@@ -212,8 +212,8 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone" required>
-                    Phone Number
+                  <Label htmlFor="phone">
+                    Phone Number *
                   </Label>
                   <Input
                     id="phone"
@@ -235,8 +235,8 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" required>
-                    Password
+                  <Label htmlFor="password">
+                    Password *
                   </Label>
                   <Input
                     id="password"
@@ -254,8 +254,8 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" required>
-                    Confirm Password
+                  <Label htmlFor="confirmPassword">
+                    Confirm Password *
                   </Label>
                   <Input
                     id="confirmPassword"

@@ -2,7 +2,8 @@
 
 import { useAuthPermissions } from '@/components/auth/protected-route'
 import { EmployeeDashboard } from './employee-dashboard'
-import { SupervisorDashboard } from './supervisor-dashboard'
+import { SupervisorDashboard as SupervisorOperationsDashboard } from './supervisor-dashboard'
+import { SupervisorDashboard } from '@/components/supervisor/supervisor-dashboard'
 import { AdminDashboard } from './admin-dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -33,8 +34,12 @@ export function RoleBasedDashboard({ className }: RoleBasedDashboardProps) {
     return <AdminDashboard className={className} />
   }
 
-  if (hasRole(['MANAGER', 'SUPERVISOR'])) {
+  if (hasRole(['SUPERVISOR'])) {
     return <SupervisorDashboard className={className} />
+  }
+
+  if (hasRole(['MANAGER'])) {
+    return <SupervisorOperationsDashboard className={className} />
   }
 
   if (hasRole(['EMPLOYEE'])) {

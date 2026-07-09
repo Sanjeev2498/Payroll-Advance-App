@@ -1,9 +1,8 @@
 'use client'
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import { RoleSpecificSidebar } from '@/components/layout/role-specific-sidebar'
+import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
-import { useAppStore } from '@/stores/app-store'
 import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({
@@ -11,14 +10,12 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { sidebarCollapsed } = useAppStore()
-
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-gray-100">
         {/* Desktop sidebar - hidden on mobile */}
         <div className="hidden lg:block">
-          <RoleSpecificSidebar />
+          <Sidebar />
         </div>
         
         <div className="flex flex-col flex-1 overflow-hidden">

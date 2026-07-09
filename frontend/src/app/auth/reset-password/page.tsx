@@ -245,8 +245,8 @@ function ResetPasswordContent() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="password" required>
-                  New Password
+                <Label htmlFor="password">
+                  New Password *
                 </Label>
                 <Input
                   id="password"
@@ -262,8 +262,8 @@ function ResetPasswordContent() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" required>
-                  Confirm New Password
+                <Label htmlFor="confirmPassword">
+                  Confirm New Password *
                 </Label>
                 <Input
                   id="confirmPassword"

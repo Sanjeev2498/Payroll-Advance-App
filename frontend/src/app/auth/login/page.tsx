@@ -91,8 +91,8 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" required>
-                  Email address
+                <Label htmlFor="email">
+                  Email address *
                 </Label>
                 <Input
                   id="email"
@@ -107,8 +107,8 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" required>
-                  Password
+                <Label htmlFor="password">
+                  Password *
                 </Label>
                 <Input
                   id="password"

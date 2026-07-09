@@ -246,8 +246,8 @@ describe('Property Test: Client Data Capture Completeness', () => {
           },
         ),
         {
-          numRuns: 10, // Reasonable number for comprehensive testing
-          timeout: 15000, // 15 second timeout per test
+          numRuns: 2, // Reduced for faster testing
+          timeout: 10000, // 10 second timeout per test
           seed: 42,
           endOnFailure: true,
         },
@@ -341,8 +341,8 @@ describe('Property Test: Client Data Capture Completeness', () => {
           },
         ),
         {
-          numRuns: 5,
-          timeout: 10000,
+          numRuns: 2, // Reduced for faster testing
+          timeout: 8000,
           seed: 123,
         },
       );

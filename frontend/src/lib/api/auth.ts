@@ -70,8 +70,30 @@ export const authApi = {
   },
 
   refreshToken: async (): Promise<RefreshTokenResponse> => {
-    const response = await apiClient.post<{ success: boolean; data: RefreshTokenResponse }>('/auth/refresh')
-    return response.data.data!
+    // Get refresh token from storage
+    let refreshToken: string | null = null
+    
+    if (typeof window !== 'undefined') {
+      try {
+        const authStorage = localStorage.getItem('auth-storage')
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage)
+          refreshToken = parsed.state?.refreshToken || null
+        }
+      } catch (error) {
+        console.error('Failed to get refresh token from storage:', error)
+        throw new Error('No refresh token found')
+      }
+    }
+    
+    if (!refreshToken) {
+      throw new Error('No refresh token available')
+    }
+    
+    const response = await apiClient.post<RefreshTokenResponse>('/auth/refresh', {
+      refreshToken: refreshToken
+    })
+    return response.data
   },
 
   getProfile: async (): Promise<User> => {

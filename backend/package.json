@@ -34,6 +34,8 @@
     "rls:validate": "node -e \"require('./scripts/setup-rls.js')().then(() => require('./scripts/test-rls.js')())\"",
     "test:property": "jest --testPathPattern=property-tests --verbose",
     "test:property-fast": "jest --testPathPattern=property-tests --verbose --runInBand",
+    "test:payroll-dashboard": "jest --testPathPattern=\"payroll-dashboard-accuracy\\.property\\.spec\\.ts$\" --verbose",
+    "test:payroll-properties": "jest --testPathPattern=\"payroll.*\\.property\\.spec\\.ts$\" --verbose",
     "ci:lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "ci:test": "jest --ci --coverage --watchAll=false",
     "ci:test-property": "jest --testPathPattern=property-tests --ci --watchAll=false",

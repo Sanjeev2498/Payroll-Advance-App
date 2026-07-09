@@ -56,7 +56,7 @@ export function useAuth(): {
         }
         
         console.log('🎉 Login Success - Setting auth state...')
-        setAuth(user, tokens.accessToken)
+        setAuth(user, tokens.accessToken, tokens.refreshToken)
         console.log('🎉 Login Success - Auth state set, updating query cache...')
         queryClient.setQueryData(queryKeys.profile(), user)
         
@@ -161,7 +161,7 @@ export function useAuth(): {
       // Update token in store
       const currentUser = useAuthStore.getState().user
       if (currentUser) {
-        setAuth(currentUser, response.accessToken)
+        setAuth(currentUser, response.accessToken, response.refreshToken)
       }
     },
     onError: () => {

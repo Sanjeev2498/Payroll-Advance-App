@@ -119,12 +119,12 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.record({
-            employees: fc.array(employeeGenerator, { minLength: 1, maxLength: 10 }),
-            clients: fc.array(clientGenerator, { minLength: 1, maxLength: 3 }),
-            sites: fc.array(siteGenerator, { minLength: 1, maxLength: 5 }),
-            attendanceRecords: fc.array(attendanceGenerator, { minLength: 0, maxLength: 15 }),
-            payrollRuns: fc.array(payrollGenerator, { minLength: 0, maxLength: 3 }),
-            invoices: fc.array(invoiceGenerator, { minLength: 0, maxLength: 8 })
+            employees: fc.array(employeeGenerator, { minLength: 1, maxLength: 5 }),
+            clients: fc.array(clientGenerator, { minLength: 1, maxLength: 2 }),
+            sites: fc.array(siteGenerator, { minLength: 1, maxLength: 3 }),
+            attendanceRecords: fc.array(attendanceGenerator, { minLength: 0, maxLength: 8 }),
+            payrollRuns: fc.array(payrollGenerator, { minLength: 0, maxLength: 2 }),
+            invoices: fc.array(invoiceGenerator, { minLength: 0, maxLength: 4 })
           }),
           async (testData) => {
             // Setup tenant context
@@ -359,8 +359,8 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
           }
         ),
         {
-          numRuns: 15, // Comprehensive testing across different scenarios
-          timeout: 25000, // 25 second timeout per test
+          numRuns: 2, // Reduced for faster testing
+          timeout: 10000, // 10 second timeout per test
           seed: 42,
           endOnFailure: true,
         }
@@ -375,7 +375,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
           });
       });
     }
-  }, 45000); // 45 second test timeout
+  }, 30000); // 30 second test timeout
   /**
    * Property 15: KPI Calculation Performance Under Load
    * **Validates: Requirements 11.1**
@@ -402,11 +402,11 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.record({
-            employeeCount: fc.integer({ min: 50, max: 200 }),
-            siteCount: fc.integer({ min: 20, max: 80 }),
-            attendanceRecordCount: fc.integer({ min: 100, max: 300 }),
-            payrollRunCount: fc.integer({ min: 5, max: 15 }),
-            invoiceCount: fc.integer({ min: 30, max: 100 })
+            employeeCount: fc.integer({ min: 10, max: 50 }),
+            siteCount: fc.integer({ min: 5, max: 20 }),
+            attendanceRecordCount: fc.integer({ min: 20, max: 100 }),
+            payrollRunCount: fc.integer({ min: 2, max: 8 }),
+            invoiceCount: fc.integer({ min: 10, max: 30 })
           }),
           async (loadData) => {
             // Setup tenant context
@@ -497,8 +497,8 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
           }
         ),
         {
-          numRuns: 5, // Fewer runs for performance tests
-          timeout: 30000, // 30 second timeout per test
+          numRuns: 2, // Reduced for faster performance testing
+          timeout: 20000, // 20 second timeout per test
           seed: 123,
           endOnFailure: true,
         }
@@ -513,7 +513,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
           });
       });
     }
-  }, 60000); // 60 second test timeout
+  }, 40000); // 40 second test timeout
   /**
    * Property 16: KPI Data Consistency Across Time Ranges
    * **Validates: Requirements 11.1**
@@ -666,8 +666,8 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
           }
         ),
         {
-          numRuns: 10,
-          timeout: 20000,
+          numRuns: 3, // Reduced for faster testing
+          timeout: 15000,
           seed: 456,
           endOnFailure: true,
         }

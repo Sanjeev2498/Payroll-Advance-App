@@ -1,6 +1,67 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient, queryKeys } from '@/lib/api'
 
+// Generic API hook for flexible endpoint usage
+interface UseApiOptions {
+  endpoint: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  params?: Record<string, any>;
+  enabled?: boolean;
+}
+
+export function useApi<T = any>({
+  endpoint,
+  method = 'GET',
+  params = {},
+  enabled = true
+}: UseApiOptions) {
+  const queryClient = useQueryClient();
+
+  if (method === 'GET') {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+    const queryString = queryParams.toString();
+    const fullEndpoint = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+    return useQuery({
+      queryKey: [endpoint, params],
+      queryFn: () => apiClient.get(fullEndpoint),
+      enabled,
+    });
+  }
+
+  // For mutations (POST, PUT, PATCH, DELETE)
+  return useMutation({
+    mutationFn: (data?: any) => {
+      const targetEndpoint = data?.endpoint || endpoint;
+      const payload = data?.endpoint ? { ...data, endpoint: undefined } : data;
+
+      switch (method) {
+        case 'POST':
+          return apiClient.post(targetEndpoint, payload);
+        case 'PUT':
+          return apiClient.put(targetEndpoint, payload);
+        case 'PATCH':
+          return apiClient.patch(targetEndpoint, payload);
+        case 'DELETE':
+          return apiClient.delete(targetEndpoint);
+        default:
+          throw new Error(`Unsupported method: ${method}`);
+      }
+    },
+    onSuccess: () => {
+      // Invalidate related queries on successful mutation
+      queryClient.invalidateQueries({ 
+        queryKey: [endpoint.split('/')[1]] // Invalidate by resource type
+      });
+    },
+  });
+}
+
 // Auth hooks
 export function useProfile() {
   return useQuery({

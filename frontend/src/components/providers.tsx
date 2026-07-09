@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useState, useEffect } from 'react'
+import { Toaster } from 'sonner'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { validateAndCleanupAuthStorage } from '@/lib/utils/auth-cleanup'
 
@@ -36,6 +37,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         {children}
+        <Toaster position="top-right" />
         <ReactQueryDevtools initialIsOpen={false} />
       </AuthProvider>
     </QueryClientProvider>

@@ -10,7 +10,6 @@ const adapter = new PrismaPg(pool);
 
 const prisma = new PrismaClient({
   adapter,
-  log: ['query', 'info', 'warn', 'error'],
 });
 
 async function main() {
@@ -253,7 +252,7 @@ async function main() {
 
   console.log(`✅ Created employees: ${employee1.firstName} ${employee1.lastName}, ${employee2.firstName} ${employee2.lastName}`);
 
-  console.log('�🇳 Database seeding completed successfully with Indian localization!');
+  console.log('🇮🇳 Database seeding completed successfully with Indian localization!');
 }
 
 main()

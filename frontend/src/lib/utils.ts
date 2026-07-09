@@ -23,10 +23,19 @@ export function formatDateTime(date: string | Date): string {
   }).format(new Date(date))
 }
 
+export function formatTime(time: string): string {
+  // Handle time strings like "09:30:00" or "14:45:00"
+  const [hours, minutes] = time.split(':');
+  const hour24 = parseInt(hours);
+  const hour12 = hour24 % 12 || 12;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minutes} ${ampm}`;
+}
+
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
   }).format(amount)
 }
 

@@ -17,6 +17,7 @@ import { PayrollModule } from './payroll/payroll.module';
 import { BillingModule } from './billing/billing.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DeploymentModule } from './deployment/deployment.module';
+import { ClientPortalModule } from './client-portal/client-portal.module';
 import { EncryptionModule } from './common/encryption/encryption.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { TenantContextMiddleware } from './common/tenant-context.middleware';
@@ -48,6 +49,7 @@ import { PrismaService } from './prisma/prisma.service';
     BillingModule,
     DashboardModule,
     DeploymentModule,
+    ClientPortalModule,
   ],
   controllers: [AppController],
   providers: [

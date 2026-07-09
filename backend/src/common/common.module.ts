@@ -5,6 +5,12 @@ import { TenantGuard } from './tenant.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EncryptionUtil } from './utils/encryption.util';
 import { DataTransformService } from './services/data-transform.service';
+import { ClientRepository } from './repositories/client.repository';
+import { SiteRepository } from './repositories/site.repository';
+import { AttendanceRepository } from './repositories/attendance.repository';
+import { EmployeeRepository } from './repositories/employee.repository';
+import { AssignmentRepository } from './repositories/assignment.repository';
+import { ShiftRepository } from './repositories/shift.repository';
 
 @Global()
 @Module({
@@ -15,6 +21,12 @@ import { DataTransformService } from './services/data-transform.service';
     TenantGuard,
     EncryptionUtil,
     DataTransformService,
+    ClientRepository,
+    SiteRepository,
+    AttendanceRepository,
+    EmployeeRepository,
+    AssignmentRepository,
+    ShiftRepository,
   ],
   exports: [
     TenantContextService, 
@@ -22,6 +34,12 @@ import { DataTransformService } from './services/data-transform.service';
     TenantGuard,
     EncryptionUtil,
     DataTransformService,
+    ClientRepository,
+    SiteRepository,
+    AttendanceRepository,
+    EmployeeRepository,
+    AssignmentRepository,
+    ShiftRepository,
   ],
 })
 export class CommonModule {}

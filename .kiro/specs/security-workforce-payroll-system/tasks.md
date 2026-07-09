@@ -2,9 +2,9 @@
 
 ## Overview
 
-This implementation plan covers **Phase 1: Foundation & Product Architecture** for an enterprise SaaS platform that manages security workforce operations and payroll processing. The implementation follows a multi-tenant architecture using TypeScript, NestJS backend, Next.js frontend, and PostgreSQL with Row-Level Security.
+This implementation plan covers the complete Security Workforce & Payroll Management System - an enterprise SaaS platform designed for security guard agencies, facility management companies, and staffing agencies. The system provides comprehensive workforce lifecycle management from client acquisition through payroll processing with specialized focus on operational visibility and data-driven decision making.
 
-The approach focuses on building essential foundation components without over-engineering, ensuring proper multi-tenant data isolation, and establishing core CRUD operations for all business entities with comprehensive property-based testing.
+The implementation follows a multi-tenant architecture using TypeScript, NestJS backend, Next.js frontend, and PostgreSQL with Row-Level Security. The approach focuses on building a robust foundation while ensuring proper multi-tenant data isolation, comprehensive business logic implementation, and thorough property-based testing for all correctness properties defined in the design document.
 
 ## Tasks
 
@@ -80,7 +80,7 @@ The approach focuses on building essential foundation components without over-en
     - Implement tenant-aware permission checking
     - _Requirements: 1.3_
 
-  - [ ]* 3.3 Write property test for role-based access enforcement
+  - [x]* 3.3 Write property test for role-based access enforcement
     - **Property 3: Role-Based Access Enforcement**  
     - **Validates: Requirements 1.3**
     - Test that users can only access resources permitted by their roles
@@ -204,7 +204,6 @@ The approach focuses on building essential foundation components without over-en
     - **Validates: Requirements 9.1**
     - Test that invoice calculations accurately reflect deployment evidence and rates
 
-**Phase 1 – Enterprise Operations Center (Highest Priority)**
 - [x] 8. Enterprise Operations Dashboard
   - [x] 8.1 Build Enterprise Operations Command Center
     - Design enterprise application shell with authentication interface and layout system
@@ -216,12 +215,12 @@ The approach focuses on building essential foundation components without over-en
     - Mobile responsive layout
     - _Requirements: 11.1, 14.1, 11.5_
 
-  - [x] 8.1.PT Write property test for Operations Command Center KPI accuracy
+  - [x]* 8.2 Write property test for Operations Command Center KPI accuracy
     - **Property 14: Real-time KPI Accuracy**
     - **Validates: Requirements 11.1**
     - Test that Operations Command Center displays accurate real-time metrics for active guards, sites, attendance status, and billing overview
 
-  - [x] 8.2 Build Deployment Operations Dashboard
+  - [x] 8.3 Build Deployment Operations Dashboard
     - Site deployment overview
     - Required vs Assigned Guards
     - Vacancy tracking
@@ -232,12 +231,12 @@ The approach focuses on building essential foundation components without over-en
     - Site operational health
     - _Requirements: 5.1, 5.2, 11.1_
 
-  - [x] 8.2.PT Write property test for deployment assignment correctness
+  - [x]* 8.4 Write property test for deployment assignment correctness
     - **Property 15: Deployment Assignment Correctness**
     - **Validates: Requirements 5.1, 5.2**
     - Test that deployment dashboard correctly tracks required vs assigned guards and prevents assignment conflicts
 
-  - [x] 8.3 Build Attendance Operations Dashboard
+  - [x] 8.5 Build Attendance Operations Dashboard
     - Live attendance monitor
     - GPS verification status
     - Late arrivals
@@ -247,149 +246,174 @@ The approach focuses on building essential foundation components without over-en
     - Attendance heatmaps
     - _Requirements: 7.1, 7.3, 11.1_
 
-  - [x] 8.3.PT Write property test for attendance monitoring accuracy
+  - [x]* 8.6 Write property test for attendance monitoring accuracy
     - **Property 16: Attendance Monitoring Accuracy**
     - **Validates: Requirements 7.1, 7.3**
     - Test that attendance dashboard accurately tracks GPS verification, late arrivals, and attendance anomalies
 
-**Phase 2 – Workforce Management**
 - [ ] 9. Workforce Management Interfaces
-  - [ ] 9.1 Employee Management
-    - Employee directory
-    - Search & filtering
-    - Skill management
-    - Availability status
-    - Employee profile
-    - Document management
-    - _Requirements: 4.1_
+  - [x] 9.1 Employee Management Interface
+    - Employee directory with advanced search and filtering
+    - Skills management and certification tracking
+    - Availability status and scheduling preferences
+    - Employee profile with document management
+    - Performance tracking and history
+    - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 9.1.PT Write property test for employee search and filtering correctness
+  - [x]* 9.2 Write property test for employee search correctness
     - **Property 17: Employee Search Correctness**
     - **Validates: Requirements 4.1**
     - Test that employee directory search and filtering returns accurate results based on skills, availability, and status
 
-  - [ ] 9.2 Assignment Management
-    - Drag & drop assignment board
-    - Site assignment
-    - Shift assignment
-    - Conflict detection
-    - Assignment recommendations
-    - _Requirements: 5.1, 5.2_
+  - [x] 9.3 Assignment Management Interface
+    - Drag & drop assignment board with visual feedback
+    - Site assignment with role and shift management
+    - Real-time conflict detection and resolution
+    - Assignment recommendations based on skills and proximity
+    - Assignment history and tracking
+    - _Requirements: 5.1, 5.2, 5.3_
 
-  - [ ] 9.2.PT Write property test for drag-and-drop assignment validation
+  - [ ]* 9.4 Write property test for assignment interface validation
     - **Property 18: Assignment Interface Validation**
     - **Validates: Requirements 5.1, 5.2**
-    - Test that drag-and-drop assignment board maintains data consistency and validates all assignment constraints
+    - Test that assignment interface maintains data consistency and validates all constraints
 
-  - [ ] 9.3 Shift Management
-    - Shift calendar
-    - Recurring schedules
-    - Shift swapping
-    - Shift availability
-    - _Requirements: 6.1, 6.2_
+  - [x] 9.5 Shift Management Interface
+    - Interactive shift calendar with multiple views (daily, weekly, monthly)
+    - Recurring schedule templates and bulk operations
+    - Shift swapping and coverage management
+    - Shift availability and gap identification
+    - _Requirements: 6.1, 6.2, 6.4_
 
-  - [ ] 9.3.PT Write property test for shift calendar consistency
+  - [ ]* 9.6 Write property test for shift calendar consistency
     - **Property 19: Shift Calendar Consistency**
     - **Validates: Requirements 6.1, 6.2**
-    - Test that shift calendar operations (creation, swapping, recurring) maintain schedule integrity and prevent conflicts
+    - Test that shift calendar operations maintain schedule integrity and prevent conflicts
 
-**Phase 3 – Business Management**
-- [ ] 10. Client & Site Operations
-  - [ ] 10.1 Client Management
-    - Client directory
-    - Client onboarding
-    - Contract management
-    - Billing configuration
-    - _Requirements: 2.1_
+- [ ] 10. Client & Site Operations Management
+  - [x] 10.1 Client Management System
+    - Comprehensive client directory with relationship tracking
+    - Client onboarding workflow with document collection
+    - Contract management with renewal tracking
+    - Billing configuration and payment terms
+    - Client performance metrics and reports
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 10.1.PT Write property test for client onboarding workflow completeness
+  - [ ]* 10.2 Write property test for client onboarding completeness
     - **Property 20: Client Onboarding Completeness**
     - **Validates: Requirements 2.1**
-    - Test that client onboarding workflow captures all required information and properly configures billing settings
+    - Test that client onboarding workflow captures all required information and configurations
 
-  - [ ] 10.2 Site Management
-    - Site overview
-    - Site status
-    - Site requirements
-    - Guard deployment
-    - Operational statistics
-    - _Requirements: 3.1_
+  - [x] 10.3 Site Management System
+    - Site overview with operational status dashboard
+    - Site requirements and specification management
+    - Guard deployment tracking and optimization
+    - Site safety protocols and compliance monitoring
+    - Operational statistics and performance metrics
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-  - [ ] 10.2.PT Write property test for site operational status accuracy
+  - [ ]* 10.4 Write property test for site operational status accuracy
     - **Property 21: Site Status Accuracy**
     - **Validates: Requirements 3.1**
-    - Test that site management interface accurately reflects operational status and guard deployment requirements
+    - Test that site management interface accurately reflects operational status and requirements
 
-**Phase 4 – Financial Operations**
-- [ ] 11. Payroll & Billing
-  - [ ] 11.1 Payroll Operations
-    - Payroll dashboard
-    - Payroll run interface
-    - Approval workflow
-    - Payslip generation
-    - Salary summaries
-    - _Requirements: 8.1, 8.3, 8.5_
+- [x] 11. Payroll & Financial Operations
+  - [x] 11.1 Payroll Operations Interface
+    - Comprehensive payroll dashboard with run status
+    - Payroll run interface with calculation verification
+    - Multi-stage approval workflow with audit trails
+    - Payslip generation and distribution system
+    - Salary summaries and variance analysis
+    - _Requirements: 8.1, 8.2, 8.3, 8.5_
 
-  - [ ] 11.1.PT Write property test for payroll dashboard calculation accuracy
+  - [x] 11.2 Write property test for payroll dashboard accuracy
     - **Property 22: Payroll Dashboard Accuracy**
     - **Validates: Requirements 8.1, 8.3**
-    - Test that payroll dashboard displays accurate calculations and approval workflow maintains data integrity
+    - Test that payroll dashboard displays accurate calculations and maintains workflow integrity
 
-  - [ ] 11.2 Billing & Invoicing
-    - Invoice dashboard
-    - Invoice generation
-    - Client billing
-    - Payment tracking
-    - Revenue analytics
-    - _Requirements: 9.1, 9.3, 9.4_
+  - [x] 11.3 Billing & Invoicing System
+    - Invoice dashboard with status tracking
+    - Automated invoice generation with customizable templates
+    - Client billing with multiple pricing models
+    - Payment tracking and accounts receivable management
+    - Revenue analytics and profitability reports
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-  - [ ] 11.2.PT Write property test for invoice generation correctness
+  - [x] 11.4 Write property test for invoice generation correctness
     - **Property 23: Invoice Generation Correctness**
     - **Validates: Requirements 9.1, 9.3**
-    - Test that invoice generation accurately calculates billing amounts and tracks payment status
+    - Test that invoice generation accurately calculates billing amounts and maintains consistency
 
-  - [ ] 11.3 Financial Reports
-    - Payroll reports
-    - Billing reports
-    - Site profitability
-    - Cost analysis
-    - _Requirements: 8.5, 9.4_
+  - [x] 11.5 Financial Reports and Analytics
+    - Comprehensive payroll reports with drill-down capabilities
+    - Billing reports and revenue analysis
+    - Site profitability analysis and cost optimization
+    - Financial forecasting and budget planning tools
+    - _Requirements: 8.5, 9.4, 11.2_
 
-  - [ ] 11.3.PT Write property test for financial report accuracy
+  - [x] 11.6 Write property test for financial report accuracy
     - **Property 24: Financial Report Accuracy**
     - **Validates: Requirements 8.5, 9.4**
+    - Test that financial reports display accurate calculations and data consistency
     - Test that financial reports (payroll, billing, profitability) display accurate calculations and data consistency
 
 **Phase 5 – Customer Experience**
 - [ ] 12. Self-Service Portals
-  - [ ] 12.1 Employee Portal
-    - Attendance
-    - Schedule
-    - Leave
-    - Payslips
-    - Documents
-    - Notifications
+  - [ ] 12.1 Employee Self-Service Portal
+    - Dashboard with today's shift, assigned site, attendance status, and notifications
+    - Attendance history and clock-in/out records
+    - Shift schedule and deployment history
+    - Leave requests, leave balance, and approval status
+    - Payslip download and payroll history
+    - Personal documents and compliance certificates
+    - Profile management (contact details, emergency contacts, password)
+    - Company announcements and notifications
+    - Attendance correction requests
+    - View assigned supervisor and site information
     - _Requirements: 11.2_
 
   - [ ] 12.1.PT Write property test for employee portal data consistency
     - **Property 25: Employee Portal Consistency**
     - **Validates: Requirements 11.2**
-    - Test that employee portal displays consistent attendance, schedule, and payslip data across all views
+    - Test that attendance, deployments, schedules, payslips, and notifications remain consistent across all employee portal views.
 
-  - [ ] 12.2 Client Portal
-    - Site monitoring
-    - Attendance
-    - Deployment
-    - Reports
-    - Invoices
-    - Complaints
-    - Replacement requests
+  - [ ] 12.2 Client Self-Service Portal
+    - Client dashboard with operational overview
+    - Live site monitoring and site health indicators
+    - View deployed guards by site and shift
+    - Attendance monitoring with absentee and late arrival alerts
+    - Deployment summaries and workforce coverage
+    - Download reports and invoices
+    - Contract and SLA overview
+    - Raise complaints and service requests
+    - Submit replacement requests for guards
+    - Incident reporting and incident tracking
+    - Notification center for operational updates
     - _Requirements: 11.4_
 
   - [ ] 12.2.PT Write property test for client portal monitoring accuracy
     - **Property 26: Client Portal Monitoring Accuracy**
     - **Validates: Requirements 11.4**
-    - Test that client portal accurately displays site monitoring data, attendance records, and deployment status
+    - Test that site monitoring, attendance, deployment status, invoices, incidents, and reports displayed in the client portal always reflect the latest operational data.
+
+  - [ ] 12.3 Supervisor Operations Portal
+    - Operations dashboard
+    - Assigned sites overview
+    - Live deployment board
+    - Guard availability
+    - Attendance approval and corrections
+    - Emergency replacement workflow
+    - Shift management
+    - Incident management
+    - Site health monitoring
+    - Daily muster roll
+    - Operational notifications
+    - _Requirements: 11.3_
+
+  - [ ] 12.3.PT Write property test for supervisor operational consistency
+    - **Property 27: Supervisor Operations Consistency**
+    - **Validates: Requirements 11.3**
+    - Test that deployment, attendance, shift coverage, and emergency replacement data remain synchronized across all supervisor operational views.
 
 **Phase 6 – Platform Security & API**
 - [ ] 13. API Platform
@@ -540,7 +564,7 @@ The approach focuses on building essential foundation components without over-en
 - [ ] 21. Final Checkpoint and System Validation
   - Ensure all tests pass, verify end-to-end workflows function correctly, validate security measures are working, ask the user if questions arise.
 
-## Notes
+## Notes  
 
 - Tasks marked with `*` are optional property-based tests and can be skipped for faster MVP delivery
 - Each task references specific requirements from the requirements document for traceability
@@ -582,18 +606,20 @@ The approach focuses on building essential foundation components without over-en
     { "id": 23, "tasks": ["11.2.PT", "11.3"] },
     { "id": 24, "tasks": ["11.3.PT", "12.1"] },
     { "id": 25, "tasks": ["12.1.PT", "12.2"] },
-    { "id": 26, "tasks": ["12.2.PT", "13.1"] },
-    { "id": 27, "tasks": ["13.1.PT", "13.2"] },
-    { "id": 28, "tasks": ["13.3"] },
-    { "id": 29, "tasks": ["13.3.PT", "13.4"] },
-    { "id": 30, "tasks": ["14.1"] },
-    { "id": 31, "tasks": ["14.1.PT", "14.2"] },
-    { "id": 32, "tasks": ["14.2.PT", "14.3"] },
-    { "id": 33, "tasks": ["15.1"] },
-    { "id": 34, "tasks": ["16.1", "17.1", "18.1"] },
-    { "id": 35, "tasks": ["19.1"] },
-    { "id": 36, "tasks": ["20.1", "20.2"] },
-    { "id": 37, "tasks": ["20.3"] }
+    { "id": 26, "tasks": ["12.2.PT", "12.3"] },
+    { "id": 27, "tasks": ["12.3.PT", "13.1"] },
+    { "id": 27, "tasks": ["12.3.PT", "13.1"] },
+    { "id": 28, "tasks": ["13.1.PT", "13.2"] },
+    { "id": 29, "tasks": ["13.3"] },
+    { "id": 30, "tasks": ["13.3.PT", "13.4"] },
+    { "id": 31, "tasks": ["14.1"] },
+    { "id": 32, "tasks": ["14.1.PT", "14.2"] },
+    { "id": 33, "tasks": ["14.2.PT", "14.3"] },
+    { "id": 34, "tasks": ["15.1"] },
+    { "id": 35, "tasks": ["16.1", "17.1", "18.1"] },
+    { "id": 36, "tasks": ["19.1"] },
+    { "id": 37, "tasks": ["20.1", "20.2"] },
+    { "id": 38, "tasks": ["20.3"] }
   ]
 }
 ```

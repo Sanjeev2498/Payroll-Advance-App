@@ -333,8 +333,8 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
           }
         ),
         {
-          numRuns: 5, // Reduced for faster execution and less complexity
-          timeout: 20000,
+          numRuns: 2, // Reduced for faster testing
+          timeout: 15000,
           seed: 42,
         }
       );

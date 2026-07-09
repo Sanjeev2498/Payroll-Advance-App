@@ -31,12 +31,20 @@ const allNavigation: NavigationItem[] = [
   
   // Employee-focused items
   {
+    name: 'Employee Portal',
+    href: '/employee-portal',
+    icon: '🏠',
+    description: 'Personal workspace',
+    roles: ['EMPLOYEE'],
+    priority: 2,
+  },
+  {
     name: 'My Schedule',
     href: '/dashboard/my-schedule',
     icon: '📅',
     description: 'Your work schedule',
     roles: ['EMPLOYEE', 'SUPERVISOR'],
-    priority: 2,
+    priority: 3,
   },
   {
     name: 'Clock In/Out',
@@ -44,7 +52,7 @@ const allNavigation: NavigationItem[] = [
     icon: '⏰',
     description: 'Time tracking',
     roles: ['EMPLOYEE', 'SUPERVISOR'],
-    priority: 3,
+    priority: 4,
   },
   {
     name: 'My Profile',
@@ -52,7 +60,7 @@ const allNavigation: NavigationItem[] = [
     icon: '👤',
     description: 'Personal information',
     roles: ['EMPLOYEE', 'SUPERVISOR', 'MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 10,
+    priority: 11,
   },
   
   // Supervisor-focused items
@@ -62,7 +70,7 @@ const allNavigation: NavigationItem[] = [
     icon: '⏰',
     description: 'Monitor team attendance',
     roles: ['SUPERVISOR', 'MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 4,
+    priority: 5,
   },
   {
     name: 'Site Management',
@@ -70,7 +78,7 @@ const allNavigation: NavigationItem[] = [
     icon: '📍',
     description: 'Manage assigned sites',
     roles: ['SUPERVISOR', 'MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 5,
+    priority: 6,
   },
   
   // Manager/HR-focused items
@@ -80,7 +88,7 @@ const allNavigation: NavigationItem[] = [
     icon: '🎯',
     description: 'Workforce deployment',
     roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 5.5,
+    priority: 6.5,
   },
   {
     name: 'Clients',
@@ -88,7 +96,7 @@ const allNavigation: NavigationItem[] = [
     icon: '🏢',
     description: 'Client management',
     roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 6,
+    priority: 7,
   },
   {
     name: 'Employees',
@@ -96,7 +104,7 @@ const allNavigation: NavigationItem[] = [
     icon: '👥',
     description: 'Workforce management',
     roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 7,
+    priority: 8,
   },
   {
     name: 'Assignments',
@@ -104,7 +112,15 @@ const allNavigation: NavigationItem[] = [
     icon: '📋',
     description: 'Work assignments',
     roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 8,
+    priority: 9,
+  },
+  {
+    name: 'Shifts',
+    href: '/dashboard/shifts',
+    icon: '🕐',
+    description: 'Shift management',
+    roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN', 'SUPERVISOR'],
+    priority: 9.5,
   },
   
   // Admin-focused items
@@ -114,7 +130,7 @@ const allNavigation: NavigationItem[] = [
     icon: '💰',
     description: 'Salary processing',
     roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 9,
+    priority: 10,
   },
   {
     name: 'Reports',
@@ -122,7 +138,7 @@ const allNavigation: NavigationItem[] = [
     icon: '📈',
     description: 'Analytics & reports',
     roles: ['MANAGER', 'COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 11,
+    priority: 12,
   },
   {
     name: 'Settings',
@@ -130,7 +146,7 @@ const allNavigation: NavigationItem[] = [
     icon: '⚙️',
     description: 'System configuration',
     roles: ['COMPANY_ADMIN', 'SUPER_ADMIN'],
-    priority: 12,
+    priority: 13,
   },
 ]
 

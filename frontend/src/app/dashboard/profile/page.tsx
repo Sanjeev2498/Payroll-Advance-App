@@ -217,8 +217,8 @@ export default function ProfilePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName" required>
-                        First Name
+                      <Label htmlFor="firstName">
+                        First Name *
                       </Label>
                       <Input
                         id="firstName"
@@ -231,8 +231,8 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="lastName" required>
-                        Last Name
+                      <Label htmlFor="lastName">
+                        Last Name *
                       </Label>
                       <Input
                         id="lastName"
@@ -246,8 +246,8 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email" required>
-                      Email Address
+                    <Label htmlFor="email">
+                      Email Address *
                     </Label>
                     <Input
                       id="email"
@@ -290,8 +290,8 @@ export default function ProfilePage() {
               {activeTab === 'password' && (
                 <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword" required>
-                      Current Password
+                    <Label htmlFor="currentPassword">
+                      Current Password *
                     </Label>
                     <Input
                       id="currentPassword"
@@ -305,8 +305,8 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword" required>
-                      New Password
+                    <Label htmlFor="newPassword">
+                      New Password *
                     </Label>
                     <Input
                       id="newPassword"
@@ -323,8 +323,8 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" required>
-                      Confirm New Password
+                    <Label htmlFor="confirmPassword">
+                      Confirm New Password *
                     </Label>
                     <Input
                       id="confirmPassword"
