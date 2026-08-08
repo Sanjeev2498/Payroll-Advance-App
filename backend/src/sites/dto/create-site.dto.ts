@@ -227,11 +227,11 @@ export class SiteContactInfoDto {
 
 export class CreateSiteDto {
   @ApiProperty({
-    description: 'Client ID that owns this site',
+    description: 'Contract ID that this site belongs to',
     example: 'uuid-v4-string',
   })
   @IsUUID(4)
-  clientId: string;
+  contractId: string;
 
   @ApiProperty({
     description: 'Site name or identifier',

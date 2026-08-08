@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as fc from 'fast-check';
 import { randomUUID } from 'crypto';
-import { ContractStatus } from '../../clients/dto/create-client.dto';
+import { ContractStatus } from '@prisma/client';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { validateDate, parseAndValidateDate } from '../../common/utils/date-validation.util';
 
@@ -70,86 +70,128 @@ describe('Property Test: Client Data Capture Completeness', () => {
         fc.asyncProperty(
           // Generate comprehensive client data
           fc.record({
-            name: fc.string({ minLength: 2, maxLength: 100 }).filter((s) => s.trim().length >= 2),
-            contactEmail: fc.emailAddress(),
-            contactInfo: fc.option(
-              fc.record({
-                contactPerson: fc.string({ minLength: 2, maxLength: 100 }),
-                phone: fc.option(fc.string({ minLength: 10, maxLength: 20 })),
-                secondaryEmail: fc.option(fc.emailAddress()),
-                address: fc.option(
-                  fc.record({
-                    street: fc.string({ minLength: 5, maxLength: 100 }),
-                    city: fc.string({ minLength: 2, maxLength: 50 }),
-                    state: fc.string({ minLength: 2, maxLength: 50 }),
-                    zipCode: fc.string({ minLength: 5, maxLength: 10 }),
-                    country: fc.string({ minLength: 2, maxLength: 50 }),
-                  }),
-                ),
-                notes: fc.option(fc.string({ maxLength: 500 })),
-              }),
-            ),
-            contractStatus: fc.constantFrom(
-              ContractStatus.ACTIVE,
-              ContractStatus.PENDING,
-              ContractStatus.EXPIRED,
-              ContractStatus.TERMINATED,
-            ),
-            contractStart: fc.option(validDateGenerator),
-            contractEnd: fc.option(validDateGenerator),
-            billingPreferences: fc.option(
-              fc.record({
-                frequency: fc.constantFrom('MONTHLY', 'QUARTERLY', 'YEARLY'),
-                method: fc.option(fc.constantFrom('EMAIL', 'MAIL', 'PORTAL')),
-                paymentTerms: fc.option(fc.integer({ min: 1, max: 90 })),
-                billingEmail: fc.option(fc.emailAddress()),
-                instructions: fc.option(fc.string({ maxLength: 500 })),
-              }),
-            ),
+            client: fc.record({
+              name: fc.string({ minLength: 2, maxLength: 100 }).filter((s) => s.trim().length >= 2),
+              contactEmail: fc.emailAddress(),
+              organizationType: fc.constantFrom('CORPORATE_OFFICE', 'RESIDENTIAL_SOCIETY', 'HOSPITAL'),
+              contactInfo: fc.option(
+                fc.record({
+                  contactPerson: fc.string({ minLength: 2, maxLength: 100 }),
+                  phone: fc.option(fc.string({ minLength: 10, maxLength: 20 })),
+                  secondaryEmail: fc.option(fc.emailAddress()),
+                  address: fc.option(
+                    fc.record({
+                      street: fc.string({ minLength: 5, maxLength: 100 }),
+                      city: fc.string({ minLength: 2, maxLength: 50 }),
+                      state: fc.string({ minLength: 2, maxLength: 50 }),
+                      zipCode: fc.string({ minLength: 5, maxLength: 10 }),
+                      country: fc.string({ minLength: 2, maxLength: 50 }),
+                    }),
+                  ),
+                  notes: fc.option(fc.string({ maxLength: 500 })),
+                }),
+              ),
+            }),
+            contract: fc.record({
+              contractNumber: fc.string({ minLength: 5, maxLength: 20 }),
+              title: fc.string({ minLength: 5, maxLength: 100 }),
+              status: fc.constantFrom(
+                ContractStatus.ACTIVE,
+                ContractStatus.PENDING,
+                ContractStatus.EXPIRED,
+                ContractStatus.TERMINATED,
+              ),
+              startDate: fc.option(validDateGenerator),
+              endDate: fc.option(validDateGenerator),
+              billingPreferences: fc.option(
+                fc.record({
+                  frequency: fc.constantFrom('MONTHLY', 'QUARTERLY', 'YEARLY'),
+                  method: fc.option(fc.constantFrom('EMAIL', 'MAIL', 'PORTAL')),
+                  paymentTerms: fc.option(fc.integer({ min: 1, max: 90 })),
+                  billingEmail: fc.option(fc.emailAddress()),
+                  instructions: fc.option(fc.string({ maxLength: 500 })),
+                }),
+              ),
+            }),
           }),
-          async (clientData) => {
+          async (testData) => {
             // Ensure contract dates are logical and valid if both provided
-            if (clientData.contractStart && clientData.contractEnd) {
+            if (testData.contract.startDate && testData.contract.endDate) {
               // Validate both dates first
-              const startValidation = validateDate(clientData.contractStart);
-              const endValidation = validateDate(clientData.contractEnd);
+              const startValidation = validateDate(testData.contract.startDate);
+              const endValidation = validateDate(testData.contract.endDate);
               
               if (!startValidation.isValid || !endValidation.isValid) {
                 fc.pre(false); // Skip invalid dates
               }
               
-              if (clientData.contractStart >= clientData.contractEnd) {
+              if (testData.contract.startDate >= testData.contract.endDate) {
                 fc.pre(false); // Skip illogical date ranges
               }
             }
 
             // Individual date validation
-            if (clientData.contractStart) {
-              const validation = validateDate(clientData.contractStart);
+            if (testData.contract.startDate) {
+              const validation = validateDate(testData.contract.startDate);
               fc.pre(validation.isValid);
             }
 
-            if (clientData.contractEnd) {
-              const validation = validateDate(clientData.contractEnd);
+            if (testData.contract.endDate) {
+              const validation = validateDate(testData.contract.endDate);
               fc.pre(validation.isValid);
             }
 
-            // Test: Create client through Prisma with tenant context
-            const createdClient = await prismaService.withTenant(testTenantId, async (prisma) => {
-              return prisma.client.create({
+            // Test: Create client and contract through Prisma with system context to avoid tenant issues
+            const { createdClient, createdContract } = await prismaService.withSystemContext(async (prisma) => {
+              // Ensure company exists first
+              let company = await prisma.company.findUnique({ where: { id: testTenantId } });
+              if (!company) {
+                company = await prisma.company.create({
+                  data: {
+                    id: testTenantId,
+                    name: `Test Company ${testTenantId}`,
+                    slug: `test-${testTenantId}-${Date.now()}`,
+                    settings: {
+                      timeZone: 'Asia/Kolkata',
+                      dateFormat: 'DD/MM/YYYY',
+                      currency: 'INR',
+                      workingHours: {},
+                      payrollSettings: {}
+                    },
+                    branding: {
+                      primaryColor: '#1f2937',
+                      secondaryColor: '#6b7280'
+                    }
+                  }
+                });
+              }
+
+              // Create client first with explicit companyId
+              const client = await prisma.client.create({
                 data: {
-                  name: clientData.name,
-                  contactEmail: clientData.contactEmail,
-                  contactInfo: clientData.contactInfo,
-                  contractStatus: clientData.contractStatus,
-                  contractStart: clientData.contractStart,
-                  contractEnd: clientData.contractEnd,
-                  billingPreferences: clientData.billingPreferences,
-                  company: {
-                    connect: { id: testTenantId },
-                  },
+                  name: testData.client.name,
+                  contactEmail: testData.client.contactEmail,
+                  organizationType: testData.client.organizationType as any,
+                  contactInfo: testData.client.contactInfo || { phone: '+91-9999999999', address: 'Test Address' },
+                  companyId: testTenantId,
                 },
               });
+
+              // Create contract for the client with proper foreign key reference
+              const contract = await prisma.contract.create({
+                data: {
+                  clientId: client.id,
+                  contractNumber: testData.contract.contractNumber,
+                  title: testData.contract.title,
+                  status: testData.contract.status,
+                  startDate: testData.contract.startDate || new Date(),
+                  endDate: testData.contract.endDate,
+                  serviceDefinitions: { services: ['security'] }, // Required field
+                  billingPreferences: testData.contract.billingPreferences,
+                },
+              });
+
+              return { createdClient: client, createdContract: contract };
             });
 
             // Verify: All required fields are captured correctly
@@ -158,51 +200,56 @@ describe('Property Test: Client Data Capture Completeness', () => {
             expect(createdClient.companyId).toBe(testTenantId);
 
             // Verify: Basic required data is preserved
-            expect(createdClient.name).toBe(clientData.name);
-            expect(createdClient.contactEmail).toBe(clientData.contactEmail);
-            expect(createdClient.contractStatus).toBe(clientData.contractStatus);
+            expect(createdClient.name).toBe(testData.client.name);
+            expect(createdClient.contactEmail).toBe(testData.client.contactEmail);
+            expect(createdClient.organizationType).toBe(testData.client.organizationType);
+
+            // Verify: Contract data is preserved
+            expect(createdContract).toBeDefined();
+            expect(createdContract.clientId).toBe(createdClient.id);
+            expect(createdContract.status).toBe(testData.contract.status);
 
             // Verify: Optional data is preserved when provided
-            if (clientData.contactInfo) {
+            if (testData.client.contactInfo) {
               expect(createdClient.contactInfo).toBeDefined();
               const storedContactInfo = createdClient.contactInfo as any;
-              expect(storedContactInfo.contactPerson).toBe(clientData.contactInfo.contactPerson);
-              if (clientData.contactInfo.phone) {
-                expect(storedContactInfo.phone).toBe(clientData.contactInfo.phone);
+              expect(storedContactInfo.contactPerson).toBe(testData.client.contactInfo.contactPerson);
+              if (testData.client.contactInfo.phone) {
+                expect(storedContactInfo.phone).toBe(testData.client.contactInfo.phone);
               }
-              if (clientData.contactInfo.secondaryEmail) {
+              if (testData.client.contactInfo.secondaryEmail) {
                 expect(storedContactInfo.secondaryEmail).toBe(
-                  clientData.contactInfo.secondaryEmail,
+                  testData.client.contactInfo.secondaryEmail,
                 );
               }
             }
 
-            // Verify: Timestamp precision is preserved (Bug 2 fix verification)
-            if (clientData.contractStart) {
-              expect(createdClient.contractStart).toEqual(clientData.contractStart);
+            // Verify: Timestamp precision is preserved
+            if (testData.contract.startDate) {
+              expect(createdContract.startDate).toEqual(testData.contract.startDate);
               
               // Verify full timestamp precision is maintained
-              const originalTime = clientData.contractStart.getTime();
-              const storedTime = createdClient.contractStart.getTime();
+              const originalTime = testData.contract.startDate.getTime();
+              const storedTime = createdContract.startDate.getTime();
               expect(storedTime).toBe(originalTime);
             }
 
-            if (clientData.contractEnd) {
-              expect(createdClient.contractEnd).toEqual(clientData.contractEnd);
+            if (testData.contract.endDate) {
+              expect(createdContract.endDate).toEqual(testData.contract.endDate);
               
               // Verify full timestamp precision is maintained  
-              const originalTime = clientData.contractEnd.getTime();
-              const storedTime = createdClient.contractEnd.getTime();
+              const originalTime = testData.contract.endDate.getTime();
+              const storedTime = createdContract.endDate.getTime();
               expect(storedTime).toBe(originalTime);
             }
 
-            if (clientData.billingPreferences) {
-              expect(createdClient.billingPreferences).toBeDefined();
-              const storedBillingPrefs = createdClient.billingPreferences as any;
-              expect(storedBillingPrefs.frequency).toBe(clientData.billingPreferences.frequency);
-              if (clientData.billingPreferences.paymentTerms) {
+            if (testData.contract.billingPreferences) {
+              expect(createdContract.billingPreferences).toBeDefined();
+              const storedBillingPrefs = createdContract.billingPreferences as any;
+              expect(storedBillingPrefs.frequency).toBe(testData.contract.billingPreferences.frequency);
+              if (testData.contract.billingPreferences.paymentTerms) {
                 expect(storedBillingPrefs.paymentTerms).toBe(
-                  clientData.billingPreferences.paymentTerms,
+                  testData.contract.billingPreferences.paymentTerms,
                 );
               }
             }
@@ -210,19 +257,28 @@ describe('Property Test: Client Data Capture Completeness', () => {
             // Verify: Timestamps are set correctly
             expect(createdClient.createdAt).toBeInstanceOf(Date);
             expect(createdClient.updatedAt).toBeInstanceOf(Date);
+            expect(createdContract.createdAt).toBeInstanceOf(Date);
+            expect(createdContract.updatedAt).toBeInstanceOf(Date);
 
-            // Test: Retrieve the client to verify data persistence
-            const retrievedClient = await prismaService.withTenant(testTenantId, async (prisma) => {
-              return prisma.client.findUnique({
+            // Test: Retrieve the client and contract to verify data persistence
+            const { retrievedClient, retrievedContract } = await prismaService.withTenant(testTenantId, async (prisma) => {
+              const client = await prisma.client.findUnique({
                 where: { id: createdClient.id },
               });
+              const contract = await prisma.contract.findUnique({
+                where: { id: createdContract.id },
+              });
+              return { retrievedClient: client, retrievedContract: contract };
             });
 
             // Verify: Retrieved data matches created data exactly
             expect(retrievedClient).toBeDefined();
             expect(retrievedClient!.name).toBe(createdClient.name);
             expect(retrievedClient!.contactEmail).toBe(createdClient.contactEmail);
-            expect(retrievedClient!.contractStatus).toBe(createdClient.contractStatus);
+            expect(retrievedClient!.organizationType).toBe(createdClient.organizationType);
+
+            expect(retrievedContract).toBeDefined();
+            expect(retrievedContract!.status).toBe(createdContract.status);
 
             // Deep comparison of JSON fields if they exist
             if (createdClient.contactInfo && retrievedClient!.contactInfo) {
@@ -231,17 +287,16 @@ describe('Property Test: Client Data Capture Completeness', () => {
               );
             }
 
-            if (createdClient.billingPreferences && retrievedClient!.billingPreferences) {
-              expect(JSON.stringify(retrievedClient!.billingPreferences)).toBe(
-                JSON.stringify(createdClient.billingPreferences),
+            if (createdContract.billingPreferences && retrievedContract!.billingPreferences) {
+              expect(JSON.stringify(retrievedContract!.billingPreferences)).toBe(
+                JSON.stringify(createdContract.billingPreferences),
               );
             }
 
-            // Cleanup: Remove the test client
+            // Cleanup: Remove the test data
             await prismaService.withTenant(testTenantId, async (prisma) => {
-              await prisma.client.delete({
-                where: { id: createdClient.id },
-              });
+              await prisma.contract.delete({ where: { id: createdContract.id } });
+              await prisma.client.delete({ where: { id: createdClient.id } });
             });
           },
         ),
@@ -293,6 +348,7 @@ describe('Property Test: Client Data Capture Completeness', () => {
           fc.record({
             name: fc.string({ minLength: 1, maxLength: 10 }), // Valid short names
             contactEmail: fc.emailAddress(),
+            organizationType: fc.constantFrom('CORPORATE_OFFICE', 'RESIDENTIAL_SOCIETY', 'HOSPITAL'),
             contractStart: fc.option(validDateGenerator),
             contractEnd: fc.option(validDateGenerator),
           }),
@@ -314,29 +370,56 @@ describe('Property Test: Client Data Capture Completeness', () => {
             }
 
             // Test with valid data - should succeed
-            const client = await prismaService.withTenant(testTenantId, async (prisma) => {
-              return prisma.client.create({
+            const { client, contract } = await prismaService.withTenant(testTenantId, async (prisma) => {
+              // Ensure company exists first
+              let company = await prisma.company.findUnique({ where: { id: testTenantId } });
+              if (!company) {
+                company = await prisma.company.create({
+                  data: {
+                    id: testTenantId,
+                    name: `Test Company ${testTenantId}`,
+                    slug: `test-${testTenantId}`,
+                    settings: {},
+                    branding: {}
+                  }
+                });
+              }
+
+              const createdClient = await prisma.client.create({
                 data: {
                   name: validData.name,
                   contactEmail: validData.contactEmail,
-                  contractStart: validData.contractStart,
-                  contractEnd: validData.contractEnd,
-                  company: {
-                    connect: { id: testTenantId },
-                  },
+                  organizationType: validData.organizationType as any,
+                  companyId: testTenantId,
                 },
               });
+
+              const createdContract = await prisma.contract.create({
+                data: {
+                  clientId: createdClient.id,
+                  contractNumber: `TEST-${Date.now()}`,
+                  title: 'Test Contract',
+                  startDate: validData.contractStart || new Date(),
+                  endDate: validData.contractEnd,
+                  serviceDefinitions: { services: ['security'] },
+                },
+              });
+
+              return { client: createdClient, contract: createdContract };
             });
 
             expect(client).toBeDefined();
             expect(client.name).toBe(validData.name);
             expect(client.contactEmail).toBe(validData.contactEmail);
+            expect(client.organizationType).toBe(validData.organizationType);
+
+            expect(contract).toBeDefined();
+            expect(contract.clientId).toBe(client.id);
 
             // Cleanup successful creation
             await prismaService.withTenant(testTenantId, async (prisma) => {
-              await prisma.client.delete({
-                where: { id: client.id },
-              });
+              await prisma.contract.delete({ where: { id: contract.id } });
+              await prisma.client.delete({ where: { id: client.id } });
             });
           },
         ),
@@ -411,14 +494,25 @@ describe('Property Test: Date Validation Edge Cases', () => {
         
         try {
           await prismaService.withTenant(testTenantId, async (prisma) => {
-            return prisma.client.create({
+            const client = await prisma.client.create({
               data: {
                 name: 'Test Client',
                 contactEmail: `test-${Date.now()}@example.com`, // Unique email
-                contractStart: invalidDate,
+                organizationType: 'CORPORATE_OFFICE',
                 company: {
                   connect: { id: testTenantId },
                 },
+              },
+            });
+
+            // Create contract with invalid date
+            return prisma.contract.create({
+              data: {
+                clientId: client.id,
+                contractNumber: `INVALID-${Date.now()}`,
+                title: 'Invalid Date Contract',
+                startDate: invalidDate,
+                serviceDefinitions: { services: ['security'] },
               },
             });
           });

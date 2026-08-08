@@ -6,6 +6,7 @@ import { ShiftsModule } from '../../shifts/shifts.module';
 import { ShiftsService } from '../../shifts/shifts.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { CommonModule } from '../../common/common.module';
+import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import * as fc from 'fast-check';
 import { randomUUID } from 'crypto';
 
@@ -39,7 +40,22 @@ describe('Shift Calendar Consistency Properties', () => {
         CommonModule,
         ShiftsModule
       ],
-    }).compile();
+      providers: [
+        {
+          provide: 'RbacService',
+          useValue: {
+            hasPermission: jest.fn().mockReturnValue(true),
+            getUserPermissions: jest.fn().mockReturnValue([]),
+            validateResourceAccess: jest.fn().mockReturnValue(true),
+          },
+        },
+      ],
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({
+        canActivate: jest.fn().mockReturnValue(true),
+      })
+      .compile();
 
     shiftsService = await module.resolve<ShiftsService>(ShiftsService);
     prisma = module.get<PrismaService>(PrismaService);
@@ -71,7 +87,7 @@ describe('Shift Calendar Consistency Properties', () => {
       employeeCount: fc.integer({ min: 1, max: 8 }),
       shiftCount: fc.integer({ min: 1, max: 10 }),
       daysAhead: fc.integer({ min: 1, max: 30 }),
-      conflictProbability: fc.float({ min: 0.0, max: 0.5 }),
+      conflictProbability: fc.float({ min: 0.0, max: 0.5, noNaN: true }),
       recurringEnabled: fc.boolean(),
       swappingEnabled: fc.boolean(),
     });
@@ -122,19 +138,31 @@ describe('Shift Calendar Consistency Properties', () => {
         name: `${scenario.companyName} Client`,
         contactEmail: `client@${scenario.companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
         contactInfo: { phone: '555-0123' },
-        contractStatus: 'ACTIVE',
-        contractStart: new Date(),
-        contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        billingPreferences: {}
+        organizationType: 'CORPORATE_OFFICE'
       }
     });
+
+    // Create contract for the client
+    const contract = await prisma.contract.create({
+      data: {
+        clientId: client.id,
+        contractNumber: `CNT-${Date.now()}-${Math.random()}`,
+        title: `Security Services - ${client.name}`,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        serviceDefinitions: { services: ['security', 'patrol'] },
+        billingPreferences: { type: 'standard' }
+      }
+    });
+
     // Create sites
     const sites = [];
     for (let i = 0; i < scenario.siteCount; i++) {
       const site = await prisma.site.create({
         data: {
           id: randomUUID(),
-          clientId: client.id,
+          contractId: contract.id,
           name: `Site ${i + 1}`,
           address: { street: `${100 + i} Site Street`, city: 'Test City' },
           accessRequirements: { keycard: true },
@@ -157,12 +185,45 @@ describe('Shift Calendar Consistency Properties', () => {
           firstName: `Employee${i}`,
           lastName: 'Test',
           email: `emp${i}@test.com`,
+          emailIv: 'test-iv-32chars-placeholder-val',
+          emailTag: 'test-tag-32chars-placeholder',
           phone: `555-020${i}`,
+          phoneIv: 'test-iv-32chars-placeholder-val',
+          phoneTag: 'test-tag-32chars-placeholder',
           address: { street: `${200 + i} Employee St` },
+          basicSalary: '45000',
+          basicSalaryIv: 'test-iv-32chars-placeholder-val',
+          basicSalaryTag: 'test-tag-32chars-placeholder',
+          hraAmount: '4500',
+          hraAmountIv: 'test-iv-32chars-placeholder-val',
+          hraAmountTag: 'test-tag-32chars-placeholder',
+          otherAllowances: '1500',
+          otherAllowancesIv: 'test-iv-32chars-placeholder-val',
+          otherAllowancesTag: 'test-tag-32chars-placeholder',
+          grossSalary: '51000',
+          grossSalaryIv: 'test-iv-32chars-placeholder-val',
+          grossSalaryTag: 'test-tag-32chars-placeholder',
+          salaryType: 'MONTHLY',
+          bankName: 'Test Bank Limited',
+          bankNameIv: 'test-iv-32chars-placeholder-val',
+          bankNameTag: 'test-tag-32chars-placeholder',
+          accountNumber: `33445566${String(i).padStart(2, '0')}`,
+          accountNumberIv: 'test-iv-32chars-placeholder-val',
+          accountNumberTag: 'test-tag-32chars-placeholder',
+          ifscCode: 'TEST0123456',
+          ifscCodeIv: 'test-iv-32chars-placeholder-val',
+          ifscCodeTag: 'test-tag-32chars-placeholder',
+          accountType: 'SAVINGS',
+          epfApplicable: true,
+          esicApplicable: true,
+          ptApplicable: true,
+          tdsApplicable: true,
+          dateOfBirth: new Date('1990-01-01'),
           certifications: { security: true },
           skills: ['security', 'surveillance'],
           employmentStatus: 'ACTIVE',
           hireDate: new Date(),
+          metadata: { training: 'completed', clearance: 'active' },
         }
       });
       employees.push(employee);

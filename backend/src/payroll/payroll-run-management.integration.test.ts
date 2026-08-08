@@ -36,9 +36,9 @@ describe('PayrollRunManagementService Integration', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    payrollRunManagementService = moduleFixture.get<PayrollRunManagementService>(PayrollRunManagementService);
+    payrollRunManagementService = await moduleFixture.resolve<PayrollRunManagementService>(PayrollRunManagementService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
-    tenantContextService = moduleFixture.get<TenantContextService>(TenantContextService);
+    tenantContextService = await moduleFixture.resolve<TenantContextService>(TenantContextService);
 
     // Setup test data
     await setupTestData();
@@ -314,16 +314,29 @@ describe('PayrollRunManagementService Integration', () => {
         companyId: testCompanyId,
         name: 'Test Client',
         contactEmail: 'client@test.com',
-        contractStatus: 'ACTIVE',
-        contractStart: new Date('2023-01-01'),
+        // FIXED: Removed contractStatus, contractStart - these belong to Contract entity
+        organizationType: 'CORPORATE_OFFICE',
       },
     });
     testClientId = client.id;
 
-    // Create test site
-    const site = await prismaService.site.create({
+    // Create test contract first
+    const contract = await prismaService.contract.create({
       data: {
         clientId: testClientId,
+        contractNumber: 'CONTRACT-TEST-001',
+        title: 'Test Contract',
+        status: 'ACTIVE',
+        startDate: new Date('2020-01-01'),
+        serviceDefinitions: { services: ['Security'] },
+        billingPreferences: { frequency: 'MONTHLY' },
+      },
+    });
+
+    // Create test site with contract
+    const site = await prismaService.site.create({
+      data: {
+        contractId: contract.id,
         name: 'Test Site',
         address: { street: '123 Test St', city: 'Test City' },
         operationalStatus: 'ACTIVE',
@@ -398,7 +411,9 @@ describe('PayrollRunManagementService Integration', () => {
     await prismaService.shift.deleteMany({
       where: {
         site: {
-          client: { companyId: testCompanyId },
+          contract: {
+            client: { companyId: testCompanyId },
+          },
         },
       },
     });
@@ -425,7 +440,9 @@ describe('PayrollRunManagementService Integration', () => {
 
     await prismaService.site.deleteMany({
       where: {
-        client: { companyId: testCompanyId },
+        contract: {
+          client: { companyId: testCompanyId },
+        },
       },
     });
 

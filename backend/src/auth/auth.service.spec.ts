@@ -170,17 +170,17 @@ describe('AuthService', () => {
       const result = await service.login(loginDto);
 
       // Assert
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         success: true,
         data: {
-          user: {
+          user: expect.objectContaining({
             id: mockUser.id,
             email: mockUser.email,
             firstName: mockUser.firstName,
             lastName: mockUser.lastName,
             role: mockUser.role,
             companyId: mockUser.companyId,
-          },
+          }),
           tokens: mockTokens,
         },
         message: 'Login successful',

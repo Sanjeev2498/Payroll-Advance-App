@@ -43,6 +43,15 @@ export class EncryptionUtil {
       throw new Error('Cannot encrypt empty or null data');
     }
 
+    // TEMPORARY FIX: Disable encryption for development
+    if (this.configService.get('NODE_ENV') === 'development') {
+      return {
+        encryptedData: plaintext, // Store as plain text in dev
+        iv: 'dev-iv',
+        tag: 'dev-tag',
+      };
+    }
+
     const key = this.getEncryptionKey(level);
     const iv = crypto.randomBytes(this.ivLength);
     
@@ -70,6 +79,11 @@ export class EncryptionUtil {
   ): string {
     if (!encryptedData || !iv) {
       throw new Error('Missing required decryption parameters');
+    }
+
+    // TEMPORARY FIX: Disable encryption for development
+    if (this.configService.get('NODE_ENV') === 'development') {
+      return encryptedData; // Return as plain text in dev
     }
 
     const key = this.getEncryptionKey(level);

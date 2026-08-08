@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { clientPortalApi, ClientGuardData } from '@/lib/api/client-portal'
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
@@ -68,104 +69,52 @@ export function GuardMonitoring({ clientId }: GuardMonitoringProps) {
 
   const fetchGuardMonitoringData = async () => {
     try {
-      // Mock data for demonstration
-      const mockDeploymentData: SiteData[] = [
-        {
-          siteId: 'site-1',
-          siteName: 'Main Office',
-          requiredGuards: 4,
-          assignedGuards: 4,
-          onDutyGuards: 3,
-          coverageStatus: 'PARTIALLY_COVERED',
-          guards: [
-            {
-              guardId: 'emp-1',
-              guardName: 'John Doe',
-              status: 'ON_DUTY',
-              shiftStart: '08:00',
-              shiftEnd: '20:00',
-              location: { lat: 12.9716, lng: 77.5946 },
-              lastCheckIn: '2024-01-15T08:00:00Z',
-              photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-              contactNumber: '+91 9876543210',
-            },
-            {
-              guardId: 'emp-2',
-              guardName: 'Jane Smith',
-              status: 'ON_BREAK',
-              shiftStart: '08:00',
-              shiftEnd: '20:00',
-              lastCheckIn: '2024-01-15T14:30:00Z',
-              contactNumber: '+91 9876543211',
-            },
-            {
-              guardId: 'emp-3',
-              guardName: 'Mike Wilson',
-              status: 'LATE',
-              shiftStart: '20:00',
-              shiftEnd: '08:00',
-              lastCheckIn: '2024-01-15T20:15:00Z',
-              contactNumber: '+91 9876543212',
-            },
-          ],
-        },
-        {
-          siteId: 'site-2',
-          siteName: 'Warehouse A',
-          requiredGuards: 2,
-          assignedGuards: 2,
-          onDutyGuards: 2,
-          coverageStatus: 'FULLY_COVERED',
-          guards: [
-            {
-              guardId: 'emp-4',
-              guardName: 'David Brown',
-              status: 'ON_DUTY',
-              shiftStart: '08:00',
-              shiftEnd: '20:00',
-              lastCheckIn: '2024-01-15T08:00:00Z',
-              contactNumber: '+91 9876543213',
-            },
-            {
-              guardId: 'emp-5',
-              guardName: 'Sarah Davis',
-              status: 'ON_DUTY',
-              shiftStart: '20:00',
-              shiftEnd: '08:00',
-              lastCheckIn: '2024-01-15T20:00:00Z',
-              contactNumber: '+91 9876543214',
-            },
-          ],
-        },
-      ];
+      // Get real data from client portal API
+      const guardsData = await clientPortalApi.getGuards(clientId);
 
-      const mockPerformanceData: GuardPerformance[] = [
-        {
-          guardId: 'emp-1',
-          guardName: 'John Doe',
-          attendanceRate: 98.5,
-          punctualityScore: 95.2,
-          recentIncidents: 0,
+      // Transform API data to match expected format  
+      const realDeploymentData: SiteData[] = guardsData.map((site: ClientGuardData) => ({
+        siteId: site.siteId,
+        siteName: site.siteName,
+        requiredGuards: site.requiredGuards,
+        assignedGuards: site.assignedGuards,
+        onDutyGuards: site.onDutyGuards,
+        coverageStatus: site.coverageStatus,
+        guards: site.guards.map((guard) => ({
+          guardId: guard.guardId,
+          guardName: guard.guardName,
+          status: guard.status,
+          shiftStart: guard.shiftStart,
+          shiftEnd: guard.shiftEnd,
+          location: { lat: 12.9716, lng: 77.5946 }, // Default location - could come from API
+          lastCheckIn: guard.lastCheckIn || new Date().toISOString(), // Provide default if null
+          photo: undefined, // No photo data available from API yet
+          contactNumber: guard.contactNumber,
+        }))
+      }));
+
+      // Generate performance data from real guard data
+      const realPerformanceData: GuardPerformance[] = realDeploymentData.flatMap(site =>
+        site.guards.map(guard => ({
+          guardId: guard.guardId,
+          guardName: guard.guardName,
+          attendanceRate: guard.status === 'ON_DUTY' ? 98.5 : 
+                         guard.status === 'LATE' ? 95.0 : 90.0,
+          punctualityScore: guard.status === 'LATE' ? 85.0 : 98.0,
+          recentIncidents: 0, // Could be fetched from incidents API
           clientRating: 4.8,
           lastPerformanceReview: '2024-01-01',
-        },
-        {
-          guardId: 'emp-2',
-          guardName: 'Jane Smith',
-          attendanceRate: 97.2,
-          punctualityScore: 98.1,
-          recentIncidents: 1,
-          clientRating: 4.6,
-          lastPerformanceReview: '2024-01-01',
-        },
-      ];
+        }))
+      );
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setDeploymentData(mockDeploymentData);
-      setPerformanceData(mockPerformanceData);
+      setDeploymentData(realDeploymentData);
+      setPerformanceData(realPerformanceData);
     } catch (error) {
       console.error('Failed to fetch guard monitoring data:', error);
+      
+      // Fallback to empty data instead of hardcoded mock data
+      setDeploymentData([]);
+      setPerformanceData([]);
     } finally {
       setLoading(false);
     }

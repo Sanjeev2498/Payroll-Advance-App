@@ -17,58 +17,14 @@ import {
   FileText,
   Download
 } from 'lucide-react';
+import { clientPortalApi, ClientGuardData } from '@/lib/api/client-portal';
 
 interface ClientDashboardProps {
   clientId: string;
 }
 
-interface DashboardData {
-  siteOverview: {
-    totalSites: number;
-    activeSites: number;
-    inactiveSites: number;
-    sitesWithIssues: number;
-  };
-  guardDeployment: {
-    totalGuards: number;
-    activeGuards: number;
-    onDutyGuards: number;
-    vacantPositions: number;
-  };
-  attendanceMetrics: {
-    attendanceRate: number;
-    lateArrivals: number;
-    earlyDepartures: number;
-    missedShifts: number;
-  };
-  recentIncidents: Array<{
-    id: string;
-    type: string;
-    siteName: string;
-    employeeName?: string;
-    timestamp: string;
-    severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  }>;
-  notifications: Array<{
-    id: string;
-    type: string;
-    message: string;
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-    timestamp: string;
-    actionRequired: boolean;
-  }>;
-  siteHealth: Array<{
-    siteId: string;
-    siteName: string;
-    healthScore: number;
-    status: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR' | 'CRITICAL';
-    lastUpdate: string;
-    issues: string[];
-  }>;
-}
-
 export function ClientDashboard({ clientId }: ClientDashboardProps) {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<ClientGuardData[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,76 +34,12 @@ export function ClientDashboard({ clientId }: ClientDashboardProps) {
 
   const fetchDashboardData = async () => {
     try {
-      // Mock data for demonstration
-      const mockData: DashboardData = {
-        siteOverview: {
-          totalSites: 15,
-          activeSites: 12,
-          inactiveSites: 3,
-          sitesWithIssues: 1,
-        },
-        guardDeployment: {
-          totalGuards: 45,
-          activeGuards: 42,
-          onDutyGuards: 38,
-          vacantPositions: 3,
-        },
-        attendanceMetrics: {
-          attendanceRate: 96.5,
-          lateArrivals: 5,
-          earlyDepartures: 2,
-          missedShifts: 1,
-        },
-        recentIncidents: [
-          {
-            id: 'inc-1',
-            type: 'LATE_ARRIVAL',
-            siteName: 'Main Office',
-            employeeName: 'John Doe',
-            timestamp: '2024-01-15T08:15:00Z',
-            severity: 'LOW',
-          },
-          {
-            id: 'inc-2',
-            type: 'EQUIPMENT_MALFUNCTION',
-            siteName: 'Warehouse A',
-            timestamp: '2024-01-15T10:30:00Z',
-            severity: 'MEDIUM',
-          },
-        ],
-        notifications: [
-          {
-            id: 'notif-1',
-            type: 'GUARD_REPLACEMENT_REQUEST',
-            message: 'Guard replacement needed at Site A - urgent',
-            priority: 'HIGH',
-            timestamp: '2024-01-15T09:00:00Z',
-            actionRequired: true,
-          },
-        ],
-        siteHealth: [
-          {
-            siteId: 'site-1',
-            siteName: 'Main Office',
-            healthScore: 95,
-            status: 'EXCELLENT',
-            lastUpdate: '2024-01-15T10:00:00Z',
-            issues: [],
-          },
-          {
-            siteId: 'site-2',
-            siteName: 'Warehouse A',
-            healthScore: 78,
-            status: 'GOOD',
-            lastUpdate: '2024-01-15T10:00:00Z',
-            issues: ['Equipment maintenance due'],
-          },
-        ],
-      };
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setDashboardData(mockData);
+      setLoading(true);
+      setError(null);
+      
+      // Use the actual API service
+      const data = await clientPortalApi.getGuards(clientId);
+      setDashboardData(data);
     } catch (err) {
       setError('Failed to load dashboard data');
       console.error('Dashboard error:', err);
@@ -232,9 +124,9 @@ export function ClientDashboard({ clientId }: ClientDashboardProps) {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.siteOverview.totalSites}</div>
+            <div className="text-2xl font-bold">{dashboardData.length}</div>
             <p className="text-xs text-muted-foreground">
-              {dashboardData.siteOverview.activeSites} active, {dashboardData.siteOverview.sitesWithIssues} with issues
+              {dashboardData.filter(site => site.coverageStatus === 'FULLY_COVERED').length} active, {dashboardData.filter(site => site.coverageStatus === 'UNCOVERED').length} with issues
             </p>
           </CardContent>
         </Card>
@@ -246,9 +138,9 @@ export function ClientDashboard({ clientId }: ClientDashboardProps) {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.guardDeployment.onDutyGuards}</div>
+            <div className="text-2xl font-bold">{dashboardData.reduce((total, site) => total + site.onDutyGuards, 0)}</div>
             <p className="text-xs text-muted-foreground">
-              of {dashboardData.guardDeployment.totalGuards} guards on duty
+              of {dashboardData.reduce((total, site) => total + site.assignedGuards, 0)} guards on duty
             </p>
           </CardContent>
         </Card>
@@ -260,9 +152,11 @@ export function ClientDashboard({ clientId }: ClientDashboardProps) {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.attendanceMetrics.attendanceRate}%</div>
+            <div className="text-2xl font-bold">
+              {dashboardData.length > 0 ? Math.round((dashboardData.reduce((total, site) => total + site.onDutyGuards, 0) / dashboardData.reduce((total, site) => total + site.assignedGuards, 0)) * 100) : 0}%
+            </div>
             <p className="text-xs text-muted-foreground">
-              {dashboardData.attendanceMetrics.lateArrivals} late arrivals today
+              {dashboardData.reduce((total, site) => total + site.guards.filter(g => g.status === 'LATE').length, 0)} late arrivals today
             </p>
           </CardContent>
         </Card>
@@ -274,7 +168,9 @@ export function ClientDashboard({ clientId }: ClientDashboardProps) {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{dashboardData.guardDeployment.vacantPositions}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {dashboardData.reduce((total, site) => total + (site.requiredGuards - site.onDutyGuards), 0)}
+            </div>
             <p className="text-xs text-muted-foreground">
               Positions need immediate attention
             </p>
@@ -295,28 +191,8 @@ export function ClientDashboard({ clientId }: ClientDashboardProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {dashboardData.notifications.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No new notifications</p>
-            ) : (
-              dashboardData.notifications.map((notification) => (
-                <div key={notification.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <p className="font-medium text-sm">{notification.message}</p>
-                    <Badge className={getPriorityColor(notification.priority)}>
-                      {notification.priority}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{new Date(notification.timestamp).toLocaleString()}</span>
-                    {notification.actionRequired && (
-                      <Button size="sm" variant="outline">
-                        Take Action
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+            {/* Display placeholder since we don't have notifications in the current data structure */}
+            <p className="text-gray-500 text-center py-4">No new notifications</p>
           </CardContent>
         </Card>
 
@@ -332,29 +208,8 @@ export function ClientDashboard({ clientId }: ClientDashboardProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {dashboardData.recentIncidents.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No recent incidents</p>
-            ) : (
-              dashboardData.recentIncidents.map((incident) => (
-                <div key={incident.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{incident.type.replace('_', ' ')}</p>
-                      <p className="text-sm text-gray-600">{incident.siteName}</p>
-                      {incident.employeeName && (
-                        <p className="text-xs text-gray-500">Employee: {incident.employeeName}</p>
-                      )}
-                    </div>
-                    <Badge className={getSeverityColor(incident.severity)}>
-                      {incident.severity}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {new Date(incident.timestamp).toLocaleString()}
-                  </p>
-                </div>
-              ))
-            )}
+            {/* Display placeholder since we don't have incidents in the current data structure */}
+            <p className="text-gray-500 text-center py-4">No recent incidents</p>
           </CardContent>
         </Card>
       </div>
@@ -372,48 +227,50 @@ export function ClientDashboard({ clientId }: ClientDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {dashboardData.siteHealth.map((site) => (
+            {dashboardData.map((site) => (
               <div key={site.siteId} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h4 className="font-medium">{site.siteName}</h4>
-                    <p className="text-sm text-gray-600">Health Score: {site.healthScore}/100</p>
+                    <p className="text-sm text-gray-600">Guards: {site.onDutyGuards}/{site.requiredGuards}</p>
                   </div>
                   <div className="text-right">
-                    <Badge className={`${getHealthStatusColor(site.status)} bg-transparent border`}>
-                      {site.status}
+                    <Badge className={`${site.coverageStatus === 'FULLY_COVERED' ? 'text-green-800 border-green-200' : 'text-yellow-800 border-yellow-200'} bg-transparent border`}>
+                      {site.coverageStatus.replace('_', ' ')}
                     </Badge>
                     <p className="text-xs text-gray-500 mt-1">
-                      Updated: {new Date(site.lastUpdate).toLocaleTimeString()}
+                      Coverage: {Math.round((site.onDutyGuards / site.requiredGuards) * 100)}%
                     </p>
                   </div>
                 </div>
                 
-                {/* Health Score Progress Bar */}
+                {/* Coverage Progress Bar */}
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
                   <div 
                     className={`h-2 rounded-full ${
-                      site.healthScore >= 90 ? 'bg-green-600' :
-                      site.healthScore >= 70 ? 'bg-yellow-500' :
+                      (site.onDutyGuards / site.requiredGuards) >= 1 ? 'bg-green-600' :
+                      (site.onDutyGuards / site.requiredGuards) >= 0.7 ? 'bg-yellow-500' :
                       'bg-red-500'
                     }`}
-                    style={{ width: `${site.healthScore}%` }}
+                    style={{ width: `${Math.round((site.onDutyGuards / site.requiredGuards) * 100)}%` }}
                   ></div>
                 </div>
 
-                {/* Issues */}
-                {site.issues.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-gray-700 mb-1">Issues:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {site.issues.map((issue, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {issue}
-                        </Badge>
-                      ))}
-                    </div>
+                {/* Guard Status Summary */}
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-gray-700 mb-1">Guard Status:</p>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant="outline" className="text-xs">
+                      {site.guards.filter(g => g.status === 'ON_DUTY').length} On Duty
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {site.guards.filter(g => g.status === 'LATE').length} Late
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {site.guards.filter(g => g.status === 'OFF_DUTY').length} Off Duty
+                    </Badge>
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>

@@ -24,7 +24,15 @@ const navigation: NavigationItem[] = [
     icon: '📊',
     description: 'Overview and metrics',
   },
-  
+
+  // SUPERVISOR PORTAL (High Priority for Supervisors)
+  {
+    name: 'Supervisor Portal',
+    href: '/supervisor-portal',
+    icon: '🎛️',
+    requiredRoles: ['SUPERVISOR', 'MANAGER', 'COMPANY_ADMIN'],
+    description: 'Supervisor operations center',
+  },
   // ADMIN-ONLY SECTIONS
   {
     name: 'Clients',
@@ -47,7 +55,16 @@ const navigation: NavigationItem[] = [
     requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'SUPERVISOR'],
     description: 'Workforce management',
   },
-  
+
+  // Team Attendance (for Supervisors - visible in minimized view)
+  {
+    name: 'Team Attendance',
+    href: '/dashboard/attendance',
+    icon: '⏰',
+    requiredRoles: ['SUPERVISOR', 'MANAGER', 'COMPANY_ADMIN'],
+    description: 'Monitor team attendance',
+  },
+
   // SUPERVISOR & ADMIN SECTIONS
   {
     name: 'Assignments',
@@ -55,13 +72,6 @@ const navigation: NavigationItem[] = [
     icon: '📋',
     requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'SUPERVISOR'],
     description: 'Work assignments',
-  },
-  {
-    name: 'Attendance',
-    href: '/dashboard/attendance',
-    icon: '⏰',
-    requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'SUPERVISOR'],
-    description: 'Time tracking',
   },
   
   // ADMIN-ONLY FINANCIAL SECTIONS
@@ -137,7 +147,7 @@ const navigation: NavigationItem[] = [
 export function Sidebar() {
   const pathname = usePathname()
   const { sidebarCollapsed } = useAppStore()
-  const { user } = useAuthPermissions()
+  const { user, hasRole } = useAuthPermissions()
 
   const NavigationItem = ({ item }: { item: NavigationItem }) => {
     const isActive = pathname === item.href || 
@@ -198,12 +208,12 @@ export function Sidebar() {
 
   return (
     <div className={cn(
-      'bg-white border-r border-gray-200 flex flex-col transition-all duration-300 shadow-sm',
+      'bg-white border-r border-gray-200 flex flex-col transition-all duration-300 shadow-sm min-h-screen',
       sidebarCollapsed ? 'w-16' : 'w-64'
     )}>
       {/* Logo */}
       <div className={cn(
-        "flex items-center h-16 border-b border-gray-200 px-4",
+        "flex items-center h-16 border-b border-gray-200 px-4 bg-white",
         sidebarCollapsed ? "justify-center" : "justify-start"
       )}>
         {sidebarCollapsed ? (
@@ -220,14 +230,14 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto sidebar-scroll">
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto sidebar-scroll bg-white">
         {navigation.map((item) => (
           <NavigationItem key={item.name} item={item} />
         ))}
       </nav>
 
       {/* User Info & Footer */}
-      <div className="border-t border-gray-200 p-4 space-y-2">
+      <div className="border-t border-gray-200 p-4 space-y-2 bg-white">
         {!sidebarCollapsed && user && (
           <div className="bg-gray-50 rounded-lg p-3 mb-3">
             <div className="text-xs font-medium text-gray-900 truncate">

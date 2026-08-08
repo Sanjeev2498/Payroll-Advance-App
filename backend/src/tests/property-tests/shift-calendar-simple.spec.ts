@@ -63,6 +63,7 @@ describe('Simple Shift Calendar Consistency Properties', () => {
       await prisma.assignment.deleteMany({});
       await prisma.employee.deleteMany({});
       await prisma.site.deleteMany({});
+      await prisma.contract.deleteMany({});
       await prisma.client.deleteMany({});
       await prisma.company.deleteMany({});
     } catch (error) {
@@ -91,11 +92,20 @@ describe('Simple Shift Calendar Consistency Properties', () => {
         companyId: company.id,
         name: 'Test Client',
         contactEmail: 'client@test.com',
-        contactInfo: { phone: '555-0123' },
-        contractStatus: 'ACTIVE',
-        contractStart: new Date(),
-        contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        billingPreferences: {}
+        contactInfo: { phone: '555-0123' }
+      }
+    });
+
+    // Create contract
+    const contract = await prisma.contract.create({
+      data: {
+        clientId: client.id,
+        contractNumber: `CONTRACT-SHIFT-${Date.now()}-${Math.random()}`,
+        title: `Security Services Contract - ${client.name}`,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        serviceDefinitions: { services: ['security', 'patrol'] }
       }
     });
 
@@ -103,7 +113,7 @@ describe('Simple Shift Calendar Consistency Properties', () => {
     const site = await prisma.site.create({
       data: {
         id: randomUUID(),
-        clientId: client.id,
+        contractId: contract.id,
         name: 'Test Site',
         address: { street: '123 Test Street', city: 'Test City' },
         accessRequirements: { keycard: true },
@@ -121,11 +131,6 @@ describe('Simple Shift Calendar Consistency Properties', () => {
         employeeNumber: 'EMP001',
         firstName: 'Test',
         lastName: 'Employee',
-        email: 'emp@test.com',
-        phone: '555-0200',
-        address: { street: '200 Employee St' },
-        certifications: { security: true },
-        skills: ['security', 'surveillance'],
         employmentStatus: 'ACTIVE',
         hireDate: new Date(),
       }
@@ -170,25 +175,26 @@ describe('Simple Shift Calendar Consistency Properties', () => {
                 assignmentId: assignment.id,
                 siteId: site.id,
                 shiftDate: shiftDate,
-                startTime: '09:00:00',
-                endTime: '17:00:00',
+                startTime: new Date(`1970-01-01T09:00:00.000Z`), // DateTime object with time component
+                endTime: new Date(`1970-01-01T17:00:00.000Z`),   // DateTime object with time component
                 shiftType: 'REGULAR',
                 status: 'SCHEDULED',
-                priority: 'NORMAL',
-                isRecurring: false,
-                coverageRequired: coverageRequired,
-                coverageAssigned: 1, // Since we have an assignment
-                skillRequirements: {},
-                shiftRequirements: {},
-                breakSchedule: {},
-                notes: {},
-                modificationLog: [
-                  {
-                    timestamp: new Date().toISOString(),
-                    action: 'CREATED',
-                    createdBy: 'test-system'
-                  }
-                ]
+                notes: {
+                  coverageRequired: coverageRequired,
+                  coverageAssigned: 1,
+                  priority: 'NORMAL',
+                  isRecurring: false,
+                  skillRequirements: {},
+                  shiftRequirements: {},
+                  breakSchedule: {},
+                  modificationLog: [
+                    {
+                      timestamp: new Date().toISOString(),
+                      action: 'CREATED',
+                      createdBy: 'test-system'
+                    }
+                  ]
+                }
               }
             });
 
@@ -200,9 +206,9 @@ describe('Simple Shift Calendar Consistency Properties', () => {
             expect(shift.status).toBe('SCHEDULED');
             
             // Verify: Coverage calculations
-            expect(shift.coverageRequired).toBe(coverageRequired);
-            expect(shift.coverageAssigned).toBeGreaterThan(0);
-            expect(shift.coverageAssigned).toBeLessThanOrEqual(shift.coverageRequired);
+            expect(shift.notes.coverageRequired).toBe(coverageRequired);
+            expect(shift.notes.coverageAssigned).toBeGreaterThan(0);
+            expect(shift.notes.coverageAssigned).toBeLessThanOrEqual(shift.notes.coverageRequired);
             
             // Verify: When assignment exists, coverage assigned should be > 0
             expect(shift.coverageAssigned).toBeGreaterThan(0);
@@ -216,8 +222,8 @@ describe('Simple Shift Calendar Consistency Properties', () => {
             });
             
             expect(retrievedShift).toBeDefined();
-            expect(retrievedShift!.coverageRequired).toBe(coverageRequired);
-            expect(retrievedShift!.coverageAssigned).toBe(shift.coverageAssigned);
+            expect(retrievedShift!.notes.coverageRequired).toBe(coverageRequired);
+            expect(retrievedShift!.notes.coverageAssigned).toBe(shift.notes.coverageAssigned);
             expect(retrievedShift!.status).toBe(shift.status);
             
             // Verify: No conflicts with same employee on same day

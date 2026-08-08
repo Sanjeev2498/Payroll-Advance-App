@@ -66,7 +66,7 @@ describe('Enhanced Client Management Service', () => {
         billingPreferences: {
           frequency: 'MONTHLY',
           paymentTerms: 30,
-          currency: 'USD',
+          currency: 'INR',
         },
         tags: ['high-priority', 'enterprise'],
         renewalNotificationDays: 60,

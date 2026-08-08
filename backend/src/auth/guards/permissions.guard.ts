@@ -31,6 +31,19 @@ export class PermissionsGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Check if route is public first
+    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    console.log('🔍 PermissionsGuard - Route isPublic:', isPublic);
+
+    if (isPublic) {
+      console.log('✅ PermissionsGuard - Allowing public route');
+      return true;
+    }
+
     // Get required permissions from decorator metadata
     const requiredPermissions = this.reflector.getAllAndOverride<Permission[]>(PERMISSIONS_KEY, [
       context.getHandler(),

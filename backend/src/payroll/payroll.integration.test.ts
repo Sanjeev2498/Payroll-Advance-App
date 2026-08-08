@@ -38,7 +38,7 @@ describe('Payroll Integration Tests', () => {
 
     app = moduleRef.createNestApplication();
     prisma = moduleRef.get<PrismaService>(PrismaService);
-    tenantContextService = moduleRef.get<TenantContextService>(TenantContextService);
+    tenantContextService = await moduleRef.resolve<TenantContextService>(TenantContextService);
 
     // Mock tenant context for testing
     jest.spyOn(tenantContextService, 'getTenantId').mockImplementation(() => companyId);
@@ -74,14 +74,28 @@ describe('Payroll Integration Tests', () => {
         companyId,
         name: 'Test Client Corp',
         contactEmail: 'client@testcorp.com',
-        contractStatus: 'ACTIVE',
+        // FIXED: Removed contractStatus - this belongs to Contract entity
+        organizationType: 'CORPORATE_OFFICE',
       },
     });
     clientId = client.id;
 
+    // FIXED: Create separate Contract entity
+    const contract = await prisma.contract.create({
+      data: {
+        clientId: client.id,
+        contractNumber: 'CNT-TEST-001',
+        title: 'Test Payroll Contract',
+        status: 'ACTIVE',
+        startDate: new Date(),
+        serviceDefinitions: { services: ['payroll'] },
+        billingPreferences: { cycle: 'monthly' },
+      },
+    });
+
     const site = await prisma.site.create({
       data: {
-        clientId,
+        contractId: contract.id, // FIXED: Link to contract instead of client
         name: 'Main Office Building',
         address: { street: '123 Business Ave', city: 'Mumbai', state: 'Maharashtra' },
         operationalStatus: 'ACTIVE',
@@ -97,6 +111,13 @@ describe('Payroll Integration Tests', () => {
         lastName: 'Kumar',
         email: 'rajesh.kumar@company.com',
         phone: '+91-9876543210',
+        address: {
+          street: '123 Test Street',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400001',
+          country: 'India'
+        },
         skills: ['security', 'surveillance'],
         employmentStatus: EmploymentStatus.ACTIVE,
         hireDate: new Date('2024-01-01'),
@@ -109,7 +130,7 @@ describe('Payroll Integration Tests', () => {
         employeeId,
         siteId,
         role: 'Security Guard',
-        hourlyRate: new Decimal(30.00), // ₹30 per hour
+        hourlyRate: 30.00, // Decimal field
         status: AssignmentStatus.ACTIVE,
         startDate: new Date('2024-01-01'),
       },

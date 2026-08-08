@@ -253,7 +253,7 @@ function ResetPasswordContent() {
                   type="password"
                   autoComplete="new-password"
                   placeholder="Enter new password"
-                  error={!!errors.password}
+                  error={errors.password ? errors.password.message : undefined}
                   {...register('password')}
                 />
                 {errors.password && (
@@ -270,7 +270,7 @@ function ResetPasswordContent() {
                   type="password"
                   autoComplete="new-password"
                   placeholder="Confirm new password"
-                  error={!!errors.confirmPassword}
+                  error={errors.confirmPassword ? errors.confirmPassword.message : undefined}
                   {...register('confirmPassword')}
                 />
                 {errors.confirmPassword && (

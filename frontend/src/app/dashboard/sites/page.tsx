@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,7 +19,8 @@ import { GuardDeploymentTracker } from '@/components/sites/guard-deployment-trac
 import { SiteComplianceMonitor } from '@/components/sites/site-compliance-monitor'
 
 export default function SitesManagementPage() {
-  const [sites, setSites] = useState<Site[]>([])
+  const router = useRouter()
+  const [sites, setSites] = useState<Site[]>([]) // Already initialized as empty array
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -41,8 +43,10 @@ export default function SitesManagementPage() {
         limit: 50
       }
       const response = await sitesApi.getSites(queryParams)
-      setSites(response.sites)
+      setSites(response.sites || []) // Ensure it's always an array
     } catch (error) {
+      console.error('Error loading sites:', error)
+      setSites([]) // Set empty array on error
       toast({
         title: 'Error',
         description: 'Failed to load sites',
@@ -79,7 +83,7 @@ export default function SitesManagementPage() {
     }
   }
 
-  const filteredSites = sites.filter(site => {
+  const filteredSites = (sites || []).filter(site => {
     const matchesSearch = !searchTerm || 
       site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (site.client?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -90,10 +94,10 @@ export default function SitesManagementPage() {
   })
 
   const siteStats = {
-    total: sites.length,
-    active: sites.filter(s => s.operationalStatus === 'ACTIVE').length,
-    inactive: sites.filter(s => s.operationalStatus === 'INACTIVE').length,
-    maintenance: sites.filter(s => s.operationalStatus === 'MAINTENANCE').length
+    total: (sites || []).length,
+    active: (sites || []).filter(s => s.operationalStatus === 'ACTIVE').length,
+    inactive: (sites || []).filter(s => s.operationalStatus === 'INACTIVE').length,
+    maintenance: (sites || []).filter(s => s.operationalStatus === 'MAINTENANCE').length
   }
 
   return (
@@ -213,11 +217,7 @@ export default function SitesManagementPage() {
               ))
             ) : (
               filteredSites.map((site) => (
-                <Card key={site.id} className="hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => {
-                        setSelectedSite(site)
-                        setIsDetailsDialogOpen(true)
-                      }}>
+                <Card key={site.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
@@ -251,6 +251,32 @@ export default function SitesManagementPage() {
                         <Clock className="mr-1 h-4 w-4" />
                         24/7
                       </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedSite(site)
+                          setIsDetailsDialogOpen(true)
+                        }}
+                      >
+                        View Details
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/dashboard/sites/${site.id}/operations`)
+                        }}
+                      >
+                        <Users className="mr-1 h-3 w-3" />
+                        Site Operations
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

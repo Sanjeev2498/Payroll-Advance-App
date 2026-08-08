@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +23,7 @@ import {
   Building2,
   DollarSign
 } from 'lucide-react'
+import { apiClient } from '@/lib/api/client'
 
 interface Client {
   id: string
@@ -42,79 +43,67 @@ interface Client {
   renewalRisk: 'LOW' | 'MEDIUM' | 'HIGH'
 }
 
-// Mock data - would come from API
-const mockClients: Client[] = [
-  {
-    id: '1',
-    name: 'Acme Manufacturing Corp',
-    contactEmail: 'contact@acme-manufacturing.com',
-    contractStatus: 'ACTIVE',
-    contractStart: new Date('2024-01-01'),
-    contractEnd: new Date('2024-12-31'),
-    industry: 'Manufacturing',
-    sitesCount: 5,
-    totalRevenue: 125000,
-    accountManager: { name: 'John Smith', email: 'john@company.com' },
-    performanceScore: 8.5,
-    renewalRisk: 'LOW',
-  },
-  {
-    id: '2',
-    name: 'TechCorp Office Complex',
-    contactEmail: 'security@techcorp.com',
-    contractStatus: 'ACTIVE',
-    contractStart: new Date('2023-06-15'),
-    contractEnd: new Date('2025-06-14'),
-    industry: 'Technology',
-    sitesCount: 3,
-    totalRevenue: 95000,
-    accountManager: { name: 'Sarah Johnson', email: 'sarah@company.com' },
-    performanceScore: 9.2,
-    renewalRisk: 'LOW',
-  },
-  {
-    id: '3',
-    name: 'Retail Plaza Group',
-    contactEmail: 'ops@retailplaza.com',
-    contractStatus: 'ACTIVE',
-    contractStart: new Date('2024-03-01'),
-    contractEnd: new Date('2024-11-30'),
-    industry: 'Retail',
-    sitesCount: 8,
-    totalRevenue: 180000,
-    accountManager: { name: 'Mike Wilson', email: 'mike@company.com' },
-    performanceScore: 7.8,
-    renewalRisk: 'MEDIUM',
-  },
-  {
-    id: '4',
-    name: 'City Hospital Network',
-    contactEmail: 'security@cityhospital.org',
-    contractStatus: 'PENDING',
-    industry: 'Healthcare',
-    sitesCount: 2,
-    totalRevenue: 0,
-    accountManager: { name: 'Lisa Davis', email: 'lisa@company.com' },
-    performanceScore: 0,
-    renewalRisk: 'LOW',
-  },
-]
-
-const clientStats = {
-  total: 24,
-  active: 18,
-  pending: 4,
-  expiring: 2,
-  totalRevenue: 1250000,
-  avgContractValue: 52000,
+// Real client data will come from API instead of mock data
+interface ClientsData {
+  clients: Client[]
+  summary: {
+    total: number
+    active: number
+    pending: number
+    expiring: number
+    totalRevenue: number
+    avgContractValue: number
+  }
 }
 
 export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [clientsData, setClientsData] = useState<ClientsData>({
+    clients: [],
+    summary: {
+      total: 0,
+      active: 0,
+      pending: 0,
+      expiring: 0,
+      totalRevenue: 0,
+      avgContractValue: 0,
+    }
+  })
+  const [loading, setLoading] = useState(true)
 
-  const filteredClients = mockClients.filter(client => {
+  // Fetch clients data from API
+  useEffect(() => {
+    const fetchClientsData = async () => {
+      try {
+        setLoading(true)
+        const response = await apiClient.get('/clients')
+        const { clients, summary } = response.data
+        
+        setClientsData({
+          clients: clients || [],
+          summary: summary || {
+            total: 0,
+            active: 0,
+            pending: 0,
+            expiring: 0,
+            totalRevenue: 0,
+            avgContractValue: 0,
+          }
+        })
+      } catch (error) {
+        console.error('Failed to fetch clients data:', error)
+        // Keep empty state on error
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchClientsData()
+  }, [])
+
+  const filteredClients = clientsData.clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client.contactEmail.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = selectedStatus === 'all' || client.contractStatus === selectedStatus
@@ -167,7 +156,7 @@ export default function ClientsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Clients</p>
-                <p className="text-3xl font-bold text-gray-900">{clientStats.total}</p>
+                <p className="text-3xl font-bold text-gray-900">{clientsData.summary.total}</p>
               </div>
               <Users className="w-8 h-8 text-blue-600" />
             </div>
@@ -179,7 +168,7 @@ export default function ClientsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Contracts</p>
-                <p className="text-3xl font-bold text-green-600">{clientStats.active}</p>
+                <p className="text-3xl font-bold text-green-600">{clientsData.summary.active}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
@@ -191,26 +180,26 @@ export default function ClientsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Expiring Soon</p>
-                <p className="text-3xl font-bold text-orange-600">{clientStats.expiring}</p>
+                <p className="text-3xl font-bold text-orange-600">{clientsData.summary.expiring}</p>
               </div>
               <AlertTriangle className="w-8 h-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  ${clientStats.totalRevenue.toLocaleString()}
-                </p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                        <p className="text-3xl font-bold text-blue-600">
+                          ₹{clientsData.summary.totalRevenue.toLocaleString()}
+                        </p>
+                      </div>
+                      <TrendingUp className="w-8 h-8 text-blue-600" />
+                    </div>
+                  </CardContent>
+                </Card>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
@@ -258,68 +247,99 @@ export default function ClientsPage() {
 
           {/* Client List */}
           <div className="grid gap-4">
-            {filteredClients.map((client) => (
-              <Card key={client.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+            {loading ? (
+              <Card>
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{client.name}</h3>
-                        <Badge className={getStatusColor(client.contractStatus)}>
-                          {client.contractStatus}
-                        </Badge>
-                        {client.renewalRisk !== 'LOW' && (
-                          <Badge className={getRiskColor(client.renewalRisk)}>
-                            {client.renewalRisk} RISK
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          {client.contactEmail}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4" />
-                          {client.industry || 'N/A'}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          {client.sitesCount} Sites
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4" />
-                          ${client.totalRevenue.toLocaleString()}
-                        </div>
-                      </div>
-                      {client.accountManager && (
-                        <div className="mt-2 text-sm text-gray-500">
-                          Account Manager: {client.accountManager.name}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      {client.performanceScore > 0 && (
-                        <div className="text-right">
-                          <div className="text-sm font-medium">Performance Score</div>
-                          <div className="text-2xl font-bold text-blue-600">
-                            {client.performanceScore}/10
-                          </div>
-                        </div>
-                      )}
-                      {client.contractEnd && (
-                        <div className="text-right">
-                          <div className="text-sm text-gray-500">Contract Expires</div>
-                          <div className="text-sm font-medium">
-                            {client.contractEnd.toLocaleDateString()}
-                          </div>
-                        </div>
-                      )}
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Loading clients...</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            ) : filteredClients.length === 0 ? (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No clients found</h3>
+                    <p className="text-gray-600 mb-4">
+                      {searchTerm || selectedStatus !== 'all' 
+                        ? 'No clients match your current filters.' 
+                        : 'Get started by adding your first client.'}
+                    </p>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add New Client
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredClients.map((client) => (
+                <Card key={client.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{client.name}</h3>
+                          <Badge className={getStatusColor(client.contractStatus)}>
+                            {client.contractStatus}
+                          </Badge>
+                          {client.renewalRisk !== 'LOW' && (
+                            <Badge className={getRiskColor(client.renewalRisk)}>
+                              {client.renewalRisk} RISK
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4" />
+                            {client.contactEmail}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4" />
+                            {client.industry || 'N/A'}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            {client.sitesCount} Sites
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4" />
+                            ₹{client.totalRevenue.toLocaleString()}
+                          </div>
+                        </div>
+                        {client.accountManager && (
+                          <div className="mt-2 text-sm text-gray-500">
+                            Account Manager: {client.accountManager.name}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {client.performanceScore > 0 && (
+                          <div className="text-right">
+                            <div className="text-sm font-medium">Performance Score</div>
+                            <div className="text-2xl font-bold text-blue-600">
+                              {client.performanceScore}/10
+                            </div>
+                          </div>
+                        )}
+                        {client.contractEnd && (
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">Contract Expires</div>
+                            <div className="text-sm font-medium">
+                              {new Date(client.contractEnd).toLocaleDateString()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
 
@@ -367,14 +387,14 @@ export default function ClientsPage() {
               <div className="mt-4">
                 <h4 className="font-medium mb-2">Upcoming Renewals</h4>
                 <div className="space-y-2">
-                  {filteredClients
-                    .filter(c => c.contractEnd && c.contractEnd > new Date())
+                  {clientsData.clients
+                    .filter(c => c.contractEnd && new Date(c.contractEnd) > new Date())
                     .map(client => (
                     <div key={client.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                       <div>
                         <div className="font-medium">{client.name}</div>
                         <div className="text-sm text-gray-500">
-                          Expires: {client.contractEnd?.toLocaleDateString()}
+                          Expires: {new Date(client.contractEnd!).toLocaleDateString()}
                         </div>
                       </div>
                       <Badge className={getRiskColor(client.renewalRisk)}>
@@ -382,6 +402,12 @@ export default function ClientsPage() {
                       </Badge>
                     </div>
                   ))}
+                  {clientsData.clients.filter(c => c.contractEnd && new Date(c.contractEnd) > new Date()).length === 0 && (
+                    <div className="text-center py-4 text-gray-500">
+                      <Calendar className="w-8 h-8 mx-auto mb-2" />
+                      <p className="text-sm">No upcoming renewals</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

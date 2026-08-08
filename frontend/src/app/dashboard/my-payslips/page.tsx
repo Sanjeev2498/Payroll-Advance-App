@@ -7,62 +7,21 @@ import { Download, Eye, CreditCard, IndianRupee, Calendar } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 export default function MyPayslipsPage() {
-  // Mock data - this would come from API
+  // No mock data - will come from API
   const currentSalary = {
-    basicSalary: 25000,
-    hra: 5000,
-    transport: 2000,
-    other: 1000,
-    gross: 33000,
-    pf: 1800,
-    esi: 578,
+    basicSalary: 0,
+    hra: 0,
+    transport: 0,
+    other: 0,
+    gross: 0,
+    pf: 0,
+    esi: 0,
     tax: 0,
-    deductions: 2378,
-    netPay: 30622
+    deductions: 0,
+    netPay: 0
   }
 
-  const payslips = [
-    {
-      id: '1',
-      month: 'June 2026',
-      payPeriod: '01 Jun - 30 Jun 2026',
-      grossPay: 33000,
-      deductions: 2378,
-      netPay: 30622,
-      status: 'paid',
-      paidDate: '2026-07-01'
-    },
-    {
-      id: '2',
-      month: 'May 2026',
-      payPeriod: '01 May - 31 May 2026',
-      grossPay: 33000,
-      deductions: 2378,
-      netPay: 30622,
-      status: 'paid',
-      paidDate: '2026-06-01'
-    },
-    {
-      id: '3',
-      month: 'April 2026',
-      payPeriod: '01 Apr - 30 Apr 2026',
-      grossPay: 33000,
-      deductions: 2378,
-      netPay: 30622,
-      status: 'paid',
-      paidDate: '2026-05-01'
-    },
-    {
-      id: '4',
-      month: 'March 2026',
-      payPeriod: '01 Mar - 31 Mar 2026',
-      grossPay: 33000,
-      deductions: 2378,
-      netPay: 30622,
-      status: 'paid',
-      paidDate: '2026-04-01'
-    }
-  ]
+  const payslips: any[] = []
 
   const ytdSummary = {
     totalGross: 198000,

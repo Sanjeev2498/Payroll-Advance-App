@@ -5,6 +5,7 @@ import {
   Logger,
   ConflictException
 } from '@nestjs/common';
+import { Decimal } from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { PayrollCalculationService } from './payroll-calculation.service';
@@ -16,7 +17,6 @@ import {
   PayrollItem,
   Prisma 
 } from '@prisma/client';
-import { Decimal } from 'decimal.js';
 import { 
   PayrollRunFilterDto,
   PayrollRunApprovalDto,
@@ -359,14 +359,21 @@ export class PayrollRunManagementService {
   // Private helper methods
 
   private async validatePayrollRunInput(dto: PayrollBatchProcessingDto, companyId: string) {
-    const validationContext = {
+    // Create a mock payroll run for validation
+    const mockPayrollRun = {
+      id: 'temp-id',
+      companyId,
+      runNumber: 'temp-run',
       payPeriodStart: new Date(dto.payPeriodStart),
       payPeriodEnd: new Date(dto.payPeriodEnd),
-      employeeIds: dto.employeeIds,
-      companyId,
+      status: 'DRAFT' as const,
+      totalAmount: new Decimal(0),
+      processedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    const validationResult = await this.payrollValidationService.validatePayrollRun(validationContext);
+    const validationResult = await this.payrollValidationService.validatePayrollRun(mockPayrollRun);
     
     if (!validationResult.isValid && !dto.skipErrors) {
       const errorMessages = validationResult.errors.map(error => getErrorMessage(error)).join('; ');
@@ -374,7 +381,7 @@ export class PayrollRunManagementService {
     }
 
     if (validationResult.warnings.length > 0) {
-      this.logger.warn(`Payroll validation warnings: ${validationResult.warnings.map(w => w.message).join('; ')}`);
+      this.logger.warn(`Payroll validation warnings: ${validationResult.warnings.join('; ')}`);
     }
 
     return validationResult;

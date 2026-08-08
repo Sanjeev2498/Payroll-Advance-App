@@ -4,31 +4,27 @@ import { SitesService } from './sites.service';
 import { SiteRepository } from '../common/repositories/site.repository';
 import { ClientRepository } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateSiteDto, SiteOperationalStatus } from './dto';
+import { 
+  createPrismaMock, 
+  createRepositoryMock, 
+  createServiceMocks 
+} from '../test/mocks';
 
-const mockSiteRepository = {
-  create: jest.fn(),
-  findById: jest.fn(),
-  findMany: jest.fn(),
-  update: jest.fn(),
-  delete: jest.fn(),
-  getSiteStats: jest.fn(),
-  findByClientId: jest.fn(),
-  findByOperationalStatus: jest.fn(),
-};
+// Use centralized mocks
+const mockSiteRepository = createRepositoryMock();
+const mockClientRepository = createRepositoryMock();
+const mockServiceMocks = createServiceMocks();
 
-const mockClientRepository = {
-  findById: jest.fn(),
-};
-
-const mockTenantContextService = {
-  getTenantId: jest.fn().mockReturnValue('test-tenant-id'),
-  getUserRole: jest.fn().mockReturnValue('MANAGER'),
-};
+// Add repository-specific methods to mocks
+mockSiteRepository.getSiteStats = jest.fn();
+mockSiteRepository.findByClientId = jest.fn();
+mockSiteRepository.findByOperationalStatus = jest.fn();
 
 const mockSite = {
   id: 'test-site-id',
-  clientId: 'test-client-id',
+  contractId: 'test-contract-id',
   name: 'Test Site',
   address: {
     street: '123 Test St',
@@ -53,8 +49,12 @@ describe('SitesService', () => {
   let service: SitesService;
   let siteRepository: SiteRepository;
   let clientRepository: ClientRepository;
+  let prismaMock: any;
 
   beforeEach(async () => {
+    // Create the prisma mock using centralized factory
+    prismaMock = createPrismaMock();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SitesService,
@@ -68,7 +68,11 @@ describe('SitesService', () => {
         },
         {
           provide: TenantContextService,
-          useValue: mockTenantContextService,
+          useValue: mockServiceMocks.tenantContext,
+        },
+        {
+          provide: PrismaService,
+          useValue: prismaMock,
         },
       ],
     }).compile();
@@ -85,7 +89,7 @@ describe('SitesService', () => {
   describe('create', () => {
     it('should create a new site successfully', async () => {
       const createSiteDto: CreateSiteDto = {
-        clientId: 'test-client-id',
+        contractId: 'test-contract-id',
         name: 'Test Site',
         address: {
           street: '123 Test St',
@@ -96,12 +100,29 @@ describe('SitesService', () => {
         },
       };
 
+      const mockContract = {
+        id: 'test-contract-id',
+        status: 'ACTIVE',
+        client: mockClient,
+      };
+
       mockClientRepository.findById.mockResolvedValue(mockClient);
+      prismaMock.contract.findFirst.mockResolvedValue(mockContract);
       mockSiteRepository.create.mockResolvedValue(mockSite);
 
       const result = await service.create(createSiteDto);
 
-      expect(clientRepository.findById).toHaveBeenCalledWith(createSiteDto.clientId);
+      expect(prismaMock.contract.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: createSiteDto.contractId,
+          client: {
+            companyId: expect.any(String),
+          },
+        },
+        include: {
+          client: true,
+        },
+      });
       expect(siteRepository.create).toHaveBeenCalled();
       expect(result).toBe(mockSite);
     });
@@ -109,6 +130,7 @@ describe('SitesService', () => {
     it('should throw BadRequestException if client not found', async () => {
       const createSiteDto: CreateSiteDto = {
         clientId: 'non-existent-client-id',
+        contractId: 'test-contract-id',
         name: 'Test Site',
         address: {
           street: '123 Test St',
@@ -119,15 +141,15 @@ describe('SitesService', () => {
         },
       };
 
-      mockClientRepository.findById.mockResolvedValue(null);
+      prismaMock.contract.findFirst.mockResolvedValue(null); // No contract found
 
       await expect(service.create(createSiteDto)).rejects.toThrow(BadRequestException);
-      expect(clientRepository.findById).toHaveBeenCalledWith(createSiteDto.clientId);
     });
 
     it('should throw BadRequestException if client is terminated', async () => {
       const createSiteDto: CreateSiteDto = {
         clientId: 'test-client-id',
+        contractId: 'test-contract-id',
         name: 'Test Site',
         address: {
           street: '123 Test St',
@@ -138,8 +160,13 @@ describe('SitesService', () => {
         },
       };
 
-      const terminatedClient = { ...mockClient, contractStatus: 'TERMINATED' };
-      mockClientRepository.findById.mockResolvedValue(terminatedClient);
+      const terminatedContract = {
+        id: 'test-contract-id',
+        status: 'TERMINATED',
+        client: mockClient,
+      };
+
+      prismaMock.contract.findFirst.mockResolvedValue(terminatedContract);
 
       await expect(service.create(createSiteDto)).rejects.toThrow(BadRequestException);
     });
@@ -247,15 +274,44 @@ describe('SitesService', () => {
   describe('findByClientId', () => {
     it('should return sites for a specific client', async () => {
       const clientId = 'test-client-id';
+      const sites = [mockSite];
 
       mockClientRepository.findById.mockResolvedValue(mockClient);
-      mockSiteRepository.findByClientId.mockResolvedValue([mockSite]);
+      prismaMock.site.findMany.mockResolvedValue(sites);
 
       const result = await service.findByClientId(clientId);
 
       expect(clientRepository.findById).toHaveBeenCalledWith(clientId);
-      expect(siteRepository.findByClientId).toHaveBeenCalledWith(clientId);
-      expect(result).toEqual([mockSite]);
+      expect(prismaMock.site.findMany).toHaveBeenCalledWith({
+        where: {
+          contract: {
+            clientId: clientId,
+            client: {
+              companyId: 'test-tenant-id',
+            },
+          },
+        },
+        include: {
+          contract: {
+            include: {
+              client: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              assignments: true,
+              shifts: true,
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+      });
+      expect(result).toEqual(sites);
     });
 
     it('should throw NotFoundException if client not found', async () => {

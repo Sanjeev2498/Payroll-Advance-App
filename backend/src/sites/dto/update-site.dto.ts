@@ -30,12 +30,12 @@ export class UpdateSiteDto extends PartialType(CreateSiteDto) {
   // This allows partial updates to site records
 
   @ApiPropertyOptional({
-    description: 'Client ID that owns this site',
+    description: 'Contract ID that this site belongs to',
     example: 'uuid-v4-string',
   })
   @IsOptional()
   @IsUUID(4)
-  clientId?: string;
+  contractId?: string;
 
   @ApiPropertyOptional({
     description: 'Site name or identifier',

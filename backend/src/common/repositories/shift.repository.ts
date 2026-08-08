@@ -136,10 +136,14 @@ export class ShiftRepository extends TenantAwareRepository {
             },
             site: {
               include: {
-                client: {
-                  select: {
-                    id: true,
-                    name: true,
+                contract: {
+                  include: {
+                    client: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
                   },
                 },
               },
@@ -179,8 +183,10 @@ export class ShiftRepository extends TenantAwareRepository {
         where: {
           id,
           site: {
-            client: {
-              companyId: this.tenantContext.getTenantId(),
+            contract: {
+              client: {
+                companyId: this.tenantContext.getTenantId(),
+              },
             },
           },
         },
@@ -201,10 +207,14 @@ export class ShiftRepository extends TenantAwareRepository {
           },
           site: {
             include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+              contract: {
+                include: {
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -315,8 +325,10 @@ export class ShiftRepository extends TenantAwareRepository {
     const where: Prisma.ShiftWhereInput = {
       siteId,
       site: {
-        client: {
-          companyId: this.tenantContext.getTenantId(),
+        contract: {
+          client: {
+            companyId: this.tenantContext.getTenantId(),
+          },
         },
       },
     };
@@ -423,8 +435,10 @@ export class ShiftRepository extends TenantAwareRepository {
 
     const where: Prisma.ShiftWhereInput = {
       site: {
-        client: {
-          companyId: this.tenantContext.getTenantId(),
+        contract: {
+          client: {
+            companyId: this.tenantContext.getTenantId(),
+          },
         },
       },
     };
@@ -553,8 +567,10 @@ export class ShiftRepository extends TenantAwareRepository {
       assignmentId,
       shiftDate,
       site: {
-        client: {
-          companyId: this.tenantContext.getTenantId(),
+        contract: {
+          client: {
+            companyId: this.tenantContext.getTenantId(),
+          },
         },
       },
       status: {
@@ -607,8 +623,10 @@ export class ShiftRepository extends TenantAwareRepository {
   private buildWhereClause(filters: ShiftFilters): any {
     const where: any = {
       site: {
-        client: {
-          companyId: this.tenantContext.getTenantId(),
+        contract: {
+          client: {
+            companyId: this.tenantContext.getTenantId(),
+          },
         },
       },
     };

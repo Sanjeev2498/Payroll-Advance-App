@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { clientPortalApi, ClientIncident, ClientComplaint, ClientServiceRequest } from '@/lib/api/client-portal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,17 @@ interface CommunicationProps {
 }
 
 export function Communication({ clientId }: CommunicationProps) {
+  const [recentIncidents, setRecentIncidents] = useState<ClientIncident[]>([]);
+  const [complaints, setComplaints] = useState<ClientComplaint[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<ClientServiceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalIncidents: 0,
+    openComplaints: 0,
+    pendingRequests: 0,
+    avgResolutionTime: '24h'
+  });
+
   const [newComplaint, setNewComplaint] = useState({
     type: '',
     subject: '',
@@ -30,65 +42,90 @@ export function Communication({ clientId }: CommunicationProps) {
     siteId: '',
   });
 
-  // Mock data
-  const recentIncidents = [
-    {
-      id: 'inc-1',
-      type: 'SECURITY_BREACH',
-      title: 'Unauthorized Access Attempt',
-      siteName: 'Main Office',
-      severity: 'HIGH',
-      status: 'RESOLVED',
-      reportedAt: '2024-01-15T14:30:00Z',
-    },
-  ];
+  useEffect(() => {
+    fetchCommunicationData();
+  }, [clientId]);
 
-  const complaints = [
-    {
-      id: 'comp-1',
-      type: 'SERVICE_QUALITY',
-      subject: 'Guard was late for shift',
-      status: 'INVESTIGATING',
-      priority: 'MEDIUM',
-      submittedAt: '2024-01-15T09:00:00Z',
-    },
-  ];
+  const fetchCommunicationData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch real data from API instead of using hardcoded mock data
+      const [incidentsData, complaintsData, requestsData] = await Promise.all([
+        clientPortalApi.getIncidents(clientId),
+        clientPortalApi.getComplaints(clientId),
+        clientPortalApi.getServiceRequests(clientId)
+      ]);
 
-  const serviceRequests = [
-    {
-      id: 'req-1',
-      type: 'GUARD_REPLACEMENT',
-      title: 'Additional guard needed for weekend',
-      status: 'APPROVED',
-      urgency: 'HIGH',
-      submittedAt: '2024-01-14T15:30:00Z',
-    },
-  ];
+      setRecentIncidents(incidentsData.incidents);
+      setComplaints(complaintsData.complaints);
+      setServiceRequests(requestsData.requests);
 
-  const handleComplaintSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Submitting complaint:', newComplaint);
-    // Reset form
-    setNewComplaint({
-      type: '',
-      subject: '',
-      description: '',
-      priority: 'MEDIUM',
-      siteId: '',
-    });
+      // Update stats based on real data
+      setStats({
+        totalIncidents: incidentsData.summary.total || 0,
+        openComplaints: complaintsData.summary.investigating || 0,
+        pendingRequests: requestsData.summary.pending || 0,
+        avgResolutionTime: '24h' // This could come from API
+      });
+
+    } catch (error) {
+      console.error('Failed to fetch communication data:', error);
+      // Set empty arrays instead of mock data on error
+      setRecentIncidents([]);
+      setComplaints([]);
+      setServiceRequests([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRequestSubmit = (e: React.FormEvent) => {
+  const handleComplaintSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submitting request:', newRequest);
-    // Reset form
-    setNewRequest({
-      type: '',
-      title: '',
-      description: '',
-      urgency: 'MEDIUM',
-      siteId: '',
-    });
+    try {
+      await clientPortalApi.submitComplaint({
+        ...newComplaint,
+        clientId
+      });
+      
+      // Reset form and refresh data
+      setNewComplaint({
+        type: '',
+        subject: '',
+        description: '',
+        priority: 'MEDIUM',
+        siteId: '',
+      });
+      
+      // Refresh the data to show the new complaint
+      fetchCommunicationData();
+    } catch (error) {
+      console.error('Failed to submit complaint:', error);
+    }
+  };
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await clientPortalApi.submitServiceRequest({
+        ...newRequest,
+        clientId
+      });
+      
+      // Reset form and refresh data
+      setNewRequest({
+        type: '',
+        title: '',
+        description: '',
+        urgency: 'MEDIUM',
+        siteId: '',
+      });
+      
+      // Refresh the data to show the new request
+      fetchCommunicationData();
+    } catch (error) {
+      console.error('Failed to submit request:', error);
+    }
   };
 
   const getSeverityColor = (severity: string) => {
@@ -119,7 +156,7 @@ export function Communication({ clientId }: CommunicationProps) {
             <CardTitle className="text-sm font-medium">Total Incidents</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{stats.totalIncidents}</div>
             <p className="text-sm text-gray-600">This month</p>
           </CardContent>
         </Card>
@@ -129,7 +166,7 @@ export function Communication({ clientId }: CommunicationProps) {
             <CardTitle className="text-sm font-medium">Open Complaints</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">2</div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.openComplaints}</div>
             <p className="text-sm text-gray-600">Under investigation</p>
           </CardContent>
         </Card>
@@ -139,7 +176,7 @@ export function Communication({ clientId }: CommunicationProps) {
             <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">1</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.pendingRequests}</div>
             <p className="text-sm text-gray-600">Awaiting approval</p>
           </CardContent>
         </Card>
@@ -149,7 +186,7 @@ export function Communication({ clientId }: CommunicationProps) {
             <CardTitle className="text-sm font-medium">Avg Resolution Time</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24h</div>
+            <div className="text-2xl font-bold">{stats.avgResolutionTime}</div>
             <p className="text-sm text-gray-600">Last 30 days</p>
           </CardContent>
         </Card>

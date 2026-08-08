@@ -36,7 +36,11 @@ export const authApi = {
     
     try {
       console.log('🔍 Auth API - Making POST request to /auth/login...')
-      const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
+      const response = await apiClient.post<{
+        success: boolean;
+        data: LoginResponse;
+        metadata: any;
+      }>('/auth/login', credentials)
       
       console.log('🔍 Auth API - Raw response received:')
       console.log('🔍 Auth API - Response status:', response.status)
@@ -50,8 +54,11 @@ export const authApi = {
         throw new Error('No data received from login API')
       }
       
-      console.log('🔍 Auth API - Returning response.data:', response.data)
-      return response.data!
+      // The backend wraps responses with ResponseTransformInterceptor
+      // So response.data contains { success: boolean, data: LoginResponse, metadata: any }
+      // But LoginResponse itself also has { success: boolean, data: {user, tokens}, message: string }
+      console.log('🔍 Auth API - Extracting inner data from double-wrapped response:', response.data.data.data)
+      return response.data.data
     } catch (error) {
       console.error('🚨 Auth API - Login error:', error)
       console.error('🚨 Auth API - Error type:', typeof error)
@@ -97,12 +104,12 @@ export const authApi = {
   },
 
   getProfile: async (): Promise<User> => {
-    const response = await apiClient.get<{ success: boolean; data: User }>('/auth/profile')
-    return response.data.data!
+    const response = await apiClient.get<{ success: boolean; data: { success: boolean; data: User }; metadata: any }>('/auth/profile')
+    return response.data.data.data!
   },
 
   updateProfile: async (data: Partial<User>): Promise<User> => {
-    const response = await apiClient.patch<{ success: boolean; data: User }>('/auth/profile', data)
-    return response.data.data!
+    const response = await apiClient.patch<{ success: boolean; data: { success: boolean; data: User }; metadata: any }>('/auth/profile', data)
+    return response.data.data.data!
   },
 }

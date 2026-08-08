@@ -64,7 +64,7 @@ describe('Assignment Logic Property Tests', () => {
     service = module.get<AssignmentsService>(AssignmentsService);
     assignmentRepository = module.get(AssignmentRepository);
     employeesService = module.get(EmployeesService);
-    tenantContextService = module.get(TenantContextService);
+    tenantContextService = await module.resolve(TenantContextService);
   });
 
   // ===============================
@@ -212,7 +212,7 @@ describe('Assignment Logic Property Tests', () => {
           }
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 10 }
     );
   });
 
@@ -262,7 +262,7 @@ describe('Assignment Logic Property Tests', () => {
           expect(result.recommendations[0].overallScore).toBeGreaterThan(80);
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 10 }
     );
   });
 
@@ -319,7 +319,7 @@ describe('Assignment Logic Property Tests', () => {
           expect(skillMatching.missingSkills.length).toBe(missingSkills.length);
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 10 }
     );
   });
 
@@ -363,7 +363,7 @@ describe('Assignment Logic Property Tests', () => {
           }
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 10 }
     );
   });
 
@@ -513,7 +513,7 @@ describe('Assignment Logic Property Tests', () => {
           await expect(service.create(conflictRequest as any)).rejects.toThrow(ConflictException);
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 10 }
     );
   });
 

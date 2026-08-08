@@ -34,8 +34,8 @@ describe('Tenant Context Management System - Validation', () => {
   it('should have all tenant context components available', async () => {
     // Verify all components are properly registered and available
     const tenantContextService = await module.resolve<TenantContextService>(TenantContextService);
-    const tenantGuard = module.get<TenantGuard>(TenantGuard);
-    const tenantContextMiddleware = module.get<TenantContextMiddleware>(TenantContextMiddleware);
+    const tenantGuard = await module.resolve<TenantGuard>(TenantGuard);
+    const tenantContextMiddleware = await module.resolve<TenantContextMiddleware>(TenantContextMiddleware);
 
     expect(tenantContextService).toBeDefined();
     expect(tenantGuard).toBeDefined();

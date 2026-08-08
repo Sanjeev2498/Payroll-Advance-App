@@ -230,7 +230,39 @@ export class BillingValidationService {
   }
 
   /**
-   * Validate client billing permissions
+   * Validate contract billing permissions
+   */
+  async validateContractBillingPermissions(contractId: string): Promise<void> {
+    const companyId = this.tenantContext.getTenantId();
+    
+    const contract = await this.prisma.contract.findFirst({
+      where: {
+        id: contractId,
+        client: {
+          companyId,
+        },
+      },
+      include: {
+        client: true,
+      },
+    });
+
+    if (!contract) {
+      throw new BadRequestException('Contract not found');
+    }
+
+    if (contract.status !== 'ACTIVE') {
+      throw new BadRequestException('Cannot create invoice for inactive contract');
+    }
+
+    // Check if contract has expired
+    if (contract.endDate && contract.endDate < new Date()) {
+      throw new BadRequestException('Contract has expired');
+    }
+  }
+
+  /**
+   * Validate client billing permissions (deprecated - use validateContractBillingPermissions)
    */
   async validateClientBillingPermissions(clientId: string): Promise<void> {
     const companyId = this.tenantContext.getTenantId();
@@ -244,15 +276,6 @@ export class BillingValidationService {
 
     if (!client) {
       throw new BadRequestException('Client not found');
-    }
-
-    if (client.contractStatus !== 'ACTIVE') {
-      throw new BadRequestException('Cannot create invoice for inactive client contract');
-    }
-
-    // Check if contract has expired
-    if (client.contractEnd && client.contractEnd < new Date()) {
-      throw new BadRequestException('Client contract has expired');
     }
   }
 

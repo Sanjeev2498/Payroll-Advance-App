@@ -148,7 +148,7 @@ export default function RegisterPage() {
                     id="companyName"
                     type="text"
                     placeholder="Acme Security Services"
-                    error={!!errors.companyName}
+                    error={errors.companyName ? errors.companyName.message : undefined}
                     {...register('companyName')}
                   />
                   {errors.companyName && (
@@ -171,7 +171,7 @@ export default function RegisterPage() {
                     <Input
                       id="firstName"
                       type="text"
-                      error={!!errors.firstName}
+                      error={errors.firstName ? errors.firstName.message : undefined}
                       {...register('firstName')}
                     />
                     {errors.firstName && (
@@ -186,7 +186,7 @@ export default function RegisterPage() {
                     <Input
                       id="lastName"
                       type="text"
-                      error={!!errors.lastName}
+                      error={errors.lastName ? errors.lastName.message : undefined}
                       {...register('lastName')}
                     />
                     {errors.lastName && (
@@ -203,7 +203,7 @@ export default function RegisterPage() {
                     id="email"
                     type="email"
                     autoComplete="email"
-                    error={!!errors.email}
+                    error={errors.email ? errors.email.message : undefined}
                     {...register('email')}
                   />
                   {errors.email && (
@@ -219,7 +219,7 @@ export default function RegisterPage() {
                     id="phone"
                     type="tel"
                     placeholder="+1 (555) 000-0000"
-                    error={!!errors.phone}
+                    error={errors.phone ? errors.phone.message : undefined}
                     {...register('phone')}
                   />
                   {errors.phone && (
@@ -242,7 +242,7 @@ export default function RegisterPage() {
                     id="password"
                     type="password"
                     autoComplete="new-password"
-                    error={!!errors.password}
+                    error={errors.password ? errors.password.message : undefined}
                     {...register('password')}
                   />
                   {errors.password && (
@@ -261,7 +261,7 @@ export default function RegisterPage() {
                     id="confirmPassword"
                     type="password"
                     autoComplete="new-password"
-                    error={!!errors.confirmPassword}
+                    error={errors.confirmPassword ? errors.confirmPassword.message : undefined}
                     {...register('confirmPassword')}
                   />
                   {errors.confirmPassword && (

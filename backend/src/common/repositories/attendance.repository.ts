@@ -590,10 +590,16 @@ export class AttendanceRepository extends TenantAwareRepository {
             select: {
               id: true,
               name: true,
-              client: {
+              contract: {
                 select: {
                   id: true,
-                  name: true,
+                  title: true,
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },

@@ -16,8 +16,9 @@ export function RoleGuard({
   showFallback = false 
 }: RoleGuardProps) {
   const { hasRole } = useAuthPermissions()
+  const hasPermission = hasRole(roles)
 
-  if (!hasRole(roles)) {
+  if (!hasPermission) {
     if (showFallback && fallback) {
       return <>{fallback}</>
     }

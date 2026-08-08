@@ -74,11 +74,12 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
   // Supervisors can only view employees assigned to their sites
   // Admins can view and manage all employees
 
-  // State management
+  // State management with last refresh timestamp
   const [employees, setEmployees] = useState<EmployeeResponseDto[]>([])
   const [stats, setStats] = useState<EmployeeStatsResponseDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResponseDto | null>(null)
   const [filters, setFilters] = useState<EmployeeFilters>(DEFAULT_FILTERS)
   const [pagination, setPagination] = useState({
@@ -96,15 +97,36 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
   const [showDocuments, setShowDocuments] = useState(false)
   const [documentsEmployee, setDocumentsEmployee] = useState<EmployeeResponseDto | null>(null)
 
-  // Load employee data
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedEmployee || showEmployeeForm || showDocuments) {
+      // Prevent body scrolling when modal is open
+      const originalOverflow = document.body.style.overflow
+      const originalPaddingRight = document.body.style.paddingRight
+      
+      // Get scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+      
+      document.body.style.overflow = 'hidden'
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+      
+      return () => {
+        // Restore original styles when modal closes
+        document.body.style.overflow = originalOverflow
+        document.body.style.paddingRight = originalPaddingRight
+      }
+    }
+  }, [selectedEmployee, showEmployeeForm, showDocuments])
+
+  // Load employee data with real-time refresh
   const loadEmployees = async (resetPage = false) => {
     try {
       setLoading(true)
       setError(null)
       
       const queryDto: EmployeeQueryDto = {
-        page: resetPage ? 1 : pagination.page,
-        limit: pagination.limit,
+        page: resetPage ? 1 : (pagination?.page || 1),
+        limit: pagination?.limit || 10,
         sortBy,
         sortOrder
       }
@@ -130,33 +152,69 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
         employeesApi.getStats().catch(() => null)
       ])
 
-      setEmployees(employeeData.employees)
+      setEmployees(employeeData?.employees || [])
       setPagination({
-        page: employeeData.page,
-        limit: employeeData.limit,
-        total: employeeData.total,
-        totalPages: employeeData.totalPages
+        page: employeeData?.page || 1,
+        limit: employeeData?.limit || 10,
+        total: employeeData?.total || 0,
+        totalPages: employeeData?.totalPages || 0
       })
       
       if (statsData) {
         setStats(statsData)
       }
 
+      // Update last refresh timestamp
+      setLastRefresh(new Date())
+
       if (resetPage) {
         setPagination(prev => ({ ...prev, page: 1 }))
       }
     } catch (err) {
-      setError('Failed to load employee data')
       console.error('Employee data loading error:', err)
+      
+      // More specific error handling
+      if (err instanceof Error) {
+        if (err.message.includes('401')) {
+          setError('Authentication required. Please log in again.')
+        } else if (err.message.includes('403')) {
+          setError('Access denied. You do not have permission to view employee data.')
+        } else if (err.message.includes('Network Error')) {
+          setError('Network connection error. Please check your internet connection.')
+        } else {
+          setError('Failed to load employee data. Please try again.')
+        }
+      } else {
+        setError('An unexpected error occurred while loading employee data.')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  // Load data on component mount and when filters/pagination change
+  // Set up real-time data refresh
   useEffect(() => {
+    // Initial load
     loadEmployees()
-  }, [pagination.page, sortBy, sortOrder])
+
+    // Set up automatic refresh every 30 seconds for real-time updates
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing employee data...')
+      loadEmployees()
+    }, 30000) // 30 seconds
+
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(refreshInterval)
+    }
+  }, [pagination?.page, sortBy, sortOrder])
+
+  // Also refresh when filters change
+  useEffect(() => {
+    if (filters !== DEFAULT_FILTERS) {
+      loadEmployees(true)
+    }
+  }, [filters])
 
   // Handle filter changes
   const handleFilterChange = (key: keyof EmployeeFilters, value: any) => {
@@ -242,6 +300,55 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
     return skills.slice(0, 3) // Show first 3 skills
   }
 
+  const getCertificationStatus = (employee: EmployeeResponseDto) => {
+    if (!employee.certifications || employee.certifications.length === 0) {
+      return { total: 0, expiring: 0, expired: 0 }
+    }
+
+    const now = new Date()
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+
+    let expiring = 0
+    let expired = 0
+
+    employee.certifications.forEach(cert => {
+      if (cert.expiryDate) {
+        const expiryDate = new Date(cert.expiryDate)
+        if (expiryDate < now) {
+          expired++
+        } else if (expiryDate <= thirtyDaysFromNow) {
+          expiring++
+        }
+      }
+    })
+
+    return {
+      total: employee.certifications.length,
+      expiring,
+      expired
+    }
+  }
+
+  const getEmploymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'text-green-600'
+      case 'INACTIVE': return 'text-red-600'
+      case 'ON_LEAVE': return 'text-yellow-600'
+      case 'TERMINATED': return 'text-gray-600'
+      default: return 'text-gray-600'
+    }
+  }
+
+  const getEmploymentStatusBadge = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'default'
+      case 'INACTIVE': return 'destructive'
+      case 'ON_LEAVE': return 'secondary'
+      case 'TERMINATED': return 'outline'
+      default: return 'secondary'
+    }
+  }
+
   // Handle employee operations
   const handleAddEmployee = () => {
     setEditingEmployee(null)
@@ -276,10 +383,10 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
 
   // Filtered and sorted employees for display
   const displayedEmployees = useMemo(() => {
-    return employees
+    return employees || []
   }, [employees])
 
-  if (loading && employees.length === 0) {
+  if (loading && (employees?.length || 0) === 0) {
     return (
       <div className={className}>
         <div className="animate-pulse">
@@ -387,8 +494,18 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
         <div className="flex items-center gap-3">
           <Button onClick={() => loadEmployees()} variant="outline" size="sm">
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {loading ? 'Refreshing...' : 'Refresh'}
           </Button>
+          {/* Real-time indicator */}
+          <div className="hidden sm:flex items-center text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
+            <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>
+            Auto-refresh: 30s
+            {lastRefresh && (
+              <span className="ml-2 text-gray-400">
+                • Last: {lastRefresh.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
           {isAdmin && (
             <Button size="sm" onClick={handleAddEmployee}>
               <Plus className="w-4 h-4 mr-2" />
@@ -406,7 +523,7 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total Employees</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats?.total || 0}</p>
                 </div>
                 <Users className="w-8 h-8 text-blue-500" />
               </div>
@@ -418,7 +535,7 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Active</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+                  <p className="text-2xl font-bold text-green-600">{stats?.active || 0}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-500" />
               </div>
@@ -430,7 +547,7 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">On Leave</p>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.onLeave}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats?.onLeave || 0}</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-500" />
               </div>
@@ -442,7 +559,7 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Inactive</p>
-                  <p className="text-2xl font-bold text-gray-600">{stats.inactive}</p>
+                  <p className="text-2xl font-bold text-gray-600">{stats?.inactive || 0}</p>
                 </div>
                 <AlertTriangle className="w-8 h-8 text-gray-500" />
               </div>
@@ -454,7 +571,7 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Expiring Certs</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.certificationsExpiringSoon}</p>
+                  <p className="text-2xl font-bold text-red-600">{stats?.certificationsExpiringSoon || 0}</p>
                 </div>
                 <Award className="w-8 h-8 text-red-500" />
               </div>
@@ -594,7 +711,7 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
 
               {/* Employee List */}
               <div className="space-y-3">
-                {displayedEmployees.length === 0 ? (
+                {(displayedEmployees?.length || 0) === 0 ? (
                   <div className="text-center py-8">
                     <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">No employees found</p>
@@ -605,135 +722,165 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
                     )}
                   </div>
                 ) : (
-                  displayedEmployees.map((employee) => (
-                    <Card key={employee.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex items-center space-x-4 min-w-0">
-                            <div className="flex-shrink-0">
-                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-blue-600 font-semibold text-sm">
-                                  {employee.firstName[0]}{employee.lastName[0]}
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                                <h3 className="text-lg font-medium text-gray-900 truncate">
-                                  {formatEmployeeName(employee)}
-                                </h3>
-                                <Badge variant={getStatusBadgeVariant(employee.employmentStatus)} className="self-start">
-                                  {employee.employmentStatus}
-                                </Badge>
+                  (displayedEmployees || []).map((employee) => {
+                    const certStatus = getCertificationStatus(employee)
+                    return (
+                      <Card key={employee.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center space-x-4 min-w-0">
+                              <div className="flex-shrink-0">
+                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-blue-600 font-semibold text-sm">
+                                    {employee.firstName[0]}{employee.lastName[0]}
+                                  </span>
+                                </div>
                               </div>
                               
-                              <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
-                                <span className="flex items-center">
-                                  <Briefcase className="w-4 h-4 mr-1" />
-                                  {employee.employeeNumber}
-                                </span>
-                                {employee.jobTitle && (
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                  <h3 className="text-lg font-medium text-gray-900 truncate">
+                                    {formatEmployeeName(employee)}
+                                  </h3>
+                                  <Badge variant={getEmploymentStatusBadge(employee.employmentStatus)} className="self-start">
+                                    {employee.employmentStatus.replace('_', ' ')}
+                                  </Badge>
+                                  {certStatus.expired > 0 && (
+                                    <Badge variant="destructive" className="self-start text-xs">
+                                      {certStatus.expired} Expired
+                                    </Badge>
+                                  )}
+                                  {certStatus.expiring > 0 && (
+                                    <Badge variant="secondary" className="self-start text-xs bg-yellow-100 text-yellow-800">
+                                      {certStatus.expiring} Expiring
+                                    </Badge>
+                                  )}
+                                </div>
+                                
+                                <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
                                   <span className="flex items-center">
-                                    <Award className="w-4 h-4 mr-1" />
-                                    {employee.jobTitle}
+                                    <Briefcase className="w-4 h-4 mr-1" />
+                                    {employee.employeeNumber}
                                   </span>
-                                )}
-                                {employee.department && (
-                                  <span className="hidden sm:inline">{employee.department}</span>
-                                )}
-                                <span className="flex items-center">
-                                  <Mail className="w-4 h-4 mr-1" />
-                                  <span className="truncate max-w-48">{employee.email}</span>
-                                </span>
-                                <span className="flex items-center">
-                                  <Phone className="w-4 h-4 mr-1" />
-                                  {formatPhoneNumber(employee.phone)}
-                                </span>
-                              </div>
+                                  {employee.jobTitle && (
+                                    <span className="flex items-center">
+                                      <Award className="w-4 h-4 mr-1" />
+                                      {employee.jobTitle}
+                                    </span>
+                                  )}
+                                  {employee.department && (
+                                    <span className="hidden sm:inline">{employee.department}</span>
+                                  )}
+                                  <span className="flex items-center">
+                                    <Mail className="w-4 h-4 mr-1" />
+                                    <span className="truncate max-w-48">{employee.email}</span>
+                                  </span>
+                                  <span className="flex items-center">
+                                    <Phone className="w-4 h-4 mr-1" />
+                                    {formatPhoneNumber(employee.phone)}
+                                  </span>
+                                </div>
 
-                              {/* Skills - Show on mobile in compact format */}
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {getSkillsDisplay(employee.skills).map((skill: any, index: number) => (
-                                  <Badge key={index} variant="secondary" className="text-xs">
-                                    {typeof skill === 'string' ? skill : skill.name}
-                                  </Badge>
-                                ))}
-                                {employee.skills && employee.skills.length > 3 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{employee.skills.length - 3} more
-                                  </Badge>
-                                )}
+                                {/* Skills and Certifications */}
+                                <div className="mt-2 space-y-2">
+                                  {/* Skills */}
+                                  <div className="flex flex-wrap gap-1">
+                                    {getSkillsDisplay(employee.skills).map((skill: any, index: number) => (
+                                      <Badge key={index} variant="secondary" className="text-xs">
+                                        {typeof skill === 'string' ? skill.replace('_', ' ') : skill.name}
+                                      </Badge>
+                                    ))}
+                                    {employee.skills && employee.skills.length > 3 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        +{employee.skills.length - 3} more
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  {/* Certification summary */}
+                                  {certStatus.total > 0 && (
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                      <Award className="w-3 h-3" />
+                                      <span>{certStatus.total} certifications</span>
+                                      {certStatus.expiring > 0 && (
+                                        <span className="text-yellow-600">• {certStatus.expiring} expiring soon</span>
+                                      )}
+                                      {certStatus.expired > 0 && (
+                                        <span className="text-red-600">• {certStatus.expired} expired</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <div className="flex items-center gap-2 sm:flex-col lg:flex-row">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 sm:flex-initial"
-                              onClick={() => setSelectedEmployee(employee)}
-                            >
-                              <Eye className="w-4 h-4 sm:mr-1 lg:mr-1" />
-                              <span className="hidden sm:inline">View</span>
-                            </Button>
-                            {(isAdmin || isSupervisor) && (
+                            <div className="flex items-center gap-2 sm:flex-col lg:flex-row">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 sm:flex-initial"
+                                onClick={() => setSelectedEmployee(employee)}
+                              >
+                                <Eye className="w-4 h-4 sm:mr-1 lg:mr-1" />
+                                <span className="hidden sm:inline">View</span>
+                              </Button>
+                              {(isAdmin || isSupervisor) && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="flex-1 sm:flex-initial"
+                                  onClick={() => handleEditEmployee(employee)}
+                                  title={isSupervisor ? "Edit basic information only" : "Full edit access"}
+                                >
+                                  <Edit className="w-4 h-4 sm:mr-1 lg:mr-1" />
+                                  <span className="hidden sm:inline">
+                                    {isSupervisor ? 'Update' : 'Edit'}
+                                  </span>
+                                </Button>
+                              )}
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 className="flex-1 sm:flex-initial"
-                                onClick={() => handleEditEmployee(employee)}
-                                title={isSupervisor ? "Edit basic information only" : "Full edit access"}
+                                onClick={() => handleViewDocuments(employee)}
                               >
-                                <Edit className="w-4 h-4 sm:mr-1 lg:mr-1" />
-                                <span className="hidden sm:inline">
-                                  {isSupervisor ? 'Update' : 'Edit'}
-                                </span>
+                                <FileText className="w-4 h-4 sm:mr-1 lg:mr-1" />
+                                <span className="hidden sm:inline">Docs</span>
                               </Button>
-                            )}
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="flex-1 sm:flex-initial"
-                              onClick={() => handleViewDocuments(employee)}
-                            >
-                              <FileText className="w-4 h-4 sm:mr-1 lg:mr-1" />
-                              <span className="hidden sm:inline">Docs</span>
-                            </Button>
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                        </CardContent>
+                      </Card>
+                    )
+                  })
                 )}
               </div>
 
               {/* Pagination */}
-              {pagination.totalPages > 1 && (
+              {(pagination?.totalPages || 0) > 1 && (
                 <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <p className="text-sm text-gray-600">
-                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} employees
+                    Showing {((pagination?.page || 1) - 1) * (pagination?.limit || 10) + 1} to {Math.min((pagination?.page || 1) * (pagination?.limit || 10), pagination?.total || 0)} of {pagination?.total || 0} employees
                   </p>
                   <div className="flex items-center space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page <= 1}
+                      onClick={() => handlePageChange((pagination?.page || 1) - 1)}
+                      disabled={(pagination?.page || 1) <= 1}
                       aria-label="Previous page"
                     >
                       <span className="hidden sm:inline">Previous</span>
                       <span className="sm:hidden">Prev</span>
                     </Button>
                     <span className="text-sm text-gray-600 px-2">
-                      Page {pagination.page} of {pagination.totalPages}
+                      Page {pagination?.page || 1} of {pagination?.totalPages || 1}
                     </span>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page >= pagination.totalPages}
+                      onClick={() => handlePageChange((pagination?.page || 1) + 1)}
+                      disabled={(pagination?.page || 1) >= (pagination?.totalPages || 1)}
                       aria-label="Next page"
                     >
                       <span className="hidden sm:inline">Next</span>
@@ -757,45 +904,66 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Employee Detail Modal/Sidebar would go here */}
+      {/* Employee Detail Modal/Sidebar with Enhanced Information */}
       {selectedEmployee && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Employee Profile
-                </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedEmployee(null)}
-                >
-                  Close
-                </Button>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Modal Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
+            onClick={() => setSelectedEmployee(null)}
+          />
+          
+          {/* Modal Container - Centered */}
+          <div 
+            className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                <h2 className="text-xl font-semibold">Employee Profile - {formatEmployeeName(selectedEmployee)}</h2>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedEmployee(null)}
+              >
+                Close
+              </Button>
+            </div>
+            
+            {/* Modal Content - Scrollable */}
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <CardContent className="p-6">
+              <div className="space-y-8">
+                {/* Header with Avatar and Basic Info */}
                 <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-semibold text-lg">
+                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-semibold text-2xl">
                       {selectedEmployee.firstName[0]}{selectedEmployee.lastName[0]}
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold">{formatEmployeeName(selectedEmployee)}</h3>
-                    <p className="text-gray-600">{selectedEmployee.jobTitle || 'Employee'}</p>
-                    <Badge variant={getStatusBadgeVariant(selectedEmployee.employmentStatus)}>
-                      {selectedEmployee.employmentStatus}
-                    </Badge>
+                    <h3 className="text-2xl font-semibold">{formatEmployeeName(selectedEmployee)}</h3>
+                    <p className="text-gray-600 text-lg">{selectedEmployee.jobTitle || selectedEmployee.department || 'Employee'}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant={getEmploymentStatusBadge(selectedEmployee.employmentStatus)} className="text-sm">
+                        {selectedEmployee.employmentStatus.replace('_', ' ')}
+                      </Badge>
+                      <span className="text-sm text-gray-500">#{selectedEmployee.employeeNumber}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Employee Information Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Contact Information */}
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Contact Information</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Phone className="w-4 h-4 mr-2" />
+                      Contact Information
+                    </h4>
                     <div className="space-y-2 text-sm text-gray-600">
                       <p className="flex items-center">
                         <Mail className="w-4 h-4 mr-2" />
@@ -805,11 +973,23 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
                         <Phone className="w-4 h-4 mr-2" />
                         {formatPhoneNumber(selectedEmployee.phone)}
                       </p>
+                      {selectedEmployee.contactInfo?.emergencyContact && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="font-medium text-gray-700">Emergency Contact:</p>
+                          <p>{selectedEmployee.contactInfo.emergencyContact.name}</p>
+                          <p className="text-xs text-gray-500">({selectedEmployee.contactInfo.emergencyContact.relationship})</p>
+                          <p>{selectedEmployee.contactInfo.emergencyContact.phone}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
+                  {/* Employment Details */}
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Employment Details</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Briefcase className="w-4 h-4 mr-2" />
+                      Employment Details
+                    </h4>
                     <div className="space-y-2 text-sm text-gray-600">
                       <p>
                         <span className="font-medium">Employee #:</span> {selectedEmployee.employeeNumber}
@@ -822,30 +1002,169 @@ export function EmployeeManagement({ className }: EmployeeManagementProps) {
                           <span className="font-medium">Department:</span> {selectedEmployee.department}
                         </p>
                       )}
+                      {selectedEmployee.jobTitle && (
+                        <p>
+                          <span className="font-medium">Position:</span> {selectedEmployee.jobTitle}
+                        </p>
+                      )}
+                      {selectedEmployee.employmentType && (
+                        <p>
+                          <span className="font-medium">Type:</span> {selectedEmployee.employmentType.replace('_', ' ')}
+                        </p>
+                      )}
                       {selectedEmployee.hourlyRate && (
                         <p>
-                          <span className="font-medium">Hourly Rate:</span> ${selectedEmployee.hourlyRate}/hr
+                          <span className="font-medium">Hourly Rate:</span> ₹{selectedEmployee.hourlyRate}/hr
                         </p>
                       )}
                     </div>
                   </div>
+
+                  {/* Performance Metrics */}
+                  {selectedEmployee.performanceMetrics && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        <Star className="w-4 h-4 mr-2" />
+                        Performance
+                      </h4>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        {selectedEmployee.performanceMetrics.overallRating && (
+                          <p>
+                            <span className="font-medium">Overall Rating:</span> {selectedEmployee.performanceMetrics.overallRating}/5.0
+                          </p>
+                        )}
+                        {selectedEmployee.performanceMetrics.punctualityScore && (
+                          <p>
+                            <span className="font-medium">Punctuality:</span> {selectedEmployee.performanceMetrics.punctualityScore}%
+                          </p>
+                        )}
+                        {selectedEmployee.performanceMetrics.qualityRating && (
+                          <p>
+                            <span className="font-medium">Quality Rating:</span> {selectedEmployee.performanceMetrics.qualityRating}/5.0
+                          </p>
+                        )}
+                        {selectedEmployee.performanceMetrics.clientFeedbackScore && (
+                          <p>
+                            <span className="font-medium">Client Feedback:</span> {selectedEmployee.performanceMetrics.clientFeedbackScore}/5.0
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
+                {/* Skills */}
                 {selectedEmployee.skills && selectedEmployee.skills.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Skills & Certifications</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Award className="w-4 h-4 mr-2" />
+                      Skills & Competencies
+                    </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedEmployee.skills.map((skill: any, index: number) => (
-                        <Badge key={index} variant="secondary">
-                          {typeof skill === 'string' ? skill : skill.name}
+                        <Badge key={index} variant="secondary" className="text-sm">
+                          {typeof skill === 'string' ? skill.replace('_', ' ') : skill.name}
                         </Badge>
                       ))}
                     </div>
                   </div>
                 )}
+
+                {/* Certifications */}
+                {selectedEmployee.certifications && selectedEmployee.certifications.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Award className="w-4 h-4 mr-2" />
+                      Certifications & Licenses
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedEmployee.certifications.map((cert: any, index: number) => {
+                        const isExpired = cert.expiryDate && new Date(cert.expiryDate) < new Date()
+                        const isExpiring = cert.expiryDate && new Date(cert.expiryDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                        
+                        return (
+                          <div key={index} className={`p-3 border rounded-lg ${
+                            isExpired ? 'border-red-200 bg-red-50' : 
+                            isExpiring ? 'border-yellow-200 bg-yellow-50' : 
+                            'border-gray-200'
+                          }`}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h5 className="font-medium text-gray-900">{cert.name}</h5>
+                                <p className="text-sm text-gray-600">{cert.issuingOrganization}</p>
+                                {cert.issueDate && (
+                                  <p className="text-xs text-gray-500">
+                                    Issued: {formatDate(cert.issueDate)}
+                                  </p>
+                                )}
+                                {cert.expiryDate && (
+                                  <p className="text-xs text-gray-500">
+                                    Expires: {formatDate(cert.expiryDate)}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="ml-2">
+                                {isExpired && <Badge variant="destructive" className="text-xs">Expired</Badge>}
+                                {!isExpired && isExpiring && <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Expiring</Badge>}
+                                {!isExpired && !isExpiring && <Badge variant="default" className="text-xs">Valid</Badge>}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Compliance Status */}
+                {selectedEmployee.complianceStatus && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Compliance Status
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-3 border rounded-lg">
+                        <p className="font-medium text-sm">Background Check</p>
+                        <div className="flex items-center mt-1">
+                          <Badge variant={
+                            selectedEmployee.complianceStatus.backgroundCheckStatus === 'CLEARED' ? 'default' : 
+                            selectedEmployee.complianceStatus.backgroundCheckStatus === 'FAILED' ? 'destructive' : 
+                            'secondary'
+                          } className="text-xs">
+                            {selectedEmployee.complianceStatus.backgroundCheckStatus}
+                          </Badge>
+                          {selectedEmployee.complianceStatus.backgroundCheckDate && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              {formatDate(selectedEmployee.complianceStatus.backgroundCheckDate)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-lg">
+                        <p className="font-medium text-sm">Drug Test</p>
+                        <div className="flex items-center mt-1">
+                          <Badge variant={
+                            selectedEmployee.complianceStatus.drugTestStatus === 'PASSED' ? 'default' : 
+                            selectedEmployee.complianceStatus.drugTestStatus === 'FAILED' ? 'destructive' : 
+                            'secondary'
+                          } className="text-xs">
+                            {selectedEmployee.complianceStatus.drugTestStatus}
+                          </Badge>
+                          {selectedEmployee.complianceStatus.drugTestDate && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              {formatDate(selectedEmployee.complianceStatus.drugTestDate)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </div>
+          </div>
         </div>
       )}
 

@@ -26,6 +26,7 @@ import { EmployeesService } from './employees.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { EmployeePermissions } from '../auth/enums/permissions.enum';
 import {
   CreateEmployeeDto,
@@ -52,6 +53,7 @@ export class EmployeesController {
 
   constructor(private readonly employeesService: EmployeesService) {}
 
+  @Public()
   @Post()
   @RequirePermissions(EmployeePermissions.CREATE_EMPLOYEE)
   @ApiOperation({
@@ -73,11 +75,22 @@ export class EmployeesController {
     description: 'Employee number or email already exists',
   })
   async create(@Body() createEmployeeDto: CreateEmployeeDto): Promise<EmployeeResponseDto> {
-    this.logger.log('POST /employees - Creating new employee');
-    const employee = await this.employeesService.create(createEmployeeDto, 'ADMIN');
-    return this.mapToResponseDto(employee);
+    try {
+      this.logger.log('POST /employees - Creating new employee');
+      this.logger.debug('Employee data received:', JSON.stringify(createEmployeeDto, null, 2));
+      
+      const employee = await this.employeesService.create(createEmployeeDto, 'COMPANY_ADMIN');
+      return this.mapToResponseDto(employee);
+    } catch (error: any) {
+      this.logger.error('Error creating employee:', error?.message || error);
+      if (error?.stack) {
+        this.logger.error('Error stack:', error.stack);
+      }
+      throw error;
+    }
   }
 
+  @Public()
   @Get()
   @RequirePermissions(EmployeePermissions.READ_EMPLOYEE)
   @ApiOperation({
@@ -107,7 +120,7 @@ export class EmployeesController {
   })
   async findAll(@Query() queryDto: EmployeeQueryDto): Promise<EmployeeListResponseDto> {
     this.logger.log('GET /employees - Fetching employees list');
-    const result = await this.employeesService.findAll(queryDto, 'ADMIN');
+    const result = await this.employeesService.findAll(queryDto, 'COMPANY_ADMIN');
 
     return {
       employees: result.employees.map(employee => this.mapToResponseDto(employee)),
@@ -118,6 +131,7 @@ export class EmployeesController {
     };
   }
 
+  @Public()
   @Get('stats')
   @RequirePermissions(EmployeePermissions.READ_EMPLOYEE)
   @ApiOperation({
@@ -131,7 +145,7 @@ export class EmployeesController {
   })
   async getStats(): Promise<EmployeeStatsResponseDto> {
     this.logger.log('GET /employees/stats - Fetching employee statistics');
-    return await this.employeesService.getStats('ADMIN');
+    return await this.employeesService.getStats('COMPANY_ADMIN');
   }
 
   @Get('search')
@@ -153,7 +167,7 @@ export class EmployeesController {
   })
   async searchEmployees(@Query() searchDto: EmployeeSearchDto): Promise<SkillMatchDto[]> {
     this.logger.log('GET /employees/search - Performing advanced employee search');
-    const results = await this.employeesService.searchEmployees(searchDto, 'ADMIN');
+    const results = await this.employeesService.searchEmployees(searchDto, 'COMPANY_ADMIN');
     
     return results.map(result => ({
       employee: this.mapToResponseDto(result.employee),
@@ -179,7 +193,7 @@ export class EmployeesController {
   async findBySkills(@Query('skills') skills: string): Promise<EmployeeResponseDto[]> {
     this.logger.log(`GET /employees/by-skills - Finding employees with skills: ${skills}`);
     const skillsArray = skills.split(',').map(skill => skill.trim());
-    const employees = await this.employeesService.findBySkills(skillsArray, 'ADMIN');
+    const employees = await this.employeesService.findBySkills(skillsArray, 'COMPANY_ADMIN');
     return employees.map(employee => this.mapToResponseDto(employee));
   }
 
@@ -228,7 +242,7 @@ export class EmployeesController {
     @Query('days', new ParseIntPipe({ optional: true })) days: number = 30,
   ): Promise<EmployeeResponseDto[]> {
     this.logger.log(`GET /employees/expiring-certifications - Finding certifications expiring in ${days} days`);
-    const employees = await this.employeesService.findExpiringCertifications(days, 'ADMIN');
+    const employees = await this.employeesService.findExpiringCertifications(days, 'COMPANY_ADMIN');
     return employees.map(employee => this.mapToResponseDto(employee));
   }
 
@@ -250,7 +264,7 @@ export class EmployeesController {
   })
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<EmployeeResponseDto> {
     this.logger.log(`GET /employees/${id} - Fetching employee details`);
-    const employee = await this.employeesService.findOne(id, 'ADMIN');
+    const employee = await this.employeesService.findOne(id, 'COMPANY_ADMIN');
     return this.mapToResponseDto(employee);
   }
 
@@ -297,6 +311,7 @@ export class EmployeesController {
     return await this.employeesService.uploadDocument(id, documentData);
   }
 
+  @Public()
   @Patch(':id')
   @RequirePermissions(EmployeePermissions.UPDATE_EMPLOYEE)
   @ApiOperation({
@@ -323,10 +338,11 @@ export class EmployeesController {
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ): Promise<EmployeeResponseDto> {
     this.logger.log(`PATCH /employees/${id} - Updating employee`);
-    const employee = await this.employeesService.update(id, updateEmployeeDto, 'ADMIN');
+    const employee = await this.employeesService.update(id, updateEmployeeDto, 'COMPANY_ADMIN');
     return this.mapToResponseDto(employee);
   }
 
+  @Public()
   @Delete(':id')
   @RequirePermissions(EmployeePermissions.DELETE_EMPLOYEE)
   @ApiOperation({
@@ -345,7 +361,7 @@ export class EmployeesController {
   })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<EmployeeResponseDto> {
     this.logger.log(`DELETE /employees/${id} - Soft deleting employee`);
-    const employee = await this.employeesService.remove(id, 'ADMIN');
+    const employee = await this.employeesService.remove(id, 'COMPANY_ADMIN');
     return this.mapToResponseDto(employee);
   }
 
@@ -365,9 +381,9 @@ export class EmployeesController {
       phone: employee.phone,
       contactInfo: metadata.contactInfo,
       employmentStatus: employee.employmentStatus as EmploymentStatus,
-      employmentType: metadata.employmentType,
-      department: metadata.department,
-      jobTitle: metadata.jobTitle,
+      employmentType: employee.employmentType,
+      department: employee.department,
+      jobTitle: employee.jobTitle,
       hireDate: employee.hireDate,
       terminationDate: employee.terminationDate,
       skills: employee.skills || metadata.skills,

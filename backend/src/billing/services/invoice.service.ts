@@ -41,20 +41,35 @@ export class InvoiceService {
     // Calculate billing amounts
     const billingResult = await this.invoiceCalculationService.calculateClientBilling(createInvoiceDto);
 
-    // Generate invoice number if not provided
+    // Generate invoice number if not provided - FIXED: Use contractId
     const companyId = this.tenantContext.getTenantId();
     const invoiceNumber = createInvoiceDto.invoiceNumber || 
-      await this.invoiceCalculationService.generateInvoiceNumber(companyId, createInvoiceDto.clientId);
+      await this.invoiceCalculationService.generateInvoiceNumber(companyId, createInvoiceDto.contractId);
 
     // Prepare due date
     const dueDate = createInvoiceDto.dueDate 
       ? new Date(createInvoiceDto.dueDate)
       : this.calculateDefaultDueDate(new Date());
 
+    // Find the first active contract for this client to create the invoice
+    const contract = await this.prisma.contract.findFirst({
+      where: {
+        client: {
+          id: createInvoiceDto.clientId,
+          companyId,
+        },
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!contract) {
+      throw new NotFoundException(`No active contract found for client ${createInvoiceDto.clientId}`);
+    }
+
     // Create invoice
     const invoiceData: Prisma.InvoiceCreateInput = {
-      client: {
-        connect: { id: createInvoiceDto.clientId },
+      contract: {
+        connect: { id: contract.id },
       },
       invoiceNumber,
       billingPeriodStart: new Date(createInvoiceDto.billingPeriodStart),
@@ -69,12 +84,18 @@ export class InvoiceService {
     const invoice = await this.prisma.invoice.create({
       data: invoiceData,
       include: {
-        client: {
+        contract: {
           select: {
             id: true,
-            name: true,
-            contactEmail: true,
-            contactInfo: true,
+            title: true,
+            client: {
+              select: {
+                id: true,
+                name: true,
+                contactEmail: true,
+                contactInfo: true,
+              },
+            },
           },
         },
       },
@@ -149,12 +170,16 @@ export class InvoiceService {
       where: { id },
       data: updateData,
       include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            contactEmail: true,
-            contactInfo: true,
+        contract: {
+          include: {
+            client: {
+              select: {
+                id: true,
+                name: true,
+                contactEmail: true,
+                contactInfo: true,
+              },
+            },
           },
         },
       },
@@ -189,12 +214,16 @@ export class InvoiceService {
       this.prisma.invoice.findMany({
         where: whereClause,
         include: {
-          client: {
-            select: {
-              id: true,
-              name: true,
-              contactEmail: true,
-              contactInfo: true,
+          contract: {
+            include: {
+              client: {
+                select: {
+                  id: true,
+                  name: true,
+                  contactEmail: true,
+                  contactInfo: true,
+                },
+              },
             },
           },
         },
@@ -256,12 +285,16 @@ export class InvoiceService {
       where: { id },
       data: { status: InvoiceStatus.SENT },
       include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            contactEmail: true,
-            contactInfo: true,
+        contract: {
+          include: {
+            client: {
+              select: {
+                id: true,
+                name: true,
+                contactEmail: true,
+                contactInfo: true,
+              },
+            },
           },
         },
       },
@@ -278,7 +311,11 @@ export class InvoiceService {
     const companyId = this.tenantContext.getTenantId();
     
     let whereClause: Prisma.InvoiceWhereInput = {
-      client: { companyId },
+      contract: { 
+        client: {
+          companyId 
+        }
+      },
     };
 
     if (period) {
@@ -326,15 +363,21 @@ export class InvoiceService {
     const invoice = await this.prisma.invoice.findFirst({
       where: {
         id,
-        client: { companyId },
+        contract: { 
+          client: { companyId },
+        },
       },
       include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            contactEmail: true,
-            contactInfo: true,
+        contract: {
+          include: {
+            client: {
+              select: {
+                id: true,
+                name: true,
+                contactEmail: true,
+                contactInfo: true,
+              },
+            },
           },
         },
       },
@@ -349,11 +392,20 @@ export class InvoiceService {
 
   private buildInvoiceWhereClause(companyId: string, filterDto: InvoiceFilterDto): Prisma.InvoiceWhereInput {
     const whereClause: Prisma.InvoiceWhereInput = {
-      client: { companyId },
+      contract: { 
+        client: {
+          companyId 
+        }
+      },
     };
 
     if (filterDto.clientId) {
-      whereClause.clientId = filterDto.clientId;
+      whereClause.contract = {
+        client: {
+          id: filterDto.clientId,
+          companyId
+        }
+      };
     }
 
     if (filterDto.status) {
@@ -426,7 +478,9 @@ export class InvoiceService {
   private async getOverdueInvoicesCount(companyId: string): Promise<number> {
     return this.prisma.invoice.count({
       where: {
-        client: { companyId },
+        contract: { 
+          client: { companyId },
+        },
         status: { in: [InvoiceStatus.SENT] },
         dueDate: { lt: new Date() },
       },
@@ -456,8 +510,8 @@ export class InvoiceService {
   private mapToInvoiceResponse(invoice: any, metadata?: any): InvoiceResponse {
     return {
       id: invoice.id,
-      clientId: invoice.clientId,
-      client: invoice.client,
+      clientId: invoice.contractId,
+      client: invoice.contract?.client,
       invoiceNumber: invoice.invoiceNumber,
       billingPeriodStart: invoice.billingPeriodStart.toISOString(),
       billingPeriodEnd: invoice.billingPeriodEnd.toISOString(),

@@ -63,13 +63,13 @@ export const attendanceService = {
     })
 
     const response = await api.get(`/attendance?${searchParams.toString()}`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Get single attendance record
   async getAttendanceById(id: string): Promise<Attendance> {
     const response = await api.get(`/attendance/${id}`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Get attendance statistics
@@ -87,31 +87,31 @@ export const attendanceService = {
     if (employeeId) params.append('employeeId', employeeId)
 
     const response = await api.get(`/attendance/stats?${params.toString()}`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Clock in employee
   async clockIn(data: ClockInData): Promise<ClockAction> {
     const response = await api.post('/attendance/clock-in', data)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Clock out employee
   async clockOut(data: ClockOutData): Promise<ClockAction> {
     const response = await api.post('/attendance/clock-out', data)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Get employee current status
   async getEmployeeCurrentStatus(employeeId: string) {
     const response = await api.get(`/attendance/employee/${employeeId}/current-status`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Get employee today's attendance
   async getEmployeeTodayAttendance(employeeId: string): Promise<PaginatedResponse<Attendance>> {
     const response = await api.get(`/attendance/employee/${employeeId}/today`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Detect anomalies
@@ -138,19 +138,19 @@ export const attendanceService = {
     })
 
     const response = await api.get(`/attendance/anomalies?${searchParams.toString()}`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Request attendance correction
   async requestCorrection(attendanceId: string, data: AttendanceCorrectionData) {
     const response = await api.post(`/attendance/${attendanceId}/correction`, data)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Update attendance record
   async updateAttendance(id: string, data: Partial<Attendance>) {
     const response = await api.patch(`/attendance/${id}`, data)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Bulk update attendance records

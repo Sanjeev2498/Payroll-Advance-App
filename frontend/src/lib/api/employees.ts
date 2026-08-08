@@ -71,6 +71,12 @@ export interface EmployeeResponseDto {
   lastName: string
   email: string
   phone?: string | null
+  // Document fields
+  aadhaarNumber?: string
+  panNumber?: string
+  accountNumber?: string
+  ifscCode?: string
+  photoUrl?: string
   contactInfo?: EmployeeContactInfo
   employmentStatus: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED'
   employmentType?: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'TEMPORARY'
@@ -93,8 +99,14 @@ export interface CreateEmployeeDto {
   employeeNumber: string
   firstName: string
   lastName: string
-  email: string
+  email?: string
   phone: string
+  // Required Document fields
+  aadhaarNumber: string
+  panNumber: string
+  accountNumber: string
+  ifscCode: string
+  photoUrl?: string
   contactInfo?: EmployeeContactInfo
   employmentType?: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'TEMPORARY'
   department?: string
@@ -208,37 +220,37 @@ export const employeesApi = {
     
     const url = `/employees${params.toString() ? `?${params.toString()}` : ''}`
     const response = await apiClient.get<EmployeeListResponseDto>(url)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Get employee by ID
   async getEmployee(id: string): Promise<EmployeeResponseDto> {
     const response = await apiClient.get<EmployeeResponseDto>(`/employees/${id}`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Create new employee
   async createEmployee(employeeData: CreateEmployeeDto): Promise<EmployeeResponseDto> {
     const response = await apiClient.post<EmployeeResponseDto>('/employees', employeeData)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Update employee
   async updateEmployee(id: string, employeeData: UpdateEmployeeDto): Promise<EmployeeResponseDto> {
     const response = await apiClient.patch<EmployeeResponseDto>(`/employees/${id}`, employeeData)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Delete employee (soft delete)
   async deleteEmployee(id: string): Promise<EmployeeResponseDto> {
     const response = await apiClient.delete<EmployeeResponseDto>(`/employees/${id}`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Get employee statistics
   async getStats(): Promise<EmployeeStatsResponseDto> {
     const response = await apiClient.get<EmployeeStatsResponseDto>('/employees/stats')
-    return response.data
+    return response.data.data || response.data
   },
 
   // Search employees with advanced criteria
@@ -254,7 +266,7 @@ export const employeesApi = {
     
     const url = `/employees/search${params.toString() ? `?${params.toString()}` : ''}`
     const response = await apiClient.get<SkillMatchDto[]>(url)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Find employees by skills
@@ -263,7 +275,7 @@ export const employeesApi = {
     params.append('skills', skills.join(','))
     
     const response = await apiClient.get<EmployeeResponseDto[]>(`/employees/by-skills?${params.toString()}`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Find available employees
@@ -276,13 +288,13 @@ export const employeesApi = {
     
     const url = `/employees/available${params.toString() ? `?${params.toString()}` : ''}`
     const response = await apiClient.get<EmployeeResponseDto[]>(url)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Find employees with expiring certifications
   async getEmployeesWithExpiringCertifications(days: number = 30): Promise<EmployeeResponseDto[]> {
     const response = await apiClient.get<EmployeeResponseDto[]>(`/employees/expiring-certifications?days=${days}`)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Get employee documents
@@ -294,12 +306,12 @@ export const employeesApi = {
     
     const url = `/employees/${employeeId}/documents${params.toString() ? `?${params.toString()}` : ''}`
     const response = await apiClient.get<DocumentResponseDto[]>(url)
-    return response.data
+    return response.data.data || response.data
   },
 
   // Upload employee document
   async uploadEmployeeDocument(employeeId: string, documentData: DocumentUploadDto): Promise<DocumentResponseDto> {
     const response = await apiClient.post<DocumentResponseDto>(`/employees/${employeeId}/documents`, documentData)
-    return response.data
+    return response.data.data || response.data
   }
 }

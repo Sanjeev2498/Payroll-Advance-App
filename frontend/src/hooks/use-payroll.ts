@@ -31,7 +31,7 @@ export function usePayroll() {
       setIsLoading(true);
       setError(null);
       const data = await payrollApi.getPayrollRuns(filters);
-      setPayrollRuns(data);
+      setPayrollRuns(data as any);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch payroll runs');
     } finally {

@@ -144,7 +144,7 @@ export default function ForgotPasswordPage() {
                   type="email"
                   autoComplete="email"
                   placeholder="Enter your registered email"
-                  error={!!errors.email}
+                  error={errors.email ? errors.email.message : undefined}
                   {...register('email')}
                 />
                 {errors.email && (

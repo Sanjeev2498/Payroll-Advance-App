@@ -95,7 +95,7 @@ export const billingApi = {
   async getAnalytics(): Promise<BillingAnalytics> {
     try {
       const response = await apiClient.get('/billing/analytics');
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to fetch billing analytics:', error);
       // Return mock data for development
@@ -111,7 +111,7 @@ export const billingApi = {
   async createInvoice(data: CreateInvoiceRequest): Promise<any> {
     try {
       const response = await apiClient.post('/billing/invoices', data);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to create invoice:', error);
       // Mock success for development
@@ -128,7 +128,7 @@ export const billingApi = {
   async sendInvoice(invoiceId: string): Promise<any> {
     try {
       const response = await apiClient.post(`/billing/invoices/${invoiceId}/send`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to send invoice:', error);
       // Mock success for development
@@ -139,7 +139,7 @@ export const billingApi = {
   async markPaid(invoiceId: string, paymentData: any): Promise<any> {
     try {
       const response = await apiClient.post(`/billing/invoices/${invoiceId}/mark-paid`, paymentData);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to mark invoice as paid:', error);
       // Mock success for development
@@ -174,7 +174,7 @@ export const billingApi = {
   async getInvoiceDetails(invoiceId: string): Promise<any> {
     try {
       const response = await apiClient.get(`/billing/invoices/${invoiceId}`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to get invoice details:', error);
       // Return mock data for development
@@ -208,7 +208,7 @@ export const billingApi = {
     try {
       const searchParams = new URLSearchParams(params);
       const response = await apiClient.get(`/billing/analytics/detailed?${searchParams.toString()}`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to get billing analytics:', error);
       // Return mock data for development
@@ -241,7 +241,7 @@ export const billingApi = {
   async getPaymentTracking(): Promise<any> {
     try {
       const response = await apiClient.get('/billing/payments/tracking');
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to get payment tracking:', error);
       // Return mock data for development

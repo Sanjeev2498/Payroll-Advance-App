@@ -18,6 +18,7 @@ import {
   Zap
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { apiClient } from '@/lib/api/client'
 
 interface RealtimeEvent {
   id: string
@@ -53,102 +54,53 @@ export const RealTimeUpdates: React.FC = () => {
   const [notifications, setNotifications] = useState<RealtimeEvent[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
 
-  // Simulate WebSocket connection and real-time events
-  useEffect(() => {
-    // In a real implementation, this would be a WebSocket connection
-    const simulateRealTimeUpdates = () => {
-      setIsConnected(true)
+  // Fetch real-time data from API instead of generating mock data
+  const fetchRealTimeData = async () => {
+    try {
+      const response = await apiClient.get('/attendance/real-time-events')
+      const data = response.data.data || response.data
+      const { events: apiEvents = [], liveStats: apiStats } = data || {}
       
-      // Generate mock events periodically
-      const eventTypes: RealtimeEvent['type'][] = [
-        'CLOCK_IN', 'CLOCK_OUT', 'LATE_ARRIVAL', 'OVERTIME_START'
-      ]
-      
-      const mockEmployees = [
-        { id: '1', name: 'John Smith' },
-        { id: '2', name: 'Sarah Johnson' },
-        { id: '3', name: 'Mike Davis' },
-        { id: '4', name: 'Lisa Wang' },
-        { id: '5', name: 'James Brown' }
-      ]
-      
-      const mockSites = [
-        'Downtown Office', 'Shopping Mall', 'Industrial Complex', 
-        'Hospital Campus', 'University Building'
-      ]
-
-      const generateEvent = (): RealtimeEvent => {
-        const employee = mockEmployees[Math.floor(Math.random() * mockEmployees.length)]
-        const site = mockSites[Math.floor(Math.random() * mockSites.length)]
-        const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)]
-        
-        let severity: RealtimeEvent['severity'] = 'LOW'
-        let metadata = {}
-
-        if (eventType === 'LATE_ARRIVAL') {
-          severity = 'MEDIUM'
-          metadata = { minutesLate: Math.floor(Math.random() * 60) + 15 }
-        } else if (eventType === 'OVERTIME_START') {
-          severity = 'HIGH'
-          metadata = { scheduledEndTime: '17:00', actualTime: '18:30' }
-        }
-
-        return {
-          id: Date.now().toString() + Math.random(),
-          type: eventType,
-          employeeName: employee.name,
-          employeeId: employee.id,
-          siteName: site,
-          timestamp: new Date().toISOString(),
-          metadata,
-          severity
-        }
-      }
-
-      // Generate initial events
-      const initialEvents = Array.from({ length: 8 }, generateEvent)
-      setEvents(initialEvents.reverse()) // Most recent first
-
-      // Update live stats
-      setLiveStats({
-        activeEmployees: Math.floor(Math.random() * 50) + 25,
-        totalClockedIn: Math.floor(Math.random() * 40) + 15,
-        lateArrivals: Math.floor(Math.random() * 8) + 1,
-        pendingClockOuts: Math.floor(Math.random() * 12) + 3,
-        averageResponseTime: Math.floor(Math.random() * 300) + 100,
-        lastUpdate: new Date().toISOString()
+      // Update events (keep most recent first)
+      setEvents(prevEvents => {
+        const newEvents = (apiEvents || []).filter((newEvent: RealtimeEvent) => 
+          !prevEvents.find(existing => existing.id === newEvent.id)
+        )
+        return [...newEvents, ...prevEvents].slice(0, 20)
       })
-
-      // Simulate new events every 10-30 seconds
-      const interval = setInterval(() => {
-        const newEvent = generateEvent()
-        
-        setEvents(prevEvents => [newEvent, ...prevEvents.slice(0, 19)]) // Keep last 20 events
-        
-        // Add to notifications if it's important
-        if (newEvent.severity && ['MEDIUM', 'HIGH', 'CRITICAL'].includes(newEvent.severity)) {
-          setNotifications(prev => [newEvent, ...prev.slice(0, 4)]) // Keep last 5 notifications
-        }
-
-        // Update stats occasionally
-        if (Math.random() > 0.7) {
-          setLiveStats(prev => ({
-            ...prev,
-            totalClockedIn: prev.totalClockedIn + (Math.random() > 0.5 ? 1 : -1),
-            lateArrivals: Math.max(0, prev.lateArrivals + (Math.random() > 0.8 ? 1 : 0)),
-            lastUpdate: new Date().toISOString()
-          }))
-        }
-      }, Math.random() * 20000 + 10000) // 10-30 seconds
-
-      return () => {
-        clearInterval(interval)
-        setIsConnected(false)
+      
+      // Update live stats
+      if (apiStats) {
+        setLiveStats(apiStats)
       }
+      
+      // Add important events to notifications
+      const importantEvents = (apiEvents || []).filter((event: RealtimeEvent) => 
+        event.severity && ['MEDIUM', 'HIGH', 'CRITICAL'].includes(event.severity)
+      )
+      
+      if (importantEvents.length > 0) {
+        setNotifications(prev => [...importantEvents, ...prev].slice(0, 5))
+      }
+      
+      setIsConnected(true)
+    } catch (error) {
+      console.error('Failed to fetch real-time data:', error)
+      setIsConnected(false)
     }
+  }
 
-    const cleanup = simulateRealTimeUpdates()
-    return cleanup
+  useEffect(() => {
+    // Initial fetch
+    fetchRealTimeData()
+    
+    // Set up interval to poll for new events (in production, use WebSocket)
+    const interval = setInterval(fetchRealTimeData, 15000) // Poll every 15 seconds
+    
+    return () => {
+      clearInterval(interval)
+      setIsConnected(false)
+    }
   }, [])
 
   const getEventIcon = (type: RealtimeEvent['type']) => {

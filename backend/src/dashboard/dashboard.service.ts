@@ -86,10 +86,12 @@ export class DashboardService {
         }
       }),
 
-      // Active Sites
+      // Active Sites  
       this.prisma.site.count({
         where: {
-          client: { companyId: tenantId },
+          contract: { 
+            client: { companyId: tenantId }
+          },
           operationalStatus: 'ACTIVE'
         }
       }),
@@ -111,7 +113,9 @@ export class DashboardService {
       // Get all sites to calculate vacant positions
       this.prisma.site.findMany({
         where: {
-          client: { companyId: tenantId },
+          contract: { 
+            client: { companyId: tenantId }
+          },
           operationalStatus: 'ACTIVE'
         },
         include: {
@@ -126,7 +130,11 @@ export class DashboardService {
       this.prisma.$transaction(async (tx) => {
         const scheduledShifts = await tx.shift.count({
           where: {
-            site: { client: { companyId: tenantId } },
+            site: { 
+              contract: { 
+                client: { companyId: tenantId } 
+              } 
+            },
             shiftDate: today,
             status: 'SCHEDULED'
           }
@@ -210,7 +218,11 @@ export class DashboardService {
       // Pending Assignments (using INACTIVE status as pending)
       this.prisma.assignment.count({
         where: {
-          site: { client: { companyId: tenantId } },
+          site: { 
+            contract: { 
+              client: { companyId: tenantId } 
+            } 
+          },
           status: 'INACTIVE'
         }
       }),
@@ -227,7 +239,9 @@ export class DashboardService {
       this.prisma.$transaction(async (tx) => {
         const monthlyRevenue = await tx.invoice.aggregate({
           where: {
-            client: { companyId: tenantId },
+            contract: { 
+              client: { companyId: tenantId } 
+            },
             billingPeriodStart: { gte: monthStart },
             billingPeriodEnd: { lte: monthEnd },
             status: 'PAID'
@@ -237,14 +251,18 @@ export class DashboardService {
 
         const outstandingInvoices = await tx.invoice.count({
           where: {
-            client: { companyId: tenantId },
+            contract: { 
+              client: { companyId: tenantId } 
+            },
             status: { in: ['SENT', 'OVERDUE'] }
           }
         });
 
         const paidInvoices = await tx.invoice.count({
           where: {
-            client: { companyId: tenantId },
+            contract: { 
+              client: { companyId: tenantId } 
+            },
             billingPeriodStart: { gte: monthStart },
             status: 'PAID'
           }
@@ -252,7 +270,9 @@ export class DashboardService {
 
         const totalBilled = await tx.invoice.aggregate({
           where: {
-            client: { companyId: tenantId },
+            contract: { 
+              client: { companyId: tenantId } 
+            },
             billingPeriodStart: { gte: monthStart },
             billingPeriodEnd: { lte: monthEnd }
           },
@@ -300,11 +320,17 @@ export class DashboardService {
 
     const sites = await this.prisma.site.findMany({
       where: {
-        client: { companyId: tenantId },
+        contract: { 
+          client: { companyId: tenantId } 
+        },
         operationalStatus: 'ACTIVE'
       },
       include: {
-        client: { select: { name: true } },
+        contract: {
+          include: {
+            client: { select: { name: true } }
+          }
+        },
         assignments: {
           where: { status: 'ACTIVE' },
           include: {
@@ -349,7 +375,7 @@ export class DashboardService {
       return {
         siteId: site.id,
         siteName: site.name,
-        clientName: site.client.name,
+        clientName: site.contract.client.name,
         requiredGuards,
         assignedGuards,
         onDutyGuards,
@@ -478,7 +504,13 @@ export class DashboardService {
 
       // Recent assignments
       this.prisma.assignment.findMany({
-        where: { site: { client: { companyId: tenantId } } },
+        where: { 
+          site: { 
+            contract: { 
+              client: { companyId: tenantId } 
+            } 
+          } 
+        },
         orderBy: { createdAt: 'desc' },
         take: Math.ceil(limit / 3),
         include: {

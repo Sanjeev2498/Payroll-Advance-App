@@ -80,7 +80,7 @@ describe('UserRepository', () => {
 
     repository = module.get<UserRepository>(UserRepository);
     prisma = module.get(PrismaService) as jest.Mocked<PrismaService>;
-    tenantContext = module.get(TenantContextService) as jest.Mocked<TenantContextService>;
+    tenantContext = await module.resolve(TenantContextService) as jest.Mocked<TenantContextService>;
   });
 
   afterEach(() => {
@@ -239,7 +239,7 @@ describe('UserRepository', () => {
         },
         skip: 0,
         take: 20,
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         include: {
           company: {
             select: {
@@ -273,7 +273,7 @@ describe('UserRepository', () => {
         },
         skip: 0,
         take: 20,
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         include: {
           company: {
             select: {

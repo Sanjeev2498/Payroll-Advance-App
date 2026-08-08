@@ -45,10 +45,19 @@ const ClientGenerator = fc.record({
   contractRate: fc.float({ min: Math.fround(25), max: Math.fround(100), noNaN: true }), // Hourly billing rate
 });
 
+const ContractGenerator = fc.record({
+  id: fc.uuid(),
+  clientId: fc.uuid(), // Links to client
+  contractNumber: fc.string({ minLength: 8, maxLength: 20 }),
+  status: fc.constantFrom('ACTIVE', 'EXPIRED', 'TERMINATED'),
+  startDate: fc.date({ min: new Date('2024-01-01'), max: new Date('2024-06-30') }),
+  endDate: fc.date({ min: new Date('2024-07-01'), max: new Date('2024-12-31') }),
+});
+
 const SiteGenerator = fc.record({
   id: fc.uuid(),
   name: fc.string({ minLength: 3, maxLength: 30 }),
-  clientId: fc.uuid(),
+  contractId: fc.uuid(), // FIXED: Sites belong to contracts, not directly to clients
   requiredStaff: fc.integer({ min: 1, max: 10 }),
 });
 
@@ -81,7 +90,7 @@ const PayrollItemGenerator = fc.record({
 
 const InvoiceGenerator = fc.record({
   id: fc.uuid(),
-  clientId: fc.uuid(),
+  contractId: fc.uuid(), // FIXED: Changed from clientId to contractId to match schema
   invoiceNumber: fc.string({ minLength: 8, maxLength: 20 }),
   totalAmount: fc.float({ min: Math.fround(5000), max: Math.fround(100000), noNaN: true }),
   status: fc.constantFrom(
@@ -109,15 +118,45 @@ const DateRecordGenerator = fc.record({
   amount: fc.float({ min: Math.fround(100), max: Math.fround(10000), noNaN: true }),
 });
 
-// Complex financial scenario generator
+// Complex financial scenario generator with proper relationships
 const FinancialScenarioGenerator = fc.record({
   company: CompanyGenerator,
   clients: fc.array(ClientGenerator, { minLength: 1, maxLength: 5 }),
-  sites: fc.array(SiteGenerator, { minLength: 1, maxLength: 10 }),
   employees: fc.array(EmployeeGenerator, { minLength: 5, maxLength: 20 }),
   payrollRuns: fc.array(PayrollRunGenerator, { minLength: 1, maxLength: 3 }),
   invoices: fc.array(InvoiceGenerator, { minLength: 3, maxLength: 15 }),
   attendanceRecords: fc.array(AttendanceGenerator, { minLength: 10, maxLength: 50 }),
+}).map(base => {
+  // FIXED: Create contracts linked to existing clients
+  const contracts = base.clients.map((client, index) => ({
+    id: fc.sample(fc.uuid(), 1)[0],
+    clientId: client.id, // Link to existing client
+    contractNumber: `CONTRACT-${index + 1}`,
+    status: fc.sample(fc.constantFrom('ACTIVE', 'EXPIRED', 'TERMINATED'), 1)[0],
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-12-31'),
+  }));
+  
+  // FIXED: Create sites linked to existing contracts  
+  const sites = contracts.map((contract, index) => ({
+    id: fc.sample(fc.uuid(), 1)[0],
+    name: `Site ${index + 1}`,
+    contractId: contract.id, // Link to existing contract
+    requiredStaff: fc.sample(fc.integer({ min: 1, max: 10 }), 1)[0],
+  }));
+  
+  // FIXED: Update invoices to use contractId from existing contracts
+  const updatedInvoices = base.invoices.map((invoice, index) => ({
+    ...invoice,
+    contractId: contracts[index % contracts.length].id, // Link to existing contract
+  }));
+  
+  return {
+    ...base,
+    contracts,
+    sites,
+    invoices: updatedInvoices,
+  };
 });
 
 describe('Property: Financial Report Accuracy - Comprehensive Testing', () => {
@@ -174,7 +213,7 @@ describe('Property: Financial Report Accuracy - Comprehensive Testing', () => {
 
     financialReportsService = moduleRef.get<FinancialReportsService>(FinancialReportsService);
     prismaService = moduleRef.get<PrismaService>(PrismaService);
-    tenantContextService = moduleRef.get<TenantContextService>(TenantContextService);
+    tenantContextService = await moduleRef.resolve<TenantContextService>(TenantContextService);
   });
 
   afterAll(async () => {
@@ -277,18 +316,28 @@ describe('Property: Financial Report Accuracy - Comprehensive Testing', () => {
         async (scenario) => {
           // **Feature: security-workforce-payroll-system, Property 2: Billing Revenue Accuracy**
           
-          // Setup mock invoice data
-          const mockInvoices = scenario.invoices.map(invoice => ({
-            ...invoice,
-            totalAmount: new Decimal(invoice.totalAmount), // Convert to Decimal for service compatibility
-            client: {
-              id: invoice.clientId,
-              name: scenario.clients.find(c => c.id === invoice.clientId)?.name || 'Test Client',
-              companyId: scenario.company.id,
-            },
-          }));
+          // Setup mock invoice data with proper contract.client relationship
+          const mockInvoices = scenario.invoices.map(invoice => {
+            const contract = scenario.contracts.find(c => c.id === invoice.contractId);
+            const client = contract ? scenario.clients.find(c => c.id === contract.clientId) : null;
+            
+            return {
+              ...invoice,
+              totalAmount: new Decimal(invoice.totalAmount), // Convert to Decimal for service compatibility
+              contract: {
+                id: invoice.contractId,
+                client: client ? {
+                  id: client.id,
+                  name: client.name,
+                } : {
+                  id: 'test-client',
+                  name: 'Test Client',
+                },
+              },
+            };
+          });
 
-          // Mock Prisma responses
+          // Mock Prisma responses - ensure contract.client relationship is included
           jest.spyOn(prismaService.invoice, 'findMany').mockResolvedValue(mockInvoices);
 
           // Execute billing report generation
@@ -360,30 +409,43 @@ describe('Property: Financial Report Accuracy - Comprehensive Testing', () => {
         async (scenario) => {
           // **Feature: security-workforce-payroll-system, Property 3: Site Profitability Accuracy**
           
-          // Setup mock site data with assignments and attendance
-          const mockSites = scenario.sites.map(site => ({
-            ...site,
-            client: {
-              id: site.clientId,
-              name: scenario.clients.find(c => c.id === site.clientId)?.name || 'Test Client',
-            },
-            assignments: scenario.employees.slice(0, site.requiredStaff).map((emp, index) => ({
-              id: fc.sample(fc.uuid(), 1)[0],
-              employeeId: emp.id,
-              siteId: site.id,
-              employee: emp,
-              hourlyRate: new Decimal(emp.hourlyRate),
-              shifts: [{
+          // Setup mock site data with proper contract and client relationships
+          const mockSites = scenario.sites.map(site => {
+            // Get the contract for this site
+            const siteContract = scenario.contracts.find(contract => contract.id === site.contractId);
+            // Get the client for the contract
+            const siteClient = siteContract ? scenario.clients.find(client => client.id === siteContract.clientId) : null;
+            
+            return {
+              ...site,
+              contract: {
+                id: site.contractId,
+                client: siteClient ? {
+                  id: siteClient.id,
+                  name: siteClient.name,
+                } : {
+                  id: 'test-client',
+                  name: 'Test Client',
+                },
+              },
+              assignments: scenario.employees.slice(0, site.requiredStaff).map((emp, index) => ({
                 id: fc.sample(fc.uuid(), 1)[0],
-                attendance: [{
-                  ...scenario.attendanceRecords[index] || scenario.attendanceRecords[0],
-                  employeeId: emp.id,
-                  clockIn: new Date('2024-06-01T08:00:00Z'),
-                  clockOut: new Date('2024-06-01T16:00:00Z'), // 8 hours
+                employeeId: emp.id,
+                siteId: site.id,
+                employee: emp,
+                hourlyRate: new Decimal(emp.hourlyRate),
+                shifts: [{
+                  id: fc.sample(fc.uuid(), 1)[0],
+                  attendance: [{
+                    ...scenario.attendanceRecords[index] || scenario.attendanceRecords[0],
+                    employeeId: emp.id,
+                    clockIn: new Date('2024-06-01T08:00:00Z'),
+                    clockOut: new Date('2024-06-01T16:00:00Z'), // 8 hours
+                  }],
                 }],
-              }],
-            })),
-          }));
+              })),
+            };
+          });
 
           // Mock site invoices for revenue calculation
           const siteInvoices = scenario.invoices.slice(0, scenario.sites.length);
@@ -471,15 +533,25 @@ describe('Property: Financial Report Accuracy - Comprehensive Testing', () => {
             })),
           }));
 
-          const mockInvoices = scenario.invoices.map(invoice => ({
-            ...invoice,
-            totalAmount: new Decimal(invoice.totalAmount), // Convert to Decimal
-            client: {
-              id: invoice.clientId,
-              name: scenario.clients.find(c => c.id === invoice.clientId)?.name || 'Test Client',
-              companyId: scenario.company.id,
-            },
-          }));
+          const mockInvoices = scenario.invoices.map(invoice => {
+            const contract = scenario.contracts.find(c => c.id === invoice.contractId);
+            const client = contract ? scenario.clients.find(c => c.id === contract.clientId) : null;
+            
+            return {
+              ...invoice,
+              totalAmount: new Decimal(invoice.totalAmount), // Convert to Decimal
+              contract: {
+                id: invoice.contractId,
+                client: client ? {
+                  id: client.id,
+                  name: client.name,
+                } : {
+                  id: 'test-client',
+                  name: 'Test Client',
+                },
+              },
+            };
+          });
 
           // Mock all Prisma calls
           jest.spyOn(prismaService.payrollRun, 'findMany').mockResolvedValue(mockPayrollRuns);

@@ -112,7 +112,7 @@ describe('PayrollService', () => {
 
     service = module.get<PayrollService>(PayrollService);
     prismaService = module.get<PrismaService>(PrismaService);
-    tenantContextService = module.get<TenantContextService>(TenantContextService);
+    tenantContextService = await module.resolve<TenantContextService>(TenantContextService);
     payrollCalculationService = module.get<PayrollCalculationService>(PayrollCalculationService);
     payrollPolicyService = module.get<PayrollPolicyService>(PayrollPolicyService);
   });

@@ -26,7 +26,7 @@ describe('Drag-and-Drop Assignment Validation Properties', () => {
           employeeId: fc.uuid(),
           siteId: fc.uuid(),
           role: fc.constantFrom('Security Guard', 'Supervisor', 'Patrol Officer', 'Reception'),
-          hourlyRate: fc.float({ min: 15.0, max: 100.0 }),
+          hourlyRate: fc.float({ min: 15.0, max: 100.0, noNaN: true }),
           skills: fc.array(
             fc.constantFrom('security', 'surveillance', 'patrol', 'emergency_response', 'customer_service'),
             { minLength: 1, maxLength: 5 }
@@ -233,9 +233,9 @@ describe('Drag-and-Drop Assignment Validation Properties', () => {
               isAvailable: fc.boolean()
             }),
             performance: fc.record({
-              rating: fc.float({ min: Math.fround(1.0), max: Math.fround(5.0) }),
-              punctuality: fc.float({ min: Math.fround(0.7), max: Math.fround(1.0) }),
-              reliability: fc.float({ min: Math.fround(0.7), max: Math.fround(1.0) })
+              rating: fc.float({ min: Math.fround(1.0), max: Math.fround(5.0), noNaN: true }),
+              punctuality: fc.float({ min: Math.fround(0.7), max: Math.fround(1.0), noNaN: true }),
+              reliability: fc.float({ min: Math.fround(0.7), max: Math.fround(1.0), noNaN: true })
             })
           }),
           site: fc.record({
@@ -249,7 +249,7 @@ describe('Drag-and-Drop Assignment Validation Properties', () => {
                 fc.constantFrom('security_license', 'first_aid'),
                 { minLength: 0, maxLength: 2 }
               ),
-              minPerformanceRating: fc.float({ min: Math.fround(2.0), max: Math.fround(4.5) }),
+              minPerformanceRating: fc.float({ min: Math.fround(2.0), max: Math.fround(4.5), noNaN: true }),
               maxGuards: fc.integer({ min: 1, max: 8 }),
               currentGuards: fc.integer({ min: 0, max: 5 })
             })
@@ -297,7 +297,7 @@ describe('Drag-and-Drop Assignment Validation Properties', () => {
               employeeId: fc.uuid(),
               siteId: fc.uuid(),
               role: fc.constantFrom('Security Guard', 'Supervisor', 'Patrol Officer'),
-              hourlyRate: fc.float({ min: 20.0, max: 80.0 }),
+              hourlyRate: fc.float({ min: 20.0, max: 80.0, noNaN: true }),
               status: fc.constantFrom('ACTIVE', 'INACTIVE'),
               skills: fc.array(fc.string({ minLength: 3, maxLength: 15 }), { minLength: 1, maxLength: 4 })
             }),
@@ -311,7 +311,7 @@ describe('Drag-and-Drop Assignment Validation Properties', () => {
                 employeeId: fc.uuid(),
                 siteId: fc.uuid(),
                 role: fc.string({ minLength: 5, maxLength: 20 }),
-                hourlyRate: fc.float({ min: 15.0, max: 100.0 })
+                hourlyRate: fc.float({ min: 15.0, max: 100.0, noNaN: true })
               }))
             }),
             { minLength: 1, maxLength: 8 }

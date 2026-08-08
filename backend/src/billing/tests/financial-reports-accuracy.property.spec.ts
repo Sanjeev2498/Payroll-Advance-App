@@ -464,8 +464,8 @@ describe('Property 24: Financial Report Accuracy', () => {
           monthlyData: fc.array(fc.record({
             month: fc.string({ minLength: 3, maxLength: 9 }),
             year: fc.integer({ min: 2024, max: 2024 }),
-            payroll: fc.float({ min: 100000, max: 500000 }),
-            revenue: fc.float({ min: 150000, max: 750000 }),
+            payroll: fc.float({ min: 100000, max: 500000, noNaN: true }),
+            revenue: fc.float({ min: 150000, max: 750000, noNaN: true }),
           }), { minLength: 3, maxLength: 12 }),
         }),
         async ({ startDate, endDate, monthlyData }) => {

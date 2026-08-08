@@ -51,7 +51,7 @@ export function Header() {
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
+      <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40 shadow-sm">
         <div className="flex items-center space-x-4">
           {/* Desktop sidebar toggle */}
           <Button

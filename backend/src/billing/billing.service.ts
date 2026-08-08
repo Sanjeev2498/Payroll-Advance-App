@@ -30,8 +30,8 @@ export class BillingService {
    * Create a new invoice
    */
   async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<InvoiceResponse> {
-    // Validate client billing permissions
-    await this.billingValidationService.validateClientBillingPermissions(createInvoiceDto.clientId);
+    // Validate contract billing permissions
+    await this.billingValidationService.validateContractBillingPermissions(createInvoiceDto.contractId);
 
     // Validate additional charges if provided
     if (createInvoiceDto.additionalCharges?.length) {
@@ -97,8 +97,8 @@ export class BillingService {
    * Calculate billing preview without creating invoice
    */
   async calculateBillingPreview(createInvoiceDto: CreateInvoiceDto): Promise<BillingCalculationResult> {
-    // Validate client billing permissions
-    await this.billingValidationService.validateClientBillingPermissions(createInvoiceDto.clientId);
+    // Validate contract billing permissions
+    await this.billingValidationService.validateContractBillingPermissions(createInvoiceDto.contractId);
 
     // Calculate billing amounts
     return this.invoiceCalculationService.calculateClientBilling(createInvoiceDto);
@@ -117,6 +117,21 @@ export class BillingService {
    */
   async getInvoiceStatistics(period?: { start: Date; end: Date }) {
     return this.invoiceService.getInvoiceStatistics(period);
+  }
+
+  /**
+   * Get detailed billing analytics
+   */
+  async getDetailedAnalytics(period?: { start: Date; end: Date }, groupBy?: 'month' | 'quarter' | 'client') {
+    // For now, return the same as getInvoiceStatistics with additional grouping info
+    const stats = await this.invoiceService.getInvoiceStatistics(period);
+    
+    return {
+      ...stats,
+      groupBy: groupBy || 'month',
+      period: period || { start: new Date(), end: new Date() },
+      detailedBreakdown: []
+    };
   }
 
   /**
@@ -160,14 +175,14 @@ export class BillingService {
   }
 
   /**
-   * Generate invoice number preview
+   * Generate invoice number preview - FIXED: Updated to use contractId
    */
-  async generateInvoiceNumberPreview(clientId: string): Promise<string> {
+  async generateInvoiceNumberPreview(contractId: string): Promise<string> {
+    const companyId = this.tenantContext.getTenantId();
     // This uses the calculation service's method but doesn't save it
     return this.invoiceCalculationService.generateInvoiceNumber(
-      // We need the tenant context here, but for preview we can call it directly
-      clientId, // This will be used to get the company ID internally
-      clientId
+      companyId,
+      contractId // FIXED: Now correctly uses contractId
     );
   }
 

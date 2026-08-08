@@ -2,6 +2,7 @@ import {
   UserPermissions,
   CompanyPermissions,
   ClientPermissions,
+  ContractPermissions,
   SitePermissions,
   EmployeePermissions,
   AssignmentPermissions,
@@ -61,6 +62,7 @@ export class RolePermissionsConfig {
       ...Object.values(UserPermissions),
       ...Object.values(CompanyPermissions),
       ...Object.values(ClientPermissions),
+      ...Object.values(ContractPermissions),
       ...Object.values(SitePermissions),
       ...Object.values(EmployeePermissions),
       ...Object.values(AssignmentPermissions),
@@ -132,6 +134,10 @@ export class RolePermissionsConfig {
       ClientPermissions.UPDATE_CLIENT,
       ClientPermissions.VIEW_CLIENT_BILLING,
 
+      // Contract management
+      ContractPermissions.READ_CONTRACT,
+      ContractPermissions.VIEW_SLA_COMPLIANCE,
+
       // Site management
       SitePermissions.CREATE_SITE,
       SitePermissions.UPDATE_SITE,
@@ -191,6 +197,16 @@ export class RolePermissionsConfig {
       // Client management (full)
       ClientPermissions.DELETE_CLIENT,
       ClientPermissions.MANAGE_CLIENT_CONTRACTS,
+
+      // Contract management (full)
+      ContractPermissions.CREATE_CONTRACT,
+      ContractPermissions.UPDATE_CONTRACT,
+      ContractPermissions.DELETE_CONTRACT,
+      ContractPermissions.APPROVE_CONTRACT,
+      ContractPermissions.MANAGE_CONTRACT_AMENDMENTS,
+      ContractPermissions.MANAGE_CONTRACT_RENEWALS,
+      ContractPermissions.MANAGE_SLA_REPORTS,
+      ContractPermissions.VIEW_CONTRACT_ANALYTICS,
 
       // Site management (full)
       SitePermissions.DELETE_SITE,

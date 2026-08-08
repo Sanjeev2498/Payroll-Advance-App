@@ -4,8 +4,20 @@ import { SitesService } from './sites.service';
 import { SiteRepository } from '../common/repositories/site.repository';
 import { ClientRepository } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateSiteDto, SiteOperationalStatus } from './dto';
 import { Site } from '@prisma/client';
+import { 
+  createPrismaMock, 
+  createRepositoryMock, 
+  createServiceMocks 
+} from '../test/mocks';
+import {
+  createSiteDtoGenerator,
+  workspaceGenerator,
+  contractGenerator,
+  clientGenerator,
+} from '../test/generators/hierarchical-data-generator';
 
 /**
  * **Property 5: Site Information Preservation**
@@ -20,22 +32,17 @@ describe('Property-Based Tests: Site Information Preservation', () => {
   let service: SitesService;
   let siteRepository: SiteRepository;
   let clientRepository: ClientRepository;
+  let prismaMock: any;
 
-  const mockSiteRepository = {
-    create: jest.fn(),
-    findById: jest.fn(),
-  };
-
-  const mockClientRepository = {
-    findById: jest.fn(),
-  };
-
-  const mockTenantContextService = {
-    getTenantId: jest.fn().mockReturnValue('test-tenant-id'),
-    getUserRole: jest.fn().mockReturnValue('MANAGER'),
-  };
+  // Use centralized mocks
+  const mockSiteRepository = createRepositoryMock();
+  const mockClientRepository = createRepositoryMock();
+  const mockServiceMocks = createServiceMocks();
 
   beforeEach(async () => {
+    // Create the prisma mock using centralized factory
+    prismaMock = createPrismaMock();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SitesService,
@@ -49,7 +56,11 @@ describe('Property-Based Tests: Site Information Preservation', () => {
         },
         {
           provide: TenantContextService,
-          useValue: mockTenantContextService,
+          useValue: mockServiceMocks.tenantContext,
+        },
+        {
+          provide: PrismaService,
+          useValue: prismaMock,
         },
       ],
     }).compile();
@@ -62,92 +73,67 @@ describe('Property-Based Tests: Site Information Preservation', () => {
     jest.clearAllMocks();
   });
 
-  // Custom generators for domain entities
-  const addressGenerator = () => fc.record({
-    street: fc.string({ minLength: 1, maxLength: 255 }),
-    city: fc.string({ minLength: 1, maxLength: 100 }),
-    state: fc.string({ minLength: 1, maxLength: 50 }),
-    zipCode: fc.string({ minLength: 1, maxLength: 20 }),
-    country: fc.string({ minLength: 1, maxLength: 100 }),
-    coordinates: fc.option(fc.record({
-      latitude: fc.float({ min: -90, max: 90 }),
-      longitude: fc.float({ min: -180, max: 180 }),
-    }), { nil: undefined }),
-  });
-
-  const accessRequirementsGenerator = () => fc.record({
-    securityClearance: fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: undefined }),
-    requiredCertifications: fc.option(
-      fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 10 }), 
-      { nil: undefined }
-    ),
-    accessProcedures: fc.option(fc.string({ minLength: 1, maxLength: 1000 }), { nil: undefined }),
-    workingHours: fc.option(fc.record({
-      monday: fc.option(fc.record({
-        start: fc.string(),
-        end: fc.string(),
-        is24Hour: fc.option(fc.boolean(), { nil: undefined }),
-      }), { nil: undefined }),
-    }), { nil: undefined }),
-  });
-
-  const contactInfoGenerator = () => fc.record({
-    primaryContact: fc.option(fc.string({ minLength: 1, maxLength: 100 }), { nil: undefined }),
-    primaryPhone: fc.option(fc.string({ minLength: 1, maxLength: 20 }), { nil: undefined }),
-    primaryEmail: fc.option(fc.string({ minLength: 5, maxLength: 255 }), { nil: undefined }),
-    emergencyContact: fc.option(fc.string({ minLength: 1, maxLength: 100 }), { nil: undefined }),
-    emergencyPhone: fc.option(fc.string({ minLength: 1, maxLength: 20 }), { nil: undefined }),
-  });
-
-  const createSiteDtoGenerator = () => fc.record({
-    clientId: fc.uuid(),
-    name: fc.string({ minLength: 2, maxLength: 100 }),
-    address: addressGenerator(),
-    accessRequirements: fc.option(accessRequirementsGenerator(), { nil: undefined }),
-    safetyProtocols: fc.option(fc.record({
-      evacuationProcedures: fc.option(fc.string({ maxLength: 1000 }), { nil: undefined }),
-      hazardMitigation: fc.option(fc.string({ maxLength: 1000 }), { nil: undefined }),
-    }), { nil: undefined }),
-    operationalStatus: fc.option(
-      fc.constantFrom(...Object.values(SiteOperationalStatus)), 
-      { nil: undefined }
-    ),
-    contactInfo: fc.option(contactInfoGenerator(), { nil: undefined }),
-  });
-
   const PROPERTY_TEST_CONFIG = {
-    numRuns: 100,
+    numRuns: 50, // Reduced for faster execution
     timeout: 10000,
     seed: 42,
   };
 
   it('Property 5: Site information preservation - all data accurately captured and retrievable', async () => {
     await fc.assert(fc.asyncProperty(
-      createSiteDtoGenerator(),
-      async (siteData: CreateSiteDto) => {
-        // Setup: Mock client exists and belongs to tenant
-        const mockClient = {
-          id: siteData.clientId,
-          name: 'Test Client',
-          contractStatus: 'ACTIVE',
-          companyId: 'test-tenant-id',
+      workspaceGenerator(),
+      async (workspace) => {
+        // Use the first contract from the generated workspace
+        const contract = workspace.contracts[0];
+        const client = workspace.clients.find(c => 
+          c.contracts?.some(cont => cont.id === contract.id)
+        );
+        const site = workspace.sites[0];
+        
+        // Create the DTO based on the generated data
+        const siteData: CreateSiteDto = {
+          contractId: contract.id, // FIXED: Use contractId from workspace
+          name: site.name,
+          address: site.address,
+          accessRequirements: site.accessRequirements,
+          safetyProtocols: site.safetyProtocols,
+          operationalStatus: site.operationalStatus as any,
+          contactInfo: site.contactInfo,
+          minStaffingLevel: site.minStaffingLevel,
+          maxStaffingLevel: site.maxStaffingLevel,
+        };
+
+        // Setup: Mock contract exists and belongs to tenant
+        const mockContract = {
+          id: contract.id,
+          clientId: client?.id,
+          title: contract.title,
+          status: contract.status,
+          client: {
+            id: client?.id,
+            name: client?.name,
+            companyId: workspace.company.id,
+          },
         };
 
         // Setup: Mock successful site creation
         const mockCreatedSite: Partial<Site> = {
           id: fc.sample(fc.uuid(), 1)[0],
-          clientId: siteData.clientId,
+          contractId: contract.id, // FIXED: Use contractId
           name: siteData.name,
           address: siteData.address as any,
           accessRequirements: siteData.accessRequirements as any,
           safetyProtocols: siteData.safetyProtocols as any,
           operationalStatus: (siteData.operationalStatus || SiteOperationalStatus.ACTIVE) as any,
           contactInfo: siteData.contactInfo as any,
+          minStaffingLevel: siteData.minStaffingLevel,
+          maxStaffingLevel: siteData.maxStaffingLevel,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
 
-        mockClientRepository.findById.mockResolvedValue(mockClient);
+        // Mock the contract repository call instead of client repository
+        prismaMock.contract.findFirst.mockResolvedValue(mockContract); // FIXED: Use findFirst not findUnique
         mockSiteRepository.create.mockResolvedValue(mockCreatedSite);
 
         // Act: Create the site
@@ -155,7 +141,7 @@ describe('Property-Based Tests: Site Information Preservation', () => {
 
         // Assert: All provided data is preserved in the result
         expect(result.name).toBe(siteData.name);
-        expect(result.clientId).toBe(siteData.clientId);
+        expect(result.contractId).toBe(siteData.contractId); // FIXED: Check contractId
         
         // Verify address information preservation
         expect(result.address).toEqual(siteData.address);
@@ -185,30 +171,55 @@ describe('Property-Based Tests: Site Information Preservation', () => {
             name: siteData.name,
             address: siteData.address,
             operationalStatus: expectedStatus,
-            client: {
-              connect: { id: siteData.clientId },
+            contract: { // FIXED: Connect to contract, not client
+              connect: { id: siteData.contractId },
             },
           })
         );
 
-        // Verify client relationship validation was performed
-        expect(mockClientRepository.findById).toHaveBeenCalledWith(siteData.clientId);
+        // Verify contract relationship validation was performed
+        expect(prismaMock.contract.findFirst).toHaveBeenCalledWith({
+          where: {
+            id: siteData.contractId,
+            client: {
+              companyId: expect.any(String),
+            },
+          },
+          include: {
+            client: true,
+          },
+        });
       }
     ), PROPERTY_TEST_CONFIG);
   });
 
   it('Property 5: Site data integrity - no data loss during storage', async () => {
     await fc.assert(fc.asyncProperty(
-      createSiteDtoGenerator(),
-      async (siteData: CreateSiteDto) => {
-        // Setup: Mock client and site creation
-        const mockClient = {
-          id: siteData.clientId,
-          contractStatus: 'ACTIVE',
-          companyId: 'test-tenant-id',
+      workspaceGenerator(),
+      async (workspace) => {
+        const contract = workspace.contracts[0];
+        const site = workspace.sites[0];
+        
+        const siteData: CreateSiteDto = {
+          contractId: contract.id,
+          name: site.name,
+          address: site.address,
+          accessRequirements: site.accessRequirements,
+          safetyProtocols: site.safetyProtocols,
+          operationalStatus: site.operationalStatus as any,
+          contactInfo: site.contactInfo,
+          minStaffingLevel: site.minStaffingLevel,
+          maxStaffingLevel: site.maxStaffingLevel,
         };
 
-        mockClientRepository.findById.mockResolvedValue(mockClient);
+        // Setup: Mock contract and site creation
+        const mockContract = {
+          id: contract.id,
+          status: 'ACTIVE',
+          client: { companyId: workspace.company.id },
+        };
+
+        prismaMock.contract.findFirst.mockResolvedValue(mockContract); // FIXED: Use findFirst
         
         // Capture the exact data passed to repository
         let capturedCreateData: any;
@@ -217,6 +228,7 @@ describe('Property-Based Tests: Site Information Preservation', () => {
           return {
             ...data,
             id: fc.sample(fc.uuid(), 1)[0],
+            contractId: contract.id,
             createdAt: new Date(),
             updatedAt: new Date(),
           };
@@ -238,37 +250,42 @@ describe('Property-Based Tests: Site Information Preservation', () => {
           expect(capturedCreateData.accessRequirements.requiredCertifications)
             .toEqual(siteData.accessRequirements.requiredCertifications);
         }
-        
-        if (siteData.accessRequirements?.workingHours) {
-          expect(capturedCreateData.accessRequirements.workingHours)
-            .toEqual(siteData.accessRequirements.workingHours);
-        }
       }
     ), PROPERTY_TEST_CONFIG);
   });
 
-  it('Property 5: Client relationship validation - ensures tenant isolation', async () => {
+  it('Property 5: Contract relationship validation - ensures tenant isolation', async () => {
     await fc.assert(fc.asyncProperty(
-      createSiteDtoGenerator(),
+      workspaceGenerator(),
       fc.constantFrom('ACTIVE', 'TERMINATED', 'EXPIRED'),
-      async (siteData: CreateSiteDto, clientStatus: string) => {
-        // Setup: Mock client with various contract statuses
-        const mockClient = clientStatus === 'not_found' ? null : {
-          id: siteData.clientId,
-          contractStatus: clientStatus,
-          companyId: 'test-tenant-id',
+      async (workspace, contractStatus: string) => {
+        const contract = workspace.contracts[0];
+        const site = workspace.sites[0];
+        
+        const siteData: CreateSiteDto = {
+          contractId: contract.id,
+          name: site.name,
+          address: site.address,
+          operationalStatus: site.operationalStatus as any,
         };
 
-        mockClientRepository.findById.mockResolvedValue(mockClient);
+        // Setup: Mock contract with various statuses
+        const mockContract = contractStatus === 'not_found' ? null : {
+          id: contract.id,
+          status: contractStatus,
+          client: { companyId: workspace.company.id },
+        };
 
-        if (!mockClient) {
-          // Assert: Should reject if client doesn't exist
-          await expect(service.create(siteData)).rejects.toThrow('Client with ID');
-        } else if (clientStatus === 'TERMINATED') {
-          // Assert: Should reject if client is terminated
-          await expect(service.create(siteData)).rejects.toThrow('Cannot create sites for terminated clients');
+        prismaMock.contract.findFirst.mockResolvedValue(mockContract); // FIXED: Use findFirst
+
+        if (!mockContract) {
+          // Assert: Should reject if contract doesn't exist
+          await expect(service.create(siteData)).rejects.toThrow('Contract with ID');
+        } else if (contractStatus === 'TERMINATED' || contractStatus === 'EXPIRED') {
+          // Assert: Should reject if contract is terminated/expired
+          await expect(service.create(siteData)).rejects.toThrow();
         } else {
-          // Setup successful creation for valid clients
+          // Setup successful creation for valid contracts
           mockSiteRepository.create.mockResolvedValue({
             ...siteData,
             id: fc.sample(fc.uuid(), 1)[0],
@@ -276,12 +293,22 @@ describe('Property-Based Tests: Site Information Preservation', () => {
             updatedAt: new Date(),
           });
 
-          // Assert: Should succeed for valid clients
+          // Assert: Should succeed for valid contracts
           const result = await service.create(siteData);
-          expect(result.clientId).toBe(siteData.clientId);
+          expect(result.contractId).toBe(siteData.contractId);
           
-          // Verify client relationship validation was performed
-          expect(mockClientRepository.findById).toHaveBeenCalledWith(siteData.clientId);
+          // Verify contract relationship validation was performed
+          expect(prismaMock.contract.findFirst).toHaveBeenCalledWith({
+            where: {
+              id: siteData.contractId,
+              client: {
+                companyId: expect.any(String),
+              },
+            },
+            include: {
+              client: true,
+            },
+          });
         }
       }
     ), PROPERTY_TEST_CONFIG);

@@ -13,7 +13,7 @@ const customJestConfig = {
     '<rootDir>/src/tests/**/*.spec.ts',
     '<rootDir>/src/**/*.test.ts'
   ],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
 }

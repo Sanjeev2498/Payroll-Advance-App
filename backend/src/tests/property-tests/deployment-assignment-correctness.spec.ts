@@ -22,8 +22,38 @@ describe('Deployment Assignment Correctness Properties', () => {
   let module: TestingModule;
   let deploymentService: DeploymentService;
   let prisma: PrismaService;
-  let tenantContext: TenantContextService;
   let testDataGenerator: DeploymentTestDataGenerator;
+  let currentTenantId: string;
+
+  // Mock TenantContextService that can be controlled in tests
+  const mockTenantContextService = {
+    getTenantId: () => {
+      if (!currentTenantId) {
+        throw new Error('Tenant context not set. Ensure authentication middleware is properly configured.');
+      }
+      return currentTenantId;
+    },
+    setContext: (tenantId: string) => {
+      currentTenantId = tenantId;
+    },
+    getUserId: () => 'test-user-id',
+    getUserRole: () => 'COMPANY_ADMIN',
+    hasContext: () => Boolean(currentTenantId),
+    validateTenantAccess: () => true,
+    isAdmin: () => true,
+    hasRole: () => true,
+    hasAnyRole: () => true,
+    clearContext: () => {
+      currentTenantId = null;
+    },
+    getContext: () => ({
+      tenantId: currentTenantId,
+      userId: 'test-user-id',
+      userRole: 'COMPANY_ADMIN',
+      isSet: Boolean(currentTenantId),
+    }),
+    getContextSnapshot: () => `Mock[tenant:${currentTenantId}]`
+  };
 
   const PROPERTY_TEST_CONFIG = {
     numRuns: 2,  // Reduced for faster execution
@@ -44,6 +74,11 @@ describe('Deployment Assignment Correctness Properties', () => {
       providers: [
         DeploymentService,
         DeploymentTestDataGenerator,
+        // Mock TenantContextService for testing
+        {
+          provide: TenantContextService,
+          useValue: mockTenantContextService
+        },
         // Mock the auth dependencies since we're testing deployment logic directly
         {
           provide: 'PermissionsGuard',
@@ -57,9 +92,8 @@ describe('Deployment Assignment Correctness Properties', () => {
     .useValue({ canActivate: () => true })
     .compile();
 
-    deploymentService = await module.resolve<DeploymentService>(DeploymentService);
+    deploymentService = module.get<DeploymentService>(DeploymentService);
     prisma = module.get<PrismaService>(PrismaService);
-    tenantContext = await module.resolve<TenantContextService>(TenantContextService);
     testDataGenerator = new DeploymentTestDataGenerator(prisma);
     
     await prisma.onModuleInit();
@@ -75,6 +109,8 @@ describe('Deployment Assignment Correctness Properties', () => {
   });
 
   beforeEach(async () => {
+    // Clear tenant context before each test
+    mockTenantContextService.clearContext();
     // Clean up before each test
     await testDataGenerator.cleanup();
   });
@@ -87,7 +123,10 @@ describe('Deployment Assignment Correctness Properties', () => {
           // **Feature: security-workforce-payroll-system, Property 15.1: Guard Assignment Tracking Accuracy**
           
           // Setup: Create deployment scenario with sites and assignments
-          const { company, sites, employees, assignments } = await testDataGenerator.createDeploymentScenario(scenario);
+          const { company, client, contract, sites, employees, assignments } = await testDataGenerator.createDeploymentScenario(scenario);
+          
+          // Set tenant context to the created company
+          mockTenantContextService.setContext(company.id);
           
           // Set tenant context for the test
           tenantContext.setContext(company.id);
@@ -189,7 +228,7 @@ describe('Deployment Assignment Correctness Properties', () => {
           const { company, conflictingAssignments } = await testDataGenerator.createConflictScenario(scenario);
           
           // Set tenant context
-          tenantContext.setContext(company.id);
+          mockTenantContextService.setContext(company.id);
           
           try {
             // Test: Check conflict detection service response
@@ -262,7 +301,7 @@ describe('Deployment Assignment Correctness Properties', () => {
           const { company } = await testDataGenerator.createEfficiencyScenario(scenario);
           
           // Set tenant context
-          tenantContext.setContext(company.id);
+          mockTenantContextService.setContext(company.id);
           
           try {
             // Test: Get efficiency metrics
@@ -334,7 +373,7 @@ describe('Deployment Assignment Correctness Properties', () => {
           const { company, site, availableGuards } = await testDataGenerator.createRecommendationScenario(scenario);
           
           // Set tenant context
-          tenantContext.setContext(company.id);
+          mockTenantContextService.setContext(company.id);
           
           try {
             // Test: Get assignment recommendations
@@ -398,7 +437,7 @@ describe('Deployment Assignment Correctness Properties', () => {
           const { company, site, availableGuard } = await testDataGenerator.createQuickAssignmentScenario(scenario);
           
           // Set tenant context
-          tenantContext.setContext(company.id);
+          mockTenantContextService.setContext(company.id);
           
           try {
             // Get initial assignment count for verification

@@ -2,6 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from './tenant-context.service';
 import * as fc from 'fast-check';
+import {
+  workspaceGenerator,
+  multiTenantScenarioGenerator,
+  companyGenerator,
+  clientGenerator,
+  employeeGenerator,
+  siteGenerator,
+} from '../test/generators/hierarchical-data-generator';
 const { v4: uuidv4 } = require('uuid');
 
 // Mock Prisma Service for testing without database
@@ -9,6 +17,7 @@ class MockPrismaService {
   private mockData: {
     companies: any[];
     clients: any[];
+    contracts: any[];
     employees: any[];
     sites: any[];
     assignments: any[];
@@ -17,6 +26,7 @@ class MockPrismaService {
   } = {
     companies: [],
     clients: [],
+    contracts: [],
     employees: [],
     sites: [],
     assignments: [],
@@ -156,10 +166,89 @@ class MockPrismaService {
     };
   }
 
+  get contract() {
+    return {
+      create: async (args: any) => {
+        const contract = { 
+          id: uuidv4(),
+          ...args.data, 
+          createdAt: new Date(), 
+          updatedAt: new Date() 
+        };
+        // Initialize contracts array if it doesn't exist
+        if (!this.mockData.contracts) {
+          this.mockData.contracts = [];
+        }
+        this.mockData.contracts.push(contract);
+        return contract;
+      },
+      findMany: async (args?: any) => {
+        // Initialize contracts array if it doesn't exist
+        if (!this.mockData.contracts) {
+          this.mockData.contracts = [];
+        }
+        let contracts = this.mockData.contracts;
+        // Apply tenant filtering if not in system context
+        if (!this.isSystemContext && this.currentTenantId !== null) {
+          // Filter contracts by tenant through client relationship
+          const tenantClients = this.mockData.clients.filter(
+            (c) => c.companyId === this.currentTenantId,
+          );
+          const tenantClientIds = tenantClients.map((c) => c.id);
+          contracts = contracts.filter((contract) => tenantClientIds.includes(contract.clientId));
+        }
+        if (args?.include?.client) {
+          return contracts.map((contract) => ({
+            ...contract,
+            client: this.mockData.clients.find((c) => c.id === contract.clientId) || null,
+          }));
+        }
+        return contracts;
+      },
+      findFirst: async (args?: any) => {
+        // Initialize contracts array if it doesn't exist
+        if (!this.mockData.contracts) {
+          this.mockData.contracts = [];
+        }
+        let contracts = this.mockData.contracts;
+        // Apply tenant filtering if not in system context
+        if (!this.isSystemContext && this.currentTenantId !== null) {
+          const tenantClients = this.mockData.clients.filter(
+            (c) => c.companyId === this.currentTenantId,
+          );
+          const tenantClientIds = tenantClients.map((c) => c.id);
+          contracts = contracts.filter((contract) => tenantClientIds.includes(contract.clientId));
+        }
+        // Apply where clause if provided
+        if (args?.where) {
+          contracts = contracts.filter((contract) => {
+            for (const [key, value] of Object.entries(args.where)) {
+              if (contract[key] !== value) return false;
+            }
+            return true;
+          });
+        }
+        return contracts[0] || null;
+      },
+      deleteMany: async () => {
+        if (!this.mockData.contracts) {
+          this.mockData.contracts = [];
+        }
+        this.mockData.contracts = [];
+        return { count: 0 };
+      },
+    };
+  }
+
   get site() {
     return {
       create: async (args: any) => {
-        const site = { ...args.data, createdAt: new Date(), updatedAt: new Date() };
+        const site = { 
+          id: uuidv4(),
+          ...args.data, 
+          createdAt: new Date(), 
+          updatedAt: new Date() 
+        };
         this.mockData.sites.push(site);
         return site;
       },
@@ -167,17 +256,30 @@ class MockPrismaService {
         let sites = this.mockData.sites;
         // Apply tenant filtering if not in system context
         if (!this.isSystemContext && this.currentTenantId !== null) {
-          // Filter sites by tenant through client relationship
+          // FIXED: Filter sites by tenant through contract -> client relationship
           const tenantClients = this.mockData.clients.filter(
             (c) => c.companyId === this.currentTenantId,
           );
           const tenantClientIds = tenantClients.map((c) => c.id);
-          sites = sites.filter((s) => tenantClientIds.includes(s.clientId));
+          
+          // Initialize contracts if needed
+          if (!this.mockData.contracts) {
+            this.mockData.contracts = [];
+          }
+          
+          // Get contracts for tenant clients
+          const tenantContracts = this.mockData.contracts.filter((contract) => 
+            tenantClientIds.includes(contract.clientId)
+          );
+          const tenantContractIds = tenantContracts.map((contract) => contract.id);
+          
+          // Filter sites by contractId (FIXED: use contractId instead of clientId)
+          sites = sites.filter((s) => tenantContractIds.includes(s.contractId));
         }
-        if (args?.include?.client) {
+        if (args?.include?.contract) {
           return sites.map((s) => ({
             ...s,
-            client: this.mockData.clients.find((c) => c.id === s.clientId) || null,
+            contract: this.mockData.contracts?.find((contract) => contract.id === s.contractId) || null,
           }));
         }
         return sites;
@@ -436,24 +538,24 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     });
   });
 
-  // Data Generators
+  // Data Generators - FIXED: Use hierarchical workspace generator
   function tenantDataGenerator() {
-    return fc.record({
-      company: companyGenerator(),
-      clients: fc.array(clientGenerator(), { minLength: 1, maxLength: 3 }),
-      employees: fc.array(employeeGenerator(), { minLength: 1, maxLength: 5 }),
-      sites: fc.array(siteGenerator(), { minLength: 1, maxLength: 3 }),
-    });
+    return workspaceGenerator().map(workspace => ({
+      company: workspace.company,
+      clients: workspace.clients,
+      employees: workspace.employees,
+      sites: workspace.sites,
+    }));
   }
 
   function complexTenantScenarioGenerator() {
-    return fc.record({
-      company: companyGenerator(),
-      clients: fc.array(clientGenerator(), { minLength: 2, maxLength: 3 }),
-      employees: fc.array(employeeGenerator(), { minLength: 3, maxLength: 5 }),
-      sites: fc.array(siteGenerator(), { minLength: 2, maxLength: 4 }),
-      payrollRuns: fc.array(payrollRunGenerator(), { minLength: 1, maxLength: 2 }),
-    });
+    return workspaceGenerator().map(workspace => ({
+      company: workspace.company,
+      clients: workspace.clients,
+      employees: workspace.employees,
+      sites: workspace.sites,
+      payrollRuns: [], // Initialize empty, will be created during test
+    }));
   }
 
   function companyGenerator() {
@@ -468,51 +570,66 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     });
   }
 
-  function clientGenerator() {
+  // ✅ IMPROVED: Hierarchical Data Generation
+  // Create all entities for a single tenant in proper dependency order
+  function tenantDataGenerator() {
     return fc.record({
-      id: fc.constant(uuidv4()),
-      name: fc.string({ minLength: 3, maxLength: 30 }),
-      contactEmail: fc.emailAddress(),
-      contactInfo: fc.constant({}),
-      contractStatus: fc.constantFrom('ACTIVE', 'PENDING'),
-      contractStart: fc.date({ min: new Date('2023-01-01'), max: new Date('2024-06-01') }),
-      contractEnd: fc.date({ min: new Date('2024-07-01'), max: new Date('2025-12-31') }),
-      billingPreferences: fc.constant({}),
-    });
-  }
-
-  function employeeGenerator() {
-    return fc.record({
-      id: fc.constant(uuidv4()),
-      employeeNumber: fc.string({ minLength: 3, maxLength: 10 }),
-      firstName: fc.string({ minLength: 2, maxLength: 20 }),
-      lastName: fc.string({ minLength: 2, maxLength: 20 }),
-      email: fc.emailAddress(),
-      phone: fc.string({ minLength: 10, maxLength: 15 }),
-      address: fc.constant({}),
-      certifications: fc.constant({}),
-      skills: fc.array(fc.string({ minLength: 3, maxLength: 15 }), { maxLength: 5 }),
-      employmentStatus: fc.constantFrom('ACTIVE', 'INACTIVE'),
-      hireDate: fc.date({ min: new Date('2022-01-01'), max: new Date('2024-06-01') }),
-    });
-  }
-
-  function siteGenerator() {
-    return fc.record({
-      id: fc.constant(uuidv4()),
-      name: fc.string({ minLength: 5, maxLength: 30 }),
-      address: fc.constant({
-        street: '123 Test St',
-        city: 'Test City',
-        state: 'TS',
-        zipCode: '12345',
+      company: fc.record({
+        id: fc.constant(uuidv4()),
+        name: fc.string({ minLength: 5, maxLength: 50 }),
+        slug: fc.string({ minLength: 3, maxLength: 20 }).map(s => s.toLowerCase().replace(/[^a-z0-9]/g, '-')),
+        settings: fc.constant({}),
+        branding: fc.constant({})
       }),
-      accessRequirements: fc.constant({}),
-      safetyProtocols: fc.constant({}),
-      operationalStatus: fc.constantFrom('ACTIVE', 'INACTIVE'),
-      contactInfo: fc.constant({}),
+      clients: fc.array(
+        fc.record({
+          id: fc.constant(uuidv4()),
+          name: fc.string({ minLength: 3, maxLength: 30 }),
+          contactEmail: fc.emailAddress(),
+          contactInfo: fc.constant({})
+        }),
+        { minLength: 1, maxLength: 2 }
+      ),
+      sites: fc.array(
+        fc.record({
+          id: fc.constant(uuidv4()),
+          name: fc.string({ minLength: 5, maxLength: 30 }),
+          address: fc.constant({
+            street: '123 Test St',
+            city: 'Test City',
+            state: 'TS',
+            zipCode: '12345',
+          }),
+          accessRequirements: fc.constant({}),
+          safetyProtocols: fc.constant({}),
+          operationalStatus: fc.constantFrom('ACTIVE', 'INACTIVE'),
+          contactInfo: fc.constant({}),
+        }),
+        { minLength: 1, maxLength: 2 }
+      ),
+      employees: fc.array(
+        fc.record({
+          id: fc.constant(uuidv4()),
+          employeeNumber: fc.string({ minLength: 3, maxLength: 10 }),
+          firstName: fc.string({ minLength: 2, maxLength: 20 }),
+          lastName: fc.string({ minLength: 2, maxLength: 20 }),
+          email: fc.emailAddress(),
+          phone: fc.string({ minLength: 10, maxLength: 15 }),
+          address: fc.constant({}),
+          certifications: fc.constant({}),
+          skills: fc.array(fc.string({ minLength: 3, maxLength: 15 }), { maxLength: 5 }),
+          employmentStatus: fc.constantFrom('ACTIVE', 'INACTIVE'),
+          hireDate: fc.date({ min: new Date('2022-01-01'), max: new Date('2024-06-01') }),
+        }),
+        { minLength: 1, maxLength: 3 }
+      )
     });
   }
+
+  // Remove individual generators - they caused the isolation problems
+  // function clientGenerator() { ... }  // ❌ REMOVED
+  // function employeeGenerator() { ... } // ❌ REMOVED  
+  // function siteGenerator() { ... }     // ❌ REMOVED
 
   function payrollRunGenerator() {
     return fc.record({
@@ -548,11 +665,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
               companyId: company.id,
               name: clientData.name,
               contactEmail: clientData.contactEmail,
-              contactInfo: clientData.contactInfo,
-              contractStatus: clientData.contractStatus,
-              contractStart: clientData.contractStart,
-              contractEnd: clientData.contractEnd,
-              billingPreferences: clientData.billingPreferences,
+              contactInfo: clientData.contactInfo
             },
           }),
         ),
@@ -580,13 +693,27 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
         ),
       );
 
+      // Create contracts for clients
+      const contracts = await Promise.all(
+        clients.map((client) =>
+          prisma.contract.create({
+            data: {
+              clientId: client.id,
+              status: 'ACTIVE',
+              startDate: new Date('2024-01-01'),
+              endDate: new Date('2024-12-31')
+            },
+          }),
+        ),
+      );
+
       // Create sites
       const sites = await Promise.all(
         tenantData.sites.map((siteData: any, index: number) =>
           prisma.site.create({
             data: {
               id: siteData.id,
-              clientId: clients[index % clients.length].id,
+              contractId: contracts[index % contracts.length].id,
               name: siteData.name,
               address: siteData.address,
               accessRequirements: siteData.accessRequirements,
@@ -622,6 +749,8 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
             role: 'Security Guard',
             responsibilities: {},
             hourlyRate: 25.5,
+            hourlyRateIv: 'placeholder_iv_value_32chars',
+            hourlyRateTag: 'placeholder_tag_value',
             status: 'ACTIVE',
             startDate: new Date(),
           },

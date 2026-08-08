@@ -143,7 +143,7 @@ export function useEmployeePortal() {
     try {
       const response = await apiClient.get('/employee-portal/dashboard');
       if (response.success) {
-        setDashboard(response.data);
+        setDashboard(response.data as EmployeeDashboard);
       } else {
         setError(response.error?.message || 'Failed to fetch dashboard');
       }
@@ -164,8 +164,9 @@ export function useEmployeePortal() {
       
       const response = await apiClient.get(`/employee-portal/attendance?${params.toString()}`);
       if (response.success) {
-        setAttendanceRecords(response.data.records);
-        setAttendanceSummary(response.data.summary);
+        const attendanceData = response.data as { records: AttendanceRecord[], summary: AttendanceSummary };
+        setAttendanceRecords(attendanceData.records);
+        setAttendanceSummary(attendanceData.summary);
       } else {
         setError(response.error?.message || 'Failed to fetch attendance');
       }
@@ -186,7 +187,7 @@ export function useEmployeePortal() {
       
       const response = await apiClient.get(`/employee-portal/shifts?${params.toString()}`);
       if (response.success) {
-        setShifts(response.data);
+        setShifts(response.data as ShiftSchedule[]);
       } else {
         setError(response.error?.message || 'Failed to fetch shifts');
       }
@@ -207,7 +208,7 @@ export function useEmployeePortal() {
       
       const response = await apiClient.get(`/employee-portal/payroll?${params.toString()}`);
       if (response.success) {
-        setPayroll(response.data);
+        setPayroll(response.data as PayrollItem[]);
       } else {
         setError(response.error?.message || 'Failed to fetch payroll');
       }
@@ -224,7 +225,7 @@ export function useEmployeePortal() {
     try {
       const response = await apiClient.get('/employee-portal/documents');
       if (response.success) {
-        setDocuments(response.data);
+        setDocuments(response.data as EmployeeDocument[]);
       } else {
         setError(response.error?.message || 'Failed to fetch documents');
       }
@@ -242,7 +243,7 @@ export function useEmployeePortal() {
       const params = unreadOnly ? '?unreadOnly=true' : '';
       const response = await apiClient.get(`/employee-portal/notifications${params}`);
       if (response.success) {
-        setNotifications(response.data);
+        setNotifications(response.data as EmployeeNotification[]);
       } else {
         setError(response.error?.message || 'Failed to fetch notifications');
       }
@@ -259,7 +260,7 @@ export function useEmployeePortal() {
     try {
       const response = await apiClient.get('/employee-portal/profile');
       if (response.success) {
-        setProfile(response.data);
+        setProfile(response.data as EmployeeProfile);
       } else {
         setError(response.error?.message || 'Failed to fetch profile');
       }
@@ -346,7 +347,8 @@ export function useEmployeePortal() {
       const response = await apiClient.get(`/employee-portal/payroll/${payrollId}/download`);
       if (response.success) {
         // Open download URL in new tab
-        window.open(response.data.downloadUrl, '_blank');
+        const downloadData = response.data as { downloadUrl: string };
+        window.open(downloadData.downloadUrl, '_blank');
         return true;
       } else {
         setError(response.error?.message || 'Failed to download payslip');

@@ -73,103 +73,12 @@ export function EmployeeAnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState('last-6-months')
   const [selectedDepartment, setSelectedDepartment] = useState('all')
 
-  // Mock data - in real implementation, these would come from API calls
-  const [performanceMetrics] = useState<PerformanceMetric[]>([
-    { period: 'This Month', value: 4.2, change: 0.3, trend: 'up' },
-    { period: 'Last 3 Months', value: 3.9, change: -0.1, trend: 'down' },
-    { period: 'Last 6 Months', value: 4.0, change: 0.2, trend: 'up' },
-    { period: 'This Year', value: 3.8, change: 0.1, trend: 'up' }
-  ])
-
-  const [skillsDistribution] = useState<SkillDistribution[]>([
-    { skill: 'Security Guard', count: 45, percentage: 85, averageLevel: 3.2 },
-    { skill: 'Armed Security', count: 28, percentage: 53, averageLevel: 3.8 },
-    { skill: 'First Aid', count: 35, percentage: 66, averageLevel: 3.0 },
-    { skill: 'CCTV Operation', count: 22, percentage: 42, averageLevel: 3.5 },
-    { skill: 'Emergency Response', count: 18, percentage: 34, averageLevel: 4.1 },
-    { skill: 'Customer Service', count: 40, percentage: 75, averageLevel: 3.4 },
-    { skill: 'Report Writing', count: 33, percentage: 62, averageLevel: 2.9 },
-    { skill: 'Radio Communication', count: 25, percentage: 47, averageLevel: 3.3 }
-  ])
-
-  const [hiringTrends] = useState<HiringTrend[]>([
-    { month: 'Jan 2024', hired: 8, terminated: 3, net: 5 },
-    { month: 'Feb 2024', hired: 12, terminated: 2, net: 10 },
-    { month: 'Mar 2024', hired: 6, terminated: 5, net: 1 },
-    { month: 'Apr 2024', hired: 15, terminated: 4, net: 11 },
-    { month: 'May 2024', hired: 9, terminated: 6, net: 3 },
-    { month: 'Jun 2024', hired: 11, terminated: 3, net: 8 }
-  ])
-
-  const [departmentStats] = useState<DepartmentStats[]>([
-    {
-      department: 'Security Operations',
-      totalEmployees: 35,
-      activeEmployees: 32,
-      averageRating: 4.1,
-      averageTenure: 2.3,
-      turnoverRate: 12
-    },
-    {
-      department: 'Armed Security',
-      totalEmployees: 18,
-      activeEmployees: 16,
-      averageRating: 4.5,
-      averageTenure: 3.1,
-      turnoverRate: 8
-    },
-    {
-      department: 'Event Security',
-      totalEmployees: 12,
-      activeEmployees: 11,
-      averageRating: 3.8,
-      averageTenure: 1.8,
-      turnoverRate: 18
-    },
-    {
-      department: 'Administration',
-      totalEmployees: 8,
-      activeEmployees: 8,
-      averageRating: 4.2,
-      averageTenure: 4.2,
-      turnoverRate: 5
-    }
-  ])
-
-  const [certificationCompliance] = useState<CertificationCompliance[]>([
-    {
-      certification: 'Security License',
-      required: 53,
-      compliant: 48,
-      expiring: 3,
-      expired: 2,
-      complianceRate: 91
-    },
-    {
-      certification: 'First Aid/CPR',
-      required: 45,
-      compliant: 35,
-      expiring: 5,
-      expired: 5,
-      complianceRate: 78
-    },
-    {
-      certification: 'Firearms License',
-      required: 18,
-      compliant: 16,
-      expiring: 1,
-      expired: 1,
-      complianceRate: 89
-    },
-    {
-      certification: 'Driver License',
-      required: 25,
-      compliant: 23,
-      expiring: 1,
-      expired: 1,
-      complianceRate: 92
-    }
-  ])
+  // Load performance and analytics data from API instead of hardcoded arrays
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([])
+  const [skillsDistribution, setSkillsDistribution] = useState<SkillDistribution[]>([])
+  const [hiringTrends, setHiringTrends] = useState<HiringTrend[]>([])
+  const [departmentStats, setDepartmentStats] = useState<DepartmentStats[]>([])
+  const [certificationCompliance, setCertificationCompliance] = useState<CertificationCompliance[]>([])
 
   // Load stats data
   const loadStats = async () => {
@@ -179,6 +88,33 @@ export function EmployeeAnalyticsDashboard() {
       
       const statsData = await employeesApi.getStats()
       setStats(statsData)
+
+      // In production, these would come from dedicated analytics endpoints
+      // For now, using basic derived data from real stats until analytics APIs are implemented
+      
+      const realPerformanceMetrics: PerformanceMetric[] = [
+        { period: 'This Month', value: statsData.averagePerformanceRating, change: 0, trend: 'stable' }
+      ]
+
+      // Basic compliance data derived from real stats
+      const totalEmployees = statsData.total
+      const realCertificationCompliance: CertificationCompliance[] = [
+        {
+          certification: 'Security License',
+          required: totalEmployees,
+          compliant: totalEmployees - statsData.complianceIssues,
+          expiring: statsData.certificationsExpiringSoon,
+          expired: Math.max(0, statsData.complianceIssues - statsData.certificationsExpiringSoon),
+          complianceRate: totalEmployees > 0 ? Math.round(((totalEmployees - statsData.complianceIssues) / totalEmployees) * 100) : 100
+        }
+      ]
+
+      // Set only the real data we have, leave others empty until proper analytics endpoints exist
+      setPerformanceMetrics(realPerformanceMetrics)
+      setSkillsDistribution([]) // Will be populated when skills analytics API is available
+      setHiringTrends([]) // Will be populated when hiring analytics API is available  
+      setDepartmentStats([]) // Will be populated when department analytics API is available
+      setCertificationCompliance(realCertificationCompliance)
     } catch (err) {
       setError('Failed to load analytics data')
       console.error('Analytics loading error:', err)
@@ -361,27 +297,34 @@ export function EmployeeAnalyticsDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {performanceMetrics.map((metric, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">{metric.period}</p>
-                        <p className="text-sm text-gray-600">Average Rating</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="font-bold text-lg">{metric.value.toFixed(1)}</p>
-                          <div className="flex items-center gap-1 text-sm">
-                            {getTrendIcon(metric.trend, metric.change)}
-                            <span className={metric.change >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {metric.change >= 0 ? '+' : ''}{metric.change.toFixed(1)}
-                            </span>
+                {performanceMetrics.length > 0 ? (
+                  <div className="space-y-4">
+                    {performanceMetrics.map((metric, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">{metric.period}</p>
+                          <p className="text-sm text-gray-600">Average Rating</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="font-bold text-lg">{metric.value.toFixed(1)}</p>
+                            <div className="flex items-center gap-1 text-sm">
+                              {getTrendIcon(metric.trend, metric.change)}
+                              <span className={metric.change >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                {metric.change >= 0 ? '+' : ''}{metric.change.toFixed(1)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <BarChart3 className="w-8 h-8 mx-auto mb-2" />
+                    <p className="text-sm">Performance analytics will be available when detailed tracking is implemented</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -436,31 +379,38 @@ export function EmployeeAnalyticsDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {hiringTrends.map((trend, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">{trend.month}</p>
+                {hiringTrends.length > 0 ? (
+                  <div className="space-y-4">
+                    {hiringTrends.map((trend, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">{trend.month}</p>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm">
+                          <div className="text-center">
+                            <p className="font-medium text-green-600">+{trend.hired}</p>
+                            <p className="text-gray-600">Hired</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="font-medium text-red-600">-{trend.terminated}</p>
+                            <p className="text-gray-600">Left</p>
+                          </div>
+                          <div className="text-center">
+                            <p className={`font-bold ${trend.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {trend.net >= 0 ? '+' : ''}{trend.net}
+                            </p>
+                            <p className="text-gray-600">Net</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-6 text-sm">
-                        <div className="text-center">
-                          <p className="font-medium text-green-600">+{trend.hired}</p>
-                          <p className="text-gray-600">Hired</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="font-medium text-red-600">-{trend.terminated}</p>
-                          <p className="text-gray-600">Left</p>
-                        </div>
-                        <div className="text-center">
-                          <p className={`font-bold ${trend.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {trend.net >= 0 ? '+' : ''}{trend.net}
-                          </p>
-                          <p className="text-gray-600">Net</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <LineChart className="w-8 h-8 mx-auto mb-2" />
+                    <p className="text-sm">Hiring trends will be available when HR analytics are implemented</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -470,33 +420,33 @@ export function EmployeeAnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 bg-green-50 rounded-lg">
+                  <div className="p-4 bg-blue-50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                      <span className="font-medium text-green-900">Growing Team</span>
+                      <Users className="w-5 h-5 text-blue-600" />
+                      <span className="font-medium text-blue-900">Current Status</span>
                     </div>
-                    <p className="text-sm text-green-700">
-                      Net growth of 38 employees over the last 6 months
+                    <p className="text-sm text-blue-700">
+                      {stats?.total || 0} total employees, {stats?.active || 0} currently active
                     </p>
                   </div>
 
-                  <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="p-4 bg-green-50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                      <span className="font-medium text-blue-900">Avg. Tenure</span>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="font-medium text-green-900">Performance</span>
                     </div>
-                    <p className="text-sm text-blue-700">
-                      Employees stay an average of 2.8 years
+                    <p className="text-sm text-green-700">
+                      Average rating: {stats?.averagePerformanceRating?.toFixed(1) || 'N/A'}
                     </p>
                   </div>
 
                   <div className="p-4 bg-yellow-50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                      <span className="font-medium text-yellow-900">Seasonal Hiring</span>
+                      <span className="font-medium text-yellow-900">Compliance</span>
                     </div>
                     <p className="text-sm text-yellow-700">
-                      Higher turnover in Q1 due to seasonal work patterns
+                      {stats?.complianceIssues || 0} issues, {stats?.certificationsExpiringSoon || 0} certs expiring soon
                     </p>
                   </div>
                 </div>
@@ -515,32 +465,39 @@ export function EmployeeAnalyticsDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {skillsDistribution.map((skill, index) => (
-                  <div key={index} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-medium text-gray-900">{skill.skill}</h4>
-                      <Badge variant="secondary">
-                        {skill.count} employees
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Coverage</span>
-                        <span className="font-medium">{formatPercentage(skill.percentage)}</span>
+              {skillsDistribution.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {skillsDistribution.map((skill, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="font-medium text-gray-900">{skill.skill}</h4>
+                        <Badge variant="secondary">
+                          {skill.count} employees
+                        </Badge>
                       </div>
-                      <Progress value={skill.percentage} className="h-2" />
                       
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Avg. Level</span>
-                        <span className="font-medium">{skill.averageLevel.toFixed(1)}/5.0</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Coverage</span>
+                          <span className="font-medium">{formatPercentage(skill.percentage)}</span>
+                        </div>
+                        <Progress value={skill.percentage} className="h-2" />
+                        
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Avg. Level</span>
+                          <span className="font-medium">{skill.averageLevel.toFixed(1)}/5.0</span>
+                        </div>
+                        <Progress value={(skill.averageLevel / 5) * 100} className="h-2" />
                       </div>
-                      <Progress value={(skill.averageLevel / 5) * 100} className="h-2" />
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <PieChart className="w-8 h-8 mx-auto mb-2" />
+                  <p className="text-sm">Skills analytics will be available when employee skills tracking is implemented</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -552,37 +509,44 @@ export function EmployeeAnalyticsDashboard() {
               <CardTitle>Department-wise Statistics</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {departmentStats.map((dept, index) => (
-                  <div key={index} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-medium text-gray-900 text-lg">{dept.department}</h4>
-                      <Badge variant="outline">{dept.totalEmployees} employees</Badge>
+              {departmentStats.length > 0 ? (
+                <div className="space-y-4">
+                  {departmentStats.map((dept, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-medium text-gray-900 text-lg">{dept.department}</h4>
+                        <Badge variant="outline">{dept.totalEmployees} employees</Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-green-600">{dept.activeEmployees}</p>
+                          <p className="text-sm text-gray-600">Active</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-blue-600">{dept.averageRating.toFixed(1)}</p>
+                          <p className="text-sm text-gray-600">Avg Rating</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-purple-600">{dept.averageTenure.toFixed(1)}y</p>
+                          <p className="text-sm text-gray-600">Avg Tenure</p>
+                        </div>
+                        <div className="text-center">
+                          <p className={`text-2xl font-bold ${dept.turnoverRate > 15 ? 'text-red-600' : 'text-green-600'}`}>
+                            {dept.turnoverRate}%
+                          </p>
+                          <p className="text-sm text-gray-600">Turnover</p>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">{dept.activeEmployees}</p>
-                        <p className="text-sm text-gray-600">Active</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">{dept.averageRating.toFixed(1)}</p>
-                        <p className="text-sm text-gray-600">Avg Rating</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-purple-600">{dept.averageTenure.toFixed(1)}y</p>
-                        <p className="text-sm text-gray-600">Avg Tenure</p>
-                      </div>
-                      <div className="text-center">
-                        <p className={`text-2xl font-bold ${dept.turnoverRate > 15 ? 'text-red-600' : 'text-green-600'}`}>
-                          {dept.turnoverRate}%
-                        </p>
-                        <p className="text-sm text-gray-600">Turnover</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-8 h-8 mx-auto mb-2" />
+                  <p className="text-sm">Department analytics will be available when department tracking is implemented</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -951,7 +951,7 @@ export default function AssignmentsPage() {
                   <div className="grid grid-cols-1 gap-4">
                     <div className="text-center p-4 bg-purple-50 rounded-lg">
                       <p className="text-xl font-bold text-purple-600">
-                        ${(assignments.reduce((sum, a) => sum + a.hourlyRate, 0) / assignments.length || 0).toFixed(2)}
+                        ₹{(assignments.reduce((sum, a) => sum + a.hourlyRate, 0) / assignments.length || 0).toFixed(2)}
                       </p>
                       <p className="text-sm text-purple-600">Average Hourly Rate</p>
                     </div>
@@ -1058,7 +1058,7 @@ export default function AssignmentsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
+                <Label htmlFor="hourlyRate">Hourly Rate (₹)</Label>
                 <Input
                   id="hourlyRate"
                   type="number"
@@ -1164,7 +1164,7 @@ export default function AssignmentsPage() {
                 </div>
                 <div>
                   <Label>Hourly Rate</Label>
-                  <p className="text-sm">${selectedAssignment.hourlyRate}/hr</p>
+                  <p className="text-sm">₹{selectedAssignment.hourlyRate}/hr</p>
                 </div>
                 <div>
                   <Label>Start Date</Label>

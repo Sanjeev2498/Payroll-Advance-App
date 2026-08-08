@@ -77,10 +77,9 @@ export class ClientsController {
       name: client.name,
       contactEmail: client.contactEmail,
       contactInfo: client.contactInfo,
-      contractStatus: client.contractStatus as ContractStatus,
-      contractStart: client.contractStart,
-      contractEnd: client.contractEnd,
-      billingPreferences: client.billingPreferences,
+      organizationType: client.organizationType,
+      industry: client.industry,
+      companySize: client.companySize,
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
     };
@@ -133,13 +132,18 @@ export class ClientsController {
         name: client.name,
         contactEmail: client.contactEmail,
         contactInfo: client.contactInfo,
-        contractStatus: client.contractStatus as ContractStatus,
-        contractStart: client.contractStart,
-        contractEnd: client.contractEnd,
-        billingPreferences: client.billingPreferences,
+        organizationType: client.organizationType,
+        industry: client.industry,
+        companySize: client.companySize,
+        tags: client.tags,
+        accountManagerId: client.accountManagerId,
         createdAt: client.createdAt,
         updatedAt: client.updatedAt,
-        _count: client._count,
+        _count: {
+          sites: 0, // TODO: Get from contracts->sites when needed
+          contracts: client._count.contracts,
+          clientUsers: client._count.clientUsers,
+        },
       })),
       total: result.total,
       page: result.page,
@@ -162,7 +166,15 @@ export class ClientsController {
   })
   async getStats(): Promise<ClientStatsResponseDto> {
     this.logger.log('GET /clients/stats - Fetching client statistics');
-    return await this.clientsService.getStats();
+    const stats = await this.clientsService.getStats();
+    return {
+      total: stats.total,
+      active: stats.withActiveContracts,
+      suspended: 0, // TODO: Implement suspended client tracking
+      expired: 0, // TODO: Implement expired client tracking
+      terminated: 0, // TODO: Implement terminated client tracking
+      expiringThisMonth: stats.withExpiringContracts,
+    };
   }
 
   @Get('expiring')
@@ -192,10 +204,9 @@ export class ClientsController {
       name: client.name,
       contactEmail: client.contactEmail,
       contactInfo: client.contactInfo,
-      contractStatus: client.contractStatus as ContractStatus,
-      contractStart: client.contractStart,
-      contractEnd: client.contractEnd,
-      billingPreferences: client.billingPreferences,
+      organizationType: client.organizationType,
+      industry: client.industry,
+      companySize: client.companySize,
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
     }));
@@ -213,18 +224,19 @@ export class ClientsController {
     description: 'List of clients with the specified status',
     type: [ClientResponseDto],
   })
-  async findByStatus(@Param('status') status: ContractStatus): Promise<ClientResponseDto[]> {
-    this.logger.log(`GET /clients/by-status/${status} - Fetching clients with status ${status}`);
-    const clients = await this.clientsService.findByContractStatus(status);
+  async findByStatus(@Param('status') status: string): Promise<ClientResponseDto[]> {
+    this.logger.log(`GET /clients/by-status/${status} - Fetching clients with organization type ${status}`);
+    const clients = await this.clientsService.findByOrganizationType(status);
     return clients.map((client) => ({
       id: client.id,
       name: client.name,
       contactEmail: client.contactEmail,
       contactInfo: client.contactInfo,
-      contractStatus: client.contractStatus as ContractStatus,
-      contractStart: client.contractStart,
-      contractEnd: client.contractEnd,
-      billingPreferences: client.billingPreferences,
+      organizationType: client.organizationType,
+      industry: client.industry,
+      companySize: client.companySize,
+      tags: client.tags,
+      accountManagerId: client.accountManagerId,
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
     }));
@@ -254,10 +266,11 @@ export class ClientsController {
       name: client.name,
       contactEmail: client.contactEmail,
       contactInfo: client.contactInfo,
-      contractStatus: client.contractStatus as ContractStatus,
-      contractStart: client.contractStart,
-      contractEnd: client.contractEnd,
-      billingPreferences: client.billingPreferences,
+      organizationType: client.organizationType,
+      industry: client.industry,
+      companySize: client.companySize,
+      tags: client.tags,
+      accountManagerId: client.accountManagerId,
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
     };
@@ -295,10 +308,11 @@ export class ClientsController {
       name: client.name,
       contactEmail: client.contactEmail,
       contactInfo: client.contactInfo,
-      contractStatus: client.contractStatus as ContractStatus,
-      contractStart: client.contractStart,
-      contractEnd: client.contractEnd,
-      billingPreferences: client.billingPreferences,
+      organizationType: client.organizationType,
+      industry: client.industry,
+      companySize: client.companySize,
+      tags: client.tags,
+      accountManagerId: client.accountManagerId,
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
     };
@@ -328,10 +342,11 @@ export class ClientsController {
       name: client.name,
       contactEmail: client.contactEmail,
       contactInfo: client.contactInfo,
-      contractStatus: client.contractStatus as ContractStatus,
-      contractStart: client.contractStart,
-      contractEnd: client.contractEnd,
-      billingPreferences: client.billingPreferences,
+      organizationType: client.organizationType,
+      industry: client.industry,
+      companySize: client.companySize,
+      tags: client.tags,
+      accountManagerId: client.accountManagerId,
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
     };

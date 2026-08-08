@@ -37,7 +37,7 @@ interface TestShift {
 interface TestSite {
   id: string;
   name: string;
-  clientId: string;
+  contractId: string;  // FIXED: Changed from clientId to contractId
 }
 
 interface TestEmployee {
@@ -87,7 +87,7 @@ const shiftGenerator = fc.record({
 const siteGenerator = fc.record({
   id: fc.uuid(),
   name: fc.string({ minLength: 1, maxLength: 50 }),
-  clientId: fc.uuid()
+  contractId: fc.uuid()  // FIXED: Changed from clientId to contractId
 });
 
 const employeeGenerator = fc.record({

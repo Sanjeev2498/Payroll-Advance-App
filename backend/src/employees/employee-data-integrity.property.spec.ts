@@ -193,7 +193,7 @@ describe('Employee Data Integrity Property Tests', () => {
 
     prisma = moduleFixture.get<PrismaService>(PrismaService);
     employeesService = moduleFixture.get<EmployeesService>(EmployeesService);
-    tenantContext = moduleFixture.get<TenantContextService>(TenantContextService);
+    tenantContext = await moduleFixture.resolve<TenantContextService>(TenantContextService);
 
     // Set up tenant context for all tests
     tenantContext.setContext(testCompanyId, 'test-user', 'COMPANY_ADMIN');

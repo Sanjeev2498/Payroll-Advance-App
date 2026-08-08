@@ -6,6 +6,12 @@ export class ClientStatsDto {
   @ApiProperty({ description: 'Number of sites for this client' })
   sites: number;
 
+  @ApiProperty({ description: 'Number of contracts for this client' })
+  contracts: number;
+
+  @ApiProperty({ description: 'Number of client users' })
+  clientUsers: number;
+
   @ApiPropertyOptional({ description: 'Number of active assignments' })
   activeAssignments?: number;
 
@@ -52,23 +58,20 @@ export class ClientResponseDto {
   @ApiPropertyOptional({ description: 'Additional contact information' })
   contactInfo?: any;
 
-  @ApiProperty({ description: 'Contract status', enum: ContractStatus })
-  contractStatus: ContractStatus;
-
-  @ApiPropertyOptional({ description: 'Contract start date' })
-  contractStart?: Date;
-
-  @ApiPropertyOptional({ description: 'Contract end date' })
-  contractEnd?: Date;
-
-  @ApiPropertyOptional({ description: 'Billing preferences' })
-  billingPreferences?: any;
+  @ApiProperty({ description: 'Organization type' })
+  organizationType: string;
 
   @ApiPropertyOptional({ description: 'Industry sector' })
   industry?: string;
 
   @ApiPropertyOptional({ description: 'Company size category' })
   companySize?: string;
+
+  @ApiProperty({ description: 'Creation timestamp' })
+  createdAt: Date;
+
+  @ApiProperty({ description: 'Last update timestamp' })
+  updatedAt: Date;
 
   @ApiPropertyOptional({ description: 'Service level agreement' })
   serviceLevelAgreement?: any;
@@ -90,12 +93,6 @@ export class ClientResponseDto {
 
   @ApiPropertyOptional({ description: 'Account manager user ID' })
   accountManagerId?: string;
-
-  @ApiProperty({ description: 'Client creation timestamp' })
-  createdAt: Date;
-
-  @ApiProperty({ description: 'Last update timestamp' })
-  updatedAt: Date;
 
   @ApiPropertyOptional({ description: 'Client statistics', type: ClientStatsDto })
   _count?: ClientStatsDto;

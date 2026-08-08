@@ -182,6 +182,6 @@ export const deploymentApi = {
         'Accept': format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       }
     })
-    return response.data
+    return response.data.data || response.data
   }
 }

@@ -35,6 +35,9 @@ describe('Property Test: Invoice Calculation Precision', () => {
       client: {
         findFirst: jest.fn(),
       },
+      contract: {
+        findFirst: jest.fn(),
+      },
       invoice: {
         count: jest.fn(),
       },
@@ -85,7 +88,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
           invoiceTestDataGenerator(),
           async (testData) => {
             // Set up test environment
-            const { companyId, clientId, siteId, deploymentData, rates, billingModel } = testData;
+            const { companyId, clientId, contractId, siteId, deploymentData, rates, billingModel } = testData;
             
             // Mock tenant context
             mockTenantContextService.getTenantId.mockReturnValue(companyId);
@@ -94,7 +97,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
             await mockDeploymentData(companyId, clientId, siteId, deploymentData);
 
             const createInvoiceDto: CreateInvoiceDto = {
-              clientId,
+              contractId, // FIXED: Use contractId instead of clientId
               billingPeriodStart: '2024-01-01T00:00:00Z',
               billingPeriodEnd: '2024-01-31T23:59:59Z',
               siteIds: [siteId],
@@ -176,13 +179,13 @@ describe('Property Test: Invoice Calculation Precision', () => {
           // Generate test data with GST requirements
           gstInvoiceTestDataGenerator(),
           async (testData) => {
-            const { companyId, clientId, siteId, deploymentData, rates, gstDetails } = testData;
+            const { companyId, clientId, contractId, siteId, deploymentData, rates, gstDetails } = testData;
             
             mockTenantContextService.getTenantId.mockReturnValue(companyId);
             await mockDeploymentData(companyId, clientId, siteId, deploymentData);
 
             const createInvoiceDto: CreateInvoiceDto = {
-              clientId,
+              contractId, // FIXED: Use contractId instead of clientId
               billingPeriodStart: '2024-01-01T00:00:00Z',
               billingPeriodEnd: '2024-01-31T23:59:59Z',
               siteIds: [siteId],
@@ -254,13 +257,13 @@ describe('Property Test: Invoice Calculation Precision', () => {
           // Generate data with various shift types
           overtimeHolidayTestDataGenerator(),
           async (testData) => {
-            const { companyId, clientId, siteId, deploymentData, rates } = testData;
+            const { companyId, clientId, contractId, siteId, deploymentData, rates } = testData;
             
             mockTenantContextService.getTenantId.mockReturnValue(companyId);
             await mockDeploymentData(companyId, clientId, siteId, deploymentData);
 
             const createInvoiceDto: CreateInvoiceDto = {
-              clientId,
+              contractId, // FIXED: Use contractId instead of clientId
               billingPeriodStart: '2024-01-01T00:00:00Z',
               billingPeriodEnd: '2024-01-31T23:59:59Z',
               siteIds: [siteId],
@@ -315,13 +318,13 @@ describe('Property Test: Invoice Calculation Precision', () => {
           // Generate data with additional charges
           additionalChargesTestDataGenerator(),
           async (testData) => {
-            const { companyId, clientId, siteId, deploymentData, rates, additionalCharges } = testData;
+            const { companyId, clientId, contractId, siteId, deploymentData, rates, additionalCharges } = testData;
             
             mockTenantContextService.getTenantId.mockReturnValue(companyId);
             await mockDeploymentData(companyId, clientId, siteId, deploymentData);
 
             const createInvoiceDto: CreateInvoiceDto = {
-              clientId,
+              contractId, // FIXED: Use contractId instead of clientId
               billingPeriodStart: '2024-01-01T00:00:00Z',
               billingPeriodEnd: '2024-01-31T23:59:59Z',
               siteIds: [siteId],
@@ -380,6 +383,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
     return fc.record({
       companyId: fc.uuid(),
       clientId: fc.uuid(),
+      contractId: fc.uuid(), // FIXED: Added contractId for proper data structure
       siteId: fc.uuid(),
       billingModel: fc.constantFrom(...Object.values(BillingModel)),
       deploymentData: fc.array(
@@ -403,6 +407,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
     return fc.record({
       companyId: fc.uuid(),
       clientId: fc.uuid(),
+      contractId: fc.uuid(), // FIXED: Added contractId for proper data structure
       siteId: fc.uuid(),
       deploymentData: fc.array(
         fc.record({
@@ -445,6 +450,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
     return fc.record({
       companyId: fc.uuid(),
       clientId: fc.uuid(),
+      contractId: fc.uuid(), // FIXED: Added contractId for proper data structure
       siteId: fc.uuid(),
       deploymentData: fc.array(
         fc.record({
@@ -477,6 +483,7 @@ describe('Property Test: Invoice Calculation Precision', () => {
     return fc.record({
       companyId: fc.uuid(),
       clientId: fc.uuid(),
+      contractId: fc.uuid(), // FIXED: Added contractId for proper data structure
       siteId: fc.uuid(),
       deploymentData: fc.array(
         fc.record({
@@ -512,43 +519,65 @@ describe('Property Test: Invoice Calculation Precision', () => {
 
   async function mockDeploymentData(companyId: string, clientId: string, siteId: string, deploymentData: any[]) {
     // Mock the Prisma query for deployment data
-    const mockAttendanceRecords = deploymentData.map((data, index) => ({
-      id: `attendance-${index}`,
-      employee: {
-        id: data.employeeId,
-        firstName: `Employee`,
-        lastName: `${index + 1}`,
-        employeeNumber: `EMP${String(index + 1).padStart(3, '0')}`,
-      },
-      shift: {
-        id: `shift-${index}`,
-        shiftDate: data.date,
-        startTime: new Date('1970-01-01T09:00:00.000Z'),
-        endTime: new Date('1970-01-01T17:00:00.000Z'),
-        shiftType: data.shiftType,
-        site: {
-          id: siteId,
-          name: 'Test Site',
+    const mockAttendanceRecords = deploymentData.map((data, index) => {
+      // FIXED: Add validation for invalid dates to prevent test failures
+      const isValidDate = data.date && !isNaN(data.date.getTime());
+      const dateStr = isValidDate ? data.date.toISOString().split('T')[0] : '2024-01-15'; // Default fallback
+      
+      return {
+        id: `attendance-${index}`,
+        employee: {
+          id: data.employeeId,
+          firstName: `Employee`,
+          lastName: `${index + 1}`,
+          employeeNumber: `EMP${String(index + 1).padStart(3, '0')}`,
         },
-        assignment: {
-          id: `assignment-${index}`,
-          hourlyRate: new Decimal(100), // Default rate that will be overridden by custom rates
+        shift: {
+          id: `shift-${index}`,
+          shiftDate: isValidDate ? data.date : new Date('2024-01-15'),
+          startTime: new Date('1970-01-01T09:00:00.000Z'),
+          endTime: new Date('1970-01-01T17:00:00.000Z'),
+          shiftType: data.shiftType,
+          site: {
+            id: siteId,
+            name: 'Test Site',
+            // FIXED: Site now properly linked to contract structure
+            contract: {
+              id: `contract-${clientId}`, // Contract ID based on client for consistency
+              clientId: clientId,
+              client: {
+                id: clientId,
+                companyId: companyId,
+                name: 'Test Client',
+              }
+            }
+          },
+          assignment: {
+            id: `assignment-${index}`,
+            hourlyRate: new Decimal(100), // Default rate that will be overridden by custom rates
+          },
         },
-      },
-      clockIn: new Date(`${data.date.toISOString().split('T')[0]}T09:00:00.000Z`),
-      clockOut: new Date(
-        new Date(`${data.date.toISOString().split('T')[0]}T09:00:00.000Z`).getTime() +
-        data.hoursWorked * 60 * 60 * 1000
-      ),
-      status: AttendanceStatus.PRESENT,
-    }));
+        clockIn: new Date(`${dateStr}T09:00:00.000Z`),
+        clockOut: new Date(
+          new Date(`${dateStr}T09:00:00.000Z`).getTime() +
+          data.hoursWorked * 60 * 60 * 1000
+        ),
+        status: AttendanceStatus.PRESENT,
+      };
+    });
 
     mockPrismaService.attendance.findMany.mockResolvedValue(mockAttendanceRecords as any);
-    mockPrismaService.client.findFirst.mockResolvedValue({
-      id: clientId,
-      companyId,
-      name: 'Test Client',
-      sites: [{ id: siteId, name: 'Test Site' }],
+    // FIXED: Mock contract-based client lookup instead of direct client lookup
+    mockPrismaService.contract.findFirst.mockResolvedValue({
+      id: `contract-${clientId}`,
+      clientId: clientId,
+      status: 'ACTIVE',
+      client: {
+        id: clientId,
+        companyId,
+        name: 'Test Client',
+        sites: [{ id: siteId, name: 'Test Site' }],
+      },
     } as any);
   }
 

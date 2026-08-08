@@ -12,49 +12,16 @@ export default function MyAttendancePage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [clockedIn, setClockedIn] = useState(false)
 
-  // Mock data - this would come from API
+  // No mock data - will come from API
   const currentStatus = {
-    clockedIn: clockedIn,
-    clockInTime: '09:00 AM',
-    site: 'Tech Plaza - Main Entrance',
-    hoursWorked: '7.5',
-    breakTime: '1.0'
+    clockedIn: false,
+    clockInTime: '',
+    site: '',
+    hoursWorked: '0',
+    breakTime: '0'
   }
 
-  const attendanceHistory = [
-    {
-      date: '2026-07-08',
-      clockIn: '09:00 AM',
-      clockOut: '06:00 PM',
-      hoursWorked: '8.0',
-      site: 'Tech Plaza - Main Entrance',
-      status: 'present'
-    },
-    {
-      date: '2026-07-07',
-      clockIn: '09:05 AM',
-      clockOut: '06:05 PM',
-      hoursWorked: '8.0',
-      site: 'Tech Plaza - Main Entrance',
-      status: 'late'
-    },
-    {
-      date: '2026-07-06',
-      clockIn: '09:00 AM',
-      clockOut: '06:00 PM',
-      hoursWorked: '8.0',
-      site: 'Tech Plaza - Parking Area',
-      status: 'present'
-    },
-    {
-      date: '2026-07-05',
-      clockIn: '-',
-      clockOut: '-',
-      hoursWorked: '0',
-      site: '-',
-      status: 'absent'
-    }
-  ]
+  const attendanceHistory: any[] = []
 
   const monthlyStats = {
     totalDays: 20,

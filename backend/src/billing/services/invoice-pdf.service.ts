@@ -240,11 +240,11 @@ export class InvoicePdfService {
             
             <div class="client-info">
                 <h3>Bill To</h3>
-                <p><strong>${invoice.client.name}</strong></p>
-                <p>${invoice.client.contactEmail}</p>
-                ${invoice.client.contactInfo ? `
-                <p>${invoice.client.contactInfo.address || ''}</p>
-                <p>${invoice.client.contactInfo.phone || ''}</p>
+                <p><strong>${invoice.contract.client.name}</strong></p>
+                <p>${invoice.contract.client.contactEmail}</p>
+                ${invoice.contract.client.contactInfo ? `
+                <p>${invoice.contract.client.contactInfo.address || ''}</p>
+                <p>${invoice.contract.client.contactInfo.phone || ''}</p>
                 ` : ''}
             </div>
         </div>

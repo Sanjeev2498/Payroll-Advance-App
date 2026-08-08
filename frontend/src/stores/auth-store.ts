@@ -1,12 +1,13 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { UserRole } from '@/types'
 
 interface User {
   id: string
   email: string
   firstName: string
   lastName: string
-  role: 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'MANAGER' | 'SUPERVISOR' | 'EMPLOYEE'
+  role: UserRole
   tenantId: string
   tenantName: string
   companyId: string

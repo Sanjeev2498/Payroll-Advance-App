@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AttendanceRepository } from '../../common/repositories/attendance.repository';
 import { TenantContextService } from '../../common/tenant-context.service';
+import { TestDataFactory } from '../../test/helpers/property-test-setup';
 import * as fc from 'fast-check';
 import { randomUUID } from 'crypto';
 
@@ -79,13 +80,15 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
   it('Property 16: Attendance monitoring accuracy', async () => {
     const testTenantId = randomUUID();
 
-    // Setup: Create test company
-    await prismaService.withSystemContext(async (prisma) => {
-      await prisma.company.create({
+    // Setup: Create test company using system context to avoid FK violations
+    await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
+      await systemPrisma.company.create({
         data: {
           id: testTenantId,
           name: 'Attendance Monitoring Test Company',
           slug: `att-test-${testTenantId.substring(0, 8)}`,
+          settings: {},
+          branding: {},
         },
       });
     });
@@ -101,87 +104,54 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
             // Setup tenant context
             tenantContextService.setContext(testTenantId);
 
-            // Create minimal test data
-            let createdClient, createdSite, createdEmployee, createdAttendance = [];
+            // Create minimal test data using system context to avoid FK violations
+            let createdData;
 
-            await prismaService.withTenant(testTenantId, async (prisma) => {
-              // Cleanup any existing data first
-              await prisma.attendance.deleteMany({}).catch(() => {});
-              await prisma.shift.deleteMany({}).catch(() => {});
-              await prisma.assignment.deleteMany({}).catch(() => {});
-              await prisma.employee.deleteMany({}).catch(() => {});
-              await prisma.site.deleteMany({}).catch(() => {});
-              await prisma.client.deleteMany({}).catch(() => {});
-
-              // Create minimal client
-              createdClient = await prisma.client.create({
-                data: {
-                  name: `Test Client ${randomUUID().substring(0, 8)}`,
-                  contactEmail: `test${randomUUID().substring(0, 8)}@attendance.com`,
-                  contractStatus: 'ACTIVE',
-                  companyId: testTenantId
+            await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
+              // Create complete hierarchy with all required FK relationships
+              const hierarchy = await TestDataFactory.createCompleteHierarchy(
+                prismaService,
+                testTenantId,
+                {
+                  clientCount: 1,
+                  employeeCount: 1,
+                  siteCount: 1,
+                  createAssignments: false,
+                  createShifts: true,
+                  createAttendance: false, // We'll create attendance manually with test data
                 }
-              });
+              );
 
-              // Create minimal site
-              createdSite = await prisma.site.create({
-                data: {
-                  name: `Test Site ${randomUUID().substring(0, 8)}`,
-                  operationalStatus: 'ACTIVE',
-                  address: {
-                    street: '123 Test St',
-                    city: 'Test City',
-                    state: 'TS',
-                    zipCode: '12345'
-                  },
-                  clientId: createdClient.id
-                }
-              });
+              createdData = hierarchy;
 
-              // Create minimal employee
-              const empId = randomUUID().substring(0, 8);
-              createdEmployee = await prisma.employee.create({
-                data: {
-                  employeeNumber: `EMP${empId}`,
-                  firstName: 'Test',
-                  lastName: 'Employee',
-                  email: `test.employee.${empId}@test.com`,
-                  employmentStatus: 'ACTIVE',
-                  skills: ['security'],
-                  hireDate: new Date('2024-01-01'),
-                  companyId: testTenantId
-                }
-              });
-
-              // Create shifts and attendance records
+              // Create attendance records for each test scenario
+              const createdAttendance = [];
               const testDate = new Date(testData.testDate);
               testDate.setHours(0, 0, 0, 0);
 
               for (let i = 0; i < testData.attendanceRecords.length; i++) {
                 const attData = testData.attendanceRecords[i];
 
-                // Create shift
-                const shiftStart = new Date(testDate);
-                shiftStart.setHours(8, 0, 0, 0); // 8 AM start
-                const shiftEnd = new Date(testDate);
-                shiftEnd.setHours(16, 0, 0, 0); // 4 PM end
-
-                const shift = await prisma.shift.create({
+                // Create shift (using existing shift if available)
+                const shift = createdData.shifts[0] || await systemPrisma.shift.create({
                   data: {
                     shiftDate: testDate,
-                    startTime: shiftStart,
-                    endTime: shiftEnd,
+                    startTime: new Date(testDate.getTime() + 8 * 60 * 60 * 1000), // 8 AM
+                    endTime: new Date(testDate.getTime() + 16 * 60 * 60 * 1000), // 4 PM
                     shiftType: 'REGULAR',
                     status: 'SCHEDULED',
-                    siteId: createdSite.id,
-                    assignmentId: null
+                    siteId: createdData.sites[0].id,
+                    priority: 'NORMAL',
+                    coverageRequired: 1,
+                    coverageAssigned: 1,
                   }
                 });
 
                 // Calculate actual clock in/out times based on delays
+                const shiftStart = new Date(shift.startTime);
                 const clockInTime = new Date(shiftStart.getTime() + attData.clockInDelay * 60 * 1000);
                 const clockOutTime = attData.hasClockOut ? 
-                  new Date(shiftEnd.getTime() + attData.clockOutDelay * 60 * 1000) : null;
+                  new Date(shift.endTime.getTime() + attData.clockOutDelay * 60 * 1000) : null;
 
                 // Determine GPS verification status
                 const locationData = {
@@ -210,7 +180,7 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
                 }
 
                 // Create attendance record
-                const attendance = await prisma.attendance.create({
+                const attendance = await systemPrisma.attendance.create({
                   data: {
                     clockIn: clockInTime,
                     clockOut: clockOutTime,
@@ -218,7 +188,7 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
                     locationData,
                     verificationData,
                     notes: attData.notes,
-                    employeeId: createdEmployee.id,
+                    employeeId: createdData.employees[0].id,
                     shiftId: shift.id
                   }
                 });
@@ -237,8 +207,8 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
 
             // 1. Test GPS Verification Accuracy
             for (const { record, expectedGPSVerified, expectedWithinGeofence } of createdAttendance) {
-              const retrievedRecord = await prismaService.withTenant(testTenantId, async (prisma) => {
-                return prisma.attendance.findUnique({
+              const retrievedRecord = await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
+                return systemPrisma.attendance.findUnique({
                   where: { id: record.id }
                 });
               });
@@ -258,8 +228,11 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
             }
 
             // 2. Test Attendance Monitoring Data Accuracy (Direct Database Verification)
-            const allAttendance = await prismaService.withTenant(testTenantId, async (prisma) => {
-              return prisma.attendance.findMany({
+            const allAttendance = await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
+              return systemPrisma.attendance.findMany({
+                where: {
+                  employee: { companyId: testTenantId }
+                },
                 include: {
                   shift: true,
                   employee: true
@@ -281,8 +254,8 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
 
             // 3. Test GPS Verification Flags Accuracy
             for (const { record, expectedRequiresApproval } of createdAttendance) {
-              const retrievedRecord = await prismaService.withTenant(testTenantId, async (prisma) => {
-                return prisma.attendance.findUnique({
+              const retrievedRecord = await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
+                return systemPrisma.attendance.findUnique({
                   where: { id: record.id }
                 });
               });
@@ -321,15 +294,8 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
             expect(lateCount).toBeGreaterThanOrEqual(0);
             expect(lateCount).toBeLessThanOrEqual(allAttendance.length);
 
-            // Cleanup: Remove test data
-            await prismaService.withTenant(testTenantId, async (prisma) => {
-              await prisma.attendance.deleteMany({});
-              await prisma.shift.deleteMany({});
-              await prisma.assignment.deleteMany({});
-              await prisma.employee.deleteMany({});
-              await prisma.site.deleteMany({});
-              await prisma.client.deleteMany({});
-            });
+            // Cleanup: Remove test data using system context
+            await TestDataFactory.cleanup(prismaService, testTenantId);
           }
         ),
         {
@@ -339,14 +305,8 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
         }
       );
     } finally {
-      // Cleanup: Remove test tenant
-      await prismaService.withSystemContext(async (prisma) => {
-        await prisma.company.delete({
-          where: { id: testTenantId },
-        }).catch(() => {
-          // Ignore cleanup errors
-        });
-      });
+      // Cleanup: Remove test tenant and all dependent data
+      await TestDataFactory.cleanup(prismaService, testTenantId);
     }
   });
 });

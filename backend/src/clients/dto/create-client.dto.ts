@@ -138,7 +138,7 @@ export class BillingPreferencesDto {
   @IsString()
   instructions?: string;
 
-  @ApiPropertyOptional({ description: 'Currency code', example: 'USD' })
+  @ApiPropertyOptional({ description: 'Currency code', example: 'INR' })
   @IsOptional()
   @IsString()
   @MaxLength(3)

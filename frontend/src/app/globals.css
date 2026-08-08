@@ -58,6 +58,22 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Ensure consistent background and eliminate white patches */
+  html, body {
+    @apply bg-gray-100 min-h-screen;
+    scroll-behavior: smooth;
+  }
+  
+  /* Fix potential layout shift issues */
+  * {
+    box-sizing: border-box;
+  }
+  
+  /* Prevent white flashes during scroll */
+  #__next {
+    @apply min-h-screen bg-gray-100;
+  }
 }
 
 /* Custom scrollbar styles */
@@ -100,4 +116,28 @@
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
   background: #6B7280;
+}
+
+/* Anti-white patch utilities */
+.no-scroll-gap {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  will-change: scroll-position;
+}
+
+/* Smooth scrolling improvements */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent layout shifts during scroll */
+.fixed-layout {
+  contain: layout style paint;
+}
+
+/* Background consistency utilities */
+.bg-consistent {
+  background-color: #f3f4f6; /* gray-100 */
+  background-attachment: fixed;
 }

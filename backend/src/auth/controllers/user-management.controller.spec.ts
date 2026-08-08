@@ -1,6 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Reflector } from '@nestjs/core';
 import { UserManagementController } from './user-management.controller';
 import { UserManagementService } from '../services/user-management.service';
+import { TenantContextService } from '../../common/tenant-context.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { PermissionsGuard } from '../guards/permissions.guard';
+import { TenantGuard } from '../../common/tenant.guard';
 import { UserRole } from '@prisma/client';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UserFilterDto } from '../dto/user-filter.dto';
@@ -46,8 +52,39 @@ describe('UserManagementController', () => {
           provide: UserManagementService,
           useValue: mockUserManagementService,
         },
+        {
+          provide: TenantContextService,
+          useValue: {
+            getTenantId: jest.fn().mockReturnValue('test-tenant-id'),
+            setTenantId: jest.fn(),
+          },
+        },
+        {
+          provide: PrismaService,
+          useValue: {},
+        },
+        {
+          provide: Reflector,
+          useValue: {
+            get: jest.fn(),
+            getAllAndOverride: jest.fn(),
+          },
+        },
       ],
-    }).compile();
+    })
+    .overrideGuard(JwtAuthGuard)
+    .useValue({
+      canActivate: jest.fn().mockReturnValue(true),
+    })
+    .overrideGuard(PermissionsGuard)
+    .useValue({
+      canActivate: jest.fn().mockReturnValue(true),
+    })
+    .overrideGuard(TenantGuard)
+    .useValue({
+      canActivate: jest.fn().mockReturnValue(true),
+    })
+    .compile();
 
     controller = module.get<UserManagementController>(UserManagementController);
     userManagementService = module.get(UserManagementService) as jest.Mocked<UserManagementService>;

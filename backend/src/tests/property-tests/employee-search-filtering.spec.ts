@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import * as fc from 'fast-check';
 import { randomUUID } from 'crypto';
+import { TestDataFactory } from '../../test/helpers/test-data-factory';
 
 /**
  * Property-Based Test: Employee Search and Filtering Correctness
@@ -14,6 +15,8 @@ import { randomUUID } from 'crypto';
 describe('Property Test: Employee Search and Filtering Correctness', () => {
   let prismaService: PrismaService;
   let module: TestingModule;
+  let testDataFactory: TestDataFactory;
+  let testCompany: any;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -22,9 +25,26 @@ describe('Property Test: Employee Search and Filtering Correctness', () => {
 
     prismaService = module.get<PrismaService>(PrismaService);
     await prismaService.onModuleInit();
+    
+    testDataFactory = new TestDataFactory(prismaService);
+    
+    // Create a test company that will be used for all tests
+    testCompany = await testDataFactory.createCompany({
+      name: 'Property Test Company',
+      slug: 'property-test-company',
+    });
   });
 
+  afterEach(async () => {
+    // Clean up created employees after each test to prevent foreign key issues
+    await prismaService.$executeRaw`DELETE FROM employees WHERE company_id = ${testCompany.id}`;
+  });
+  
   afterAll(async () => {
+    // Cleanup test data
+    if (testCompany) {
+      await testDataFactory.cleanupCompanyData(testCompany.id);
+    }
     await prismaService.onModuleDestroy();
     await module.close();
   });
@@ -77,62 +97,41 @@ describe('Property Test: Employee Search and Filtering Correctness', () => {
    * and maintain data consistency across different search parameters.
    */
   it('Property 17: Employee search and filtering correctness', async () => {
-    const testTenantId = randomUUID();
-
-    // Setup: Create test company
-    await prismaService.withSystemContext(async (prisma) => {
-      await prisma.company.create({
-        data: {
-          id: testTenantId,
-          name: 'Employee Search Test Company',
-          slug: `emp-search-${testTenantId.substring(0, 8)}`,
-        },
-      });
-    });
-
-    try {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.record({
-            employees: fc.array(employeeDataGenerator, { minLength: 5, maxLength: 20 }),
-            searchQuery: searchQueryGenerator
-          }),
-          async (testData) => {
-            // Create employees in database
-            const createdEmployees = [];
-            
-            await prismaService.withTenant(testTenantId, async (prisma) => {
-              for (const empData of testData.employees) {
-                const employee = await prisma.employee.create({
-                  data: {
-                    employeeNumber: empData.employeeNumber,
-                    firstName: empData.firstName,
-                    lastName: empData.lastName,
-                    email: empData.email,
-                    employmentStatus: empData.employmentStatus,
-                    skills: empData.skills,
-                    hireDate: empData.hireDate,
-                    companyId: testTenantId,
-                    metadata: {
-                      department: empData.department,
-                      jobTitle: empData.jobTitle,
-                      hourlyRate: empData.hourlyRate,
-                      availability: empData.availability,
-                      complianceStatus: empData.complianceStatus
-                    }
-                  }
-                });
-                createdEmployees.push({
-                  ...employee,
-                  metadata: employee.metadata as any
-                });
+    await fc.assert(
+      fc.asyncProperty(
+        fc.record({
+          employees: fc.array(employeeDataGenerator, { minLength: 5, maxLength: 20 }),
+          searchQuery: searchQueryGenerator
+        }),
+        async (testData) => {
+          // Create employees in database using TestDataFactory
+          const createdEmployees = [];
+          
+          for (const empData of testData.employees) {
+            const employee = await testDataFactory.createEmployee(testCompany.id, {
+              employeeNumber: empData.employeeNumber,
+              firstName: empData.firstName,
+              lastName: empData.lastName,
+              email: empData.email,
+              employmentStatus: empData.employmentStatus,
+              skills: empData.skills,
+              hireDate: empData.hireDate,
+              metadata: {
+                department: empData.department,
+                jobTitle: empData.jobTitle,
+                hourlyRate: empData.hourlyRate,
+                availability: empData.availability,
+                complianceStatus: empData.complianceStatus
               }
             });
+            createdEmployees.push(employee);
+          }
 
+          try {
             // Test: Perform search using Prisma directly
-            const searchResult = await prismaService.withTenant(testTenantId, async (prisma) => {
+            const searchResult = await prismaService.withTenant(testCompany.id, async (prisma) => {
               const where: any = {
-                companyId: testTenantId,
+                companyId: testCompany.id,
               };
 
               // Apply search filters
@@ -247,7 +246,7 @@ describe('Property Test: Employee Search and Filtering Correctness', () => {
 
             // Verify: All returned employees belong to correct tenant
             for (const employee of searchResult.employees) {
-              expect(employee.companyId).toBe(testTenantId);
+              expect(employee.companyId).toBe(testCompany.id);
             }
 
             // Verify: Data integrity - required fields are present
@@ -257,34 +256,29 @@ describe('Property Test: Employee Search and Filtering Correctness', () => {
               expect(employee.firstName).toBeDefined();
               expect(employee.lastName).toBeDefined();
               expect(employee.employmentStatus).toBeDefined();
-              expect(employee.companyId).toBe(testTenantId);
+              expect(employee.companyId).toBe(testCompany.id);
             }
-
-            // Cleanup: Remove test employees
-            await prismaService.withTenant(testTenantId, async (prisma) => {
-              await prisma.employee.deleteMany({
-                where: { companyId: testTenantId }
-              });
+          } finally {
+            // Cleanup: Remove created employees
+            await prismaService.withTenant(testCompany.id, async (prisma) => {
+              for (const employee of createdEmployees) {
+                await prisma.employee.delete({
+                  where: { id: employee.id }
+                }).catch(() => {
+                  // Ignore cleanup errors
+                });
+              }
             });
           }
-        ),
-        {
-          numRuns: 3, // Reduced for faster testing
-          timeout: 20000, // 20 second timeout per test
-          seed: 42,
-          endOnFailure: true,
         }
-      );
-    } finally {
-      // Cleanup: Remove test company
-      await prismaService.withSystemContext(async (prisma) => {
-        await prisma.company
-          .delete({ where: { id: testTenantId } })
-          .catch(() => {
-            // Ignore cleanup errors
-          });
-      });
-    }
+      ),
+      {
+        numRuns: 3, // Reduced for faster testing
+        timeout: 20000, // 20 second timeout per test
+        seed: 42,
+        endOnFailure: true,
+      }
+    );
   }, 45000); // 45 second test timeout
 
 });

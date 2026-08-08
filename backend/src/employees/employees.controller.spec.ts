@@ -82,7 +82,7 @@ describe('EmployeesController', () => {
 
       const result = await controller.create(createDto);
 
-      expect(service.create).toHaveBeenCalledWith(createDto);
+      expect(service.create).toHaveBeenCalledWith(createDto, 'COMPANY_ADMIN');
       expect(result).toMatchObject({
         id: mockEmployee.id,
         employeeNumber: mockEmployee.employeeNumber,
@@ -107,14 +107,14 @@ describe('EmployeesController', () => {
         total: 1,
         page: 1,
         limit: 20,
-        totalPages: 1,
+        pages: 1,
       };
 
       service.findAll.mockResolvedValue(serviceResponse);
 
       const result = await controller.findAll(queryDto);
 
-      expect(service.findAll).toHaveBeenCalledWith(queryDto);
+      expect(service.findAll).toHaveBeenCalledWith(queryDto, 'ADMIN');
       expect(result).toMatchObject({
         employees: expect.any(Array),
         total: 1,
@@ -132,7 +132,7 @@ describe('EmployeesController', () => {
 
       const result = await controller.findOne(mockEmployee.id);
 
-      expect(service.findOne).toHaveBeenCalledWith(mockEmployee.id);
+      expect(service.findOne).toHaveBeenCalledWith(mockEmployee.id, 'ADMIN');
       expect(result).toMatchObject({
         id: mockEmployee.id,
         employeeNumber: mockEmployee.employeeNumber,
@@ -154,7 +154,7 @@ describe('EmployeesController', () => {
 
       const result = await controller.update(mockEmployee.id, updateDto);
 
-      expect(service.update).toHaveBeenCalledWith(mockEmployee.id, updateDto);
+      expect(service.update).toHaveBeenCalledWith(mockEmployee.id, updateDto, 'ADMIN');
       expect(result.firstName).toBe(updateDto.firstName);
     });
   });
@@ -171,7 +171,7 @@ describe('EmployeesController', () => {
 
       const result = await controller.remove(mockEmployee.id);
 
-      expect(service.remove).toHaveBeenCalledWith(mockEmployee.id);
+      expect(service.remove).toHaveBeenCalledWith(mockEmployee.id, 'ADMIN');
       expect(result.employmentStatus).toBe('TERMINATED');
       expect(result.terminationDate).toBeDefined();
     });
@@ -186,7 +186,7 @@ describe('EmployeesController', () => {
 
       const result = await controller.findBySkills(skills);
 
-      expect(service.findBySkills).toHaveBeenCalledWith(expectedSkillsArray);
+      expect(service.findBySkills).toHaveBeenCalledWith(expectedSkillsArray, 'ADMIN');
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         id: mockEmployee.id,
@@ -214,7 +214,7 @@ describe('EmployeesController', () => {
 
       const result = await controller.searchEmployees(searchDto);
 
-      expect(service.searchEmployees).toHaveBeenCalledWith(searchDto);
+      expect(service.searchEmployees).toHaveBeenCalledWith(searchDto, 'ADMIN');
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         matchPercentage: 100,
@@ -277,7 +277,7 @@ describe('EmployeesController', () => {
 
       const result = await controller.findExpiringCertifications(days);
 
-      expect(service.findExpiringCertifications).toHaveBeenCalledWith(days);
+      expect(service.findExpiringCertifications).toHaveBeenCalledWith(days, 'ADMIN');
       expect(result).toHaveLength(1);
     });
   });

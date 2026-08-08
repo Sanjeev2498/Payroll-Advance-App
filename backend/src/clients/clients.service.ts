@@ -5,7 +5,7 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { ClientRepository } from '../common/repositories/client.repository';
+import { ClientRepository, ClientSearchFilters } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
 import { CreateClientDto, UpdateClientDto, ClientQueryDto, ContractStatus } from './dto';
 import { Client } from '@prisma/client';
@@ -26,18 +26,6 @@ export class ClientsService {
    */
   async create(createClientDto: CreateClientDto): Promise<Client> {
     this.logger.log(`Creating new client: ${createClientDto.name}`);
-
-    // Validate contract dates if both are provided
-    if (createClientDto.contractStart && createClientDto.contractEnd) {
-      if (createClientDto.contractStart >= createClientDto.contractEnd) {
-        throw new BadRequestException('Contract start date must be before end date');
-      }
-    }
-
-    // Set default contract status if not provided
-    if (!createClientDto.contractStatus) {
-      createClientDto.contractStatus = ContractStatus.PENDING;
-    }
 
     // Check for duplicate email within tenant
     await this.validateUniqueEmail(createClientDto.contactEmail);
@@ -63,18 +51,27 @@ export class ClientsService {
   async findAll(queryDto: ClientQueryDto) {
     this.logger.log('Fetching clients list with filters', { queryDto });
 
-    const filters = {
+    const filters: ClientSearchFilters = {
       search: queryDto.search,
-      contractStatus: queryDto.contractStatus,
-      contractExpiringBefore: queryDto.contractExpiringBefore,
+      organizationType: queryDto.organizationType as any,
+      industry: queryDto.industry,
     };
+
+    // Validate and map sortBy field to valid Client fields
+    const validSortFields: Array<keyof Client> = [
+      'name', 'createdAt', 'updatedAt', 'contactEmail', 'organizationType', 'industry', 'companySize'
+    ];
+    
+    const sortBy = queryDto.sortBy && validSortFields.includes(queryDto.sortBy as keyof Client) 
+      ? (queryDto.sortBy as keyof Client)
+      : 'createdAt';
 
     try {
       const result = await this.clientRepository.findMany(
         filters,
         queryDto.page,
         queryDto.limit,
-        queryDto.sortBy,
+        sortBy,
         queryDto.sortOrder,
       );
 
@@ -107,13 +104,6 @@ export class ClientsService {
   async update(id: string, updateClientDto: UpdateClientDto): Promise<Client> {
     this.logger.log(`Updating client: ${id}`);
 
-    // Validate contract dates if both are provided
-    if (updateClientDto.contractStart && updateClientDto.contractEnd) {
-      if (updateClientDto.contractStart >= updateClientDto.contractEnd) {
-        throw new BadRequestException('Contract start date must be before end date');
-      }
-    }
-
     // Check for duplicate email if email is being updated
     if (updateClientDto.contactEmail) {
       await this.validateUniqueEmail(updateClientDto.contactEmail, id);
@@ -122,11 +112,6 @@ export class ClientsService {
     try {
       const updatedClient = await this.clientRepository.update(id, updateClientDto);
       this.logger.log(`Successfully updated client: ${id}`);
-
-      // Handle contract status changes
-      if (updateClientDto.contractStatus) {
-        await this.handleContractStatusChange(updatedClient, updateClientDto.contractStatus);
-      }
 
       return updatedClient;
     } catch (error) {
@@ -185,7 +170,7 @@ export class ClientsService {
     this.logger.log(`Fetching contracts expiring within ${daysUntilExpiry} days`);
 
     try {
-      const clients = await this.clientRepository.findExpiringContracts(daysUntilExpiry);
+      const clients = await this.clientRepository.findWithExpiringContracts(daysUntilExpiry);
       this.logger.log(`Found ${clients.length} contracts expiring soon`);
       return clients;
     } catch (error) {
@@ -196,14 +181,14 @@ export class ClientsService {
   }
 
   /**
-   * Find clients by contract status
+   * Find clients by organization type
    */
-  async findByContractStatus(status: ContractStatus) {
-    this.logger.log(`Fetching clients with status: ${status}`);
+  async findByOrganizationType(organizationType: string) {
+    this.logger.log(`Fetching clients with organization type: ${organizationType}`);
 
     try {
-      const clients = await this.clientRepository.findByContractStatus(status);
-      this.logger.log(`Found ${clients.length} clients with status ${status}`);
+      const clients = await this.clientRepository.findByOrganizationType(organizationType as any);
+      this.logger.log(`Found ${clients.length} clients with organization type ${organizationType}`);
       return clients;
     } catch (error) {
       const errorInfo = formatError(error);
@@ -360,36 +345,6 @@ export class ClientsService {
     // - Scheduled for next business day
     // - Assign to account manager
     // - Set follow-up reminders
-  }
-
-  /**
-   * Handle contract status changes
-   */
-  private async handleContractStatusChange(
-    client: Client,
-    newStatus: ContractStatus,
-  ): Promise<void> {
-    this.logger.log(`Handling status change for client ${client.id}: ${newStatus}`);
-
-    try {
-      switch (newStatus) {
-        case ContractStatus.ACTIVE:
-          // TODO: Activate services, send activation notification
-          break;
-        case ContractStatus.TERMINATED:
-          // TODO: Deactivate services, final billing, data retention
-          break;
-        case ContractStatus.EXPIRED:
-          // TODO: Send renewal notifications, suspend services
-          break;
-        case ContractStatus.PENDING:
-          // TODO: Send pending documents, follow up reminders
-          break;
-      }
-    } catch (error) {
-      this.logger.error(`Status change handling failed for client ${client.id}: ${getErrorMessage(error)}`);
-      // Don't throw here - status change workflow failure shouldn't prevent the update
-    }
   }
 
   /**

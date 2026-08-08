@@ -66,7 +66,7 @@ describe('UserManagementService', () => {
 
     service = module.get<UserManagementService>(UserManagementService);
     userRepository = module.get(UserRepository) as jest.Mocked<UserRepository>;
-    tenantContext = module.get(TenantContextService) as jest.Mocked<TenantContextService>;
+    tenantContext = await module.resolve(TenantContextService) as jest.Mocked<TenantContextService>;
   });
 
   it('should be defined', () => {

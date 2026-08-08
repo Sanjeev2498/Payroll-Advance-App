@@ -34,35 +34,45 @@ export enum EmploymentType {
 }
 
 export class ContactInfoDto {
-  @ApiPropertyOptional({ description: 'Emergency contact name' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  emergencyContactName?: string;
-
-  @ApiPropertyOptional({ description: 'Emergency contact phone' })
+  @ApiPropertyOptional({ description: 'Primary phone number' })
   @IsOptional()
   @IsString()
   @MaxLength(20)
-  @Matches(/^\+91 \d{5}-\d{5}$/, { message: 'Phone number must be in format: +91 11111-22222' })
-  emergencyContactPhone?: string;
+  @Matches(/^\+91[6-9]\d{9}$/, { message: 'Phone number must be in format: +919876543210' })
+  primaryPhone?: string;
 
-  @ApiPropertyOptional({ description: 'Emergency contact relationship' })
+  @ApiPropertyOptional({ description: 'Secondary phone number' })
   @IsOptional()
   @IsString()
-  @MaxLength(50)
-  emergencyContactRelationship?: string;
+  @MaxLength(20)
+  @Matches(/^\+91[6-9]\d{9}$/, { message: 'Phone number must be in format: +919876543210' })
+  secondaryPhone?: string;
+
+  @ApiPropertyOptional({ description: 'Emergency contact information' })
+  @IsOptional()
+  @IsObject()
+  emergencyContact?: {
+    name?: string;
+    relationship?: string;
+    phone?: string;
+    email?: string;
+  };
 
   @ApiPropertyOptional({ description: 'Home address' })
   @IsOptional()
   @IsObject()
   address?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
   };
+
+  @ApiPropertyOptional({ description: 'Preferred contact method' })
+  @IsOptional()
+  @IsString()
+  preferredContactMethod?: 'EMAIL' | 'PHONE' | 'SMS';
 }
 
 export class SkillDto {
@@ -267,38 +277,64 @@ export class CreateEmployeeDto {
   @MaxLength(255)
   email?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Phone number',
-    example: '+91 98765-43210',
-    pattern: '^\\+91 \\d{5}-\\d{5}$'
+    example: '+919876543210',
+    pattern: '^\\+91[6-9]\\d{9}$'
   })
-  @IsOptional()
   @IsString()
   @MaxLength(20)
-  @Matches(/^\+91 \d{5}-\d{5}$/, { message: 'Phone number must be in format: +91 11111-22222' })
-  phone?: string;
+  @Matches(/^\+91[6-9]\d{9}$/, { message: 'Phone number must be in format: +919876543210' })
+  phone: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Aadhaar number (12 digits)',
     example: '123456789012',
     pattern: '^\\d{12}$'
   })
-  @IsOptional()
   @IsString()
   @Length(12, 12)
   @Matches(/^\d{12}$/, { message: 'Aadhaar number must be exactly 12 digits' })
-  aadhaarNumber?: string;
+  aadhaarNumber: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'PAN number (10 alphanumeric characters)',
     example: 'ABCDE1234F',
     pattern: '^[A-Z]{5}\\d{4}[A-Z]$'
   })
-  @IsOptional()
   @IsString()
   @Length(10, 10)
   @Matches(/^[A-Z]{5}\d{4}[A-Z]$/, { message: 'PAN must be in format: ABCDE1234F (5 letters, 4 digits, 1 letter)' })
-  panNumber?: string;
+  panNumber: string;
+
+  @ApiProperty({
+    description: 'Bank account number',
+    example: '1234567890123456'
+  })
+  @IsString()
+  @MinLength(9)
+  @MaxLength(20)
+  @Matches(/^\d+$/, { message: 'Account number must contain only digits' })
+  accountNumber: string;
+
+  @ApiProperty({
+    description: 'IFSC code (11 characters)',
+    example: 'SBIN0001234',
+    pattern: '^[A-Z]{4}0[A-Z0-9]{6}$'
+  })
+  @IsString()
+  @Length(11, 11)
+  @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, { message: 'IFSC code must be in format: SBIN0001234' })
+  ifscCode: string;
+
+  @ApiPropertyOptional({
+    description: 'Employee photo file path or URL',
+    example: '/uploads/employees/photo.jpg'
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  photoUrl?: string;
 
   @ApiPropertyOptional({
     description: 'Contact information and emergency contacts',
@@ -313,9 +349,8 @@ export class CreateEmployeeDto {
     description: 'Hire date',
     example: '2024-01-01',
   })
-  @IsDateString()
-  @Transform(({ value }) => (value ? new Date(value) : null))
-  hireDate: Date;
+  @IsString()
+  hireDate: string;
 
   @ApiPropertyOptional({
     description: 'Employment type',

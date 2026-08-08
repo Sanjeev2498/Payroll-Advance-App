@@ -52,6 +52,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get client() {
     return this.prismaClient.client;
   }
+  get clientUser() {
+    return this.prismaClient.clientUser;
+  }
+  get clientDocument() {
+    return this.prismaClient.clientDocument;
+  }
+  get clientInteraction() {
+    return this.prismaClient.clientInteraction;
+  }
+  get contract() {
+    return this.prismaClient.contract;
+  }
   get employee() {
     return this.prismaClient.employee;
   }
@@ -158,8 +170,13 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       'company': 'id', // companies table uses id as tenant identifier  
       'user': 'companyId',
       'client': 'companyId', 
+      'clientUser': 'clientId', // clientUser belongs to client, not directly to company
+      'clientDocument': 'clientId', // clientDocument belongs to client
+      'clientInteraction': 'clientId', // clientInteraction belongs to client
+      'contract': 'clientId', // contract belongs to client
       'employee': 'companyId',
       'payrollRun': 'companyId',
+      'site': 'contractId', // site belongs to contract
       // Add other tenant-aware tables as needed
     };
 

@@ -87,7 +87,7 @@ describe('AssignmentsService', () => {
     service = module.get<AssignmentsService>(AssignmentsService);
     assignmentRepository = module.get(AssignmentRepository);
     employeesService = module.get(EmployeesService);
-    tenantContextService = module.get(TenantContextService);
+    tenantContextService = await module.resolve(TenantContextService);
   });
 
   it('should be defined', () => {

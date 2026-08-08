@@ -2,14 +2,43 @@ import { Injectable } from '@nestjs/common';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../tenant-context.service';
-import { Client, Prisma } from '@prisma/client';
-import { CreateClientDto } from '../../clients/dto/create-client.dto';
-import { UpdateClientDto } from '../../clients/dto/update-client.dto';
+import { Client, Contract, Site, Prisma, ClientOrganizationType } from '@prisma/client';
+
+export interface CreateClientDto {
+  name: string;
+  contactEmail: string;
+  contactInfo?: any;
+  organizationType?: ClientOrganizationType;
+  industry?: string;
+  companySize?: string;
+  tags?: string[];
+  accountManagerId?: string;
+  documentRequirements?: any;
+  onboardingChecklist?: any;
+}
+
+export interface UpdateClientDto {
+  name?: string;
+  contactEmail?: string;
+  contactInfo?: any;
+  organizationType?: ClientOrganizationType;
+  industry?: string;
+  companySize?: string;
+  tags?: string[];
+  accountManagerId?: string;
+  documentRequirements?: any;
+  onboardingChecklist?: any;
+  relationshipNotes?: string;
+  lastContactDate?: Date;
+  nextFollowUpDate?: Date;
+}
 
 export interface ClientSearchFilters {
   search?: string;
-  contractStatus?: string;
-  contractExpiringBefore?: Date;
+  organizationType?: ClientOrganizationType;
+  industry?: string;
+  accountManagerId?: string;
+  tags?: string[];
 }
 
 @Injectable()
@@ -31,20 +60,35 @@ export class ClientRepository extends TenantAwareRepository {
       name: data.name,
       contactEmail: data.contactEmail,
       contactInfo: data.contactInfo ? (data.contactInfo as unknown as Prisma.JsonValue) : undefined,
-      contractStatus: data.contractStatus || 'PENDING',
-      contractStart: data.contractStart,
-      contractEnd: data.contractEnd,
-      billingPreferences: data.billingPreferences
-        ? (data.billingPreferences as unknown as Prisma.JsonValue)
+      organizationType: data.organizationType || 'CORPORATE_OFFICE',
+      industry: data.industry,
+      companySize: data.companySize,
+      documentRequirements: data.documentRequirements
+        ? (data.documentRequirements as unknown as Prisma.JsonValue)
+        : undefined,
+      onboardingChecklist: data.onboardingChecklist
+        ? (data.onboardingChecklist as unknown as Prisma.JsonValue)
         : undefined,
       company: {
         connect: { id: this.tenantContext.getTenantId() },
       },
+      accountManager: data.accountManagerId
+        ? { connect: { id: data.accountManagerId } }
+        : undefined,
     };
 
     return this.writeWithTenant(() =>
       this.prisma.client.create({
         data: createData,
+        include: {
+          accountManager: true,
+          _count: {
+            select: {
+              contracts: true,
+              clientUsers: true,
+            },
+          },
+        },
       }),
     );
   }
@@ -62,28 +106,47 @@ export class ClientRepository extends TenantAwareRepository {
           ...this.getTenantFilter(),
         },
         include: {
-          sites: {
+          accountManager: {
             select: {
               id: true,
-              name: true,
-              operationalStatus: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          contracts: {
+            select: {
+              id: true,
+              contractNumber: true,
+              title: true,
+              status: true,
+              startDate: true,
+              endDate: true,
               _count: {
                 select: {
-                  assignments: true,
+                  sites: true,
                 },
               },
             },
+            orderBy: { startDate: 'desc' },
           },
-          invoices: {
+          clientUsers: {
+            where: { isActive: true },
             select: {
               id: true,
-              invoiceNumber: true,
-              totalAmount: true,
-              status: true,
-              dueDate: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              jobTitle: true,
             },
-            orderBy: { createdAt: 'desc' },
-            take: 5,
+          },
+          _count: {
+            select: {
+              contracts: true,
+              clientUsers: true,
+              clientDocuments: true,
+            },
           },
         },
       }),
@@ -106,11 +169,21 @@ export class ClientRepository extends TenantAwareRepository {
       ...(data.name && { name: data.name }),
       ...(data.contactEmail && { contactEmail: data.contactEmail }),
       ...(data.contactInfo && { contactInfo: data.contactInfo as unknown as Prisma.JsonValue }),
-      ...(data.contractStatus && { contractStatus: data.contractStatus }),
-      ...(data.contractStart && { contractStart: data.contractStart }),
-      ...(data.contractEnd && { contractEnd: data.contractEnd }),
-      ...(data.billingPreferences && {
-        billingPreferences: data.billingPreferences as unknown as Prisma.JsonValue,
+      ...(data.organizationType && { organizationType: data.organizationType }),
+      ...(data.industry && { industry: data.industry }),
+      ...(data.companySize && { companySize: data.companySize }),
+      ...(data.tags && { tags: data.tags }),
+      ...(data.relationshipNotes && { relationshipNotes: data.relationshipNotes }),
+      ...(data.lastContactDate && { lastContactDate: data.lastContactDate }),
+      ...(data.nextFollowUpDate && { nextFollowUpDate: data.nextFollowUpDate }),
+      ...(data.documentRequirements && {
+        documentRequirements: data.documentRequirements as unknown as Prisma.JsonValue,
+      }),
+      ...(data.onboardingChecklist && {
+        onboardingChecklist: data.onboardingChecklist as unknown as Prisma.JsonValue,
+      }),
+      ...(data.accountManagerId && {
+        accountManager: { connect: { id: data.accountManagerId } },
       }),
     };
 
@@ -118,12 +191,21 @@ export class ClientRepository extends TenantAwareRepository {
       this.prisma.client.update({
         where: { id },
         data: updateData,
+        include: {
+          accountManager: true,
+          _count: {
+            select: {
+              contracts: true,
+              clientUsers: true,
+            },
+          },
+        },
       }),
     );
   }
 
   /**
-   * Soft delete client by setting status to inactive
+   * Soft delete client (archive)
    */
   async delete(id: string): Promise<Client> {
     this.logOperation('DELETE', 'Client', id);
@@ -134,11 +216,15 @@ export class ClientRepository extends TenantAwareRepository {
       throw new Error(`Client with ID ${id} not found`);
     }
 
+    // For now, we'll mark client as archived by adding a tag
+    // In a real implementation, you might want to add an 'isActive' field
     return this.writeWithTenant(() =>
       this.prisma.client.update({
         where: { id },
         data: {
-          contractStatus: 'TERMINATED',
+          tags: {
+            push: 'ARCHIVED',
+          },
         },
       }),
     );
@@ -155,7 +241,8 @@ export class ClientRepository extends TenantAwareRepository {
     sortOrder?: 'asc' | 'desc',
   ): Promise<{
     clients: (Client & {
-      _count: { sites: number };
+      accountManager?: any;
+      _count: { contracts: number; clientUsers: number };
     })[];
     total: number;
     page: number;
@@ -170,6 +257,10 @@ export class ClientRepository extends TenantAwareRepository {
     const where: Prisma.ClientWhereInput = {
       ...this.getTenantFilter(),
       ...this.buildClientSearchFilter(filters),
+      // Exclude archived clients - remove this filter for now
+      // tags: {
+      //   notIn: ['ARCHIVED'],
+      // },
     };
 
     const [clients, total] = await Promise.all([
@@ -177,9 +268,18 @@ export class ClientRepository extends TenantAwareRepository {
         this.prisma.client.findMany({
           where,
           include: {
+            accountManager: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
             _count: {
               select: {
-                sites: true,
+                contracts: true,
+                clientUsers: true,
               },
             },
           },
@@ -187,7 +287,7 @@ export class ClientRepository extends TenantAwareRepository {
           skip: pagination.skip,
           take: pagination.take,
         }),
-      ) as Promise<(Client & { _count: { sites: number } })[]>,
+      ) as Promise<(Client & { accountManager?: any; _count: { contracts: number; clientUsers: number } })[]>,
       this.findWithTenant(() => this.prisma.client.count({ where })) as Promise<number>,
     ]);
 
@@ -203,7 +303,7 @@ export class ClientRepository extends TenantAwareRepository {
   /**
    * Find clients with expiring contracts
    */
-  async findExpiringContracts(daysUntilExpiry: number = 30): Promise<Client[]> {
+  async findWithExpiringContracts(daysUntilExpiry: number = 30): Promise<Client[]> {
     this.logOperation('SEARCH', 'Client', `expiring:${daysUntilExpiry}days`);
 
     const expiryDate = new Date();
@@ -213,13 +313,34 @@ export class ClientRepository extends TenantAwareRepository {
       this.prisma.client.findMany({
         where: {
           ...this.getTenantFilter(),
-          contractStatus: 'ACTIVE',
-          contractEnd: {
-            lte: expiryDate,
-            gte: new Date(), // Not already expired
+          contracts: {
+            some: {
+              status: 'ACTIVE',
+              endDate: {
+                lte: expiryDate,
+                gte: new Date(), // Not already expired
+              },
+            },
           },
         },
-        orderBy: { contractEnd: 'asc' },
+        include: {
+          contracts: {
+            where: {
+              status: 'ACTIVE',
+              endDate: {
+                lte: expiryDate,
+                gte: new Date(),
+              },
+            },
+            select: {
+              id: true,
+              contractNumber: true,
+              title: true,
+              endDate: true,
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
       }),
     );
   }
@@ -229,76 +350,125 @@ export class ClientRepository extends TenantAwareRepository {
    */
   async getClientStats(): Promise<{
     total: number;
-    active: number;
-    suspended: number;
-    expired: number;
-    terminated: number;
-    expiringThisMonth: number;
+    byOrganizationType: Record<string, number>;
+    withActiveContracts: number;
+    withExpiringContracts: number;
+    withMultipleContracts: number;
+    withClientUsers: number;
   }> {
     this.logOperation('STATS', 'Client');
 
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-    const [total, active, suspended, expired, terminated, expiringThisMonth] = await Promise.all([
-      this.findWithTenant(() =>
-        this.prisma.client.count({
-          where: this.getTenantFilter(),
-        }),
-      ) as Promise<number>,
+    const [
+      total,
+      byOrganizationType,
+      withActiveContracts,
+      withExpiringContracts,
+      withMultipleContracts,
+      withClientUsers,
+    ] = await Promise.all([
+      // Total clients
       this.findWithTenant(() =>
         this.prisma.client.count({
           where: {
             ...this.getTenantFilter(),
-            contractStatus: 'ACTIVE',
+            tags: { none: { equals: 'ARCHIVED' } },
           },
         }),
       ) as Promise<number>,
+
+      // By organization type
+      this.findWithTenant(() =>
+        this.prisma.client.groupBy({
+          by: ['organizationType'],
+          where: {
+            ...this.getTenantFilter(),
+            tags: { none: { equals: 'ARCHIVED' } },
+          },
+          _count: true,
+        }),
+      ),
+
+      // With active contracts
       this.findWithTenant(() =>
         this.prisma.client.count({
           where: {
             ...this.getTenantFilter(),
-            contractStatus: 'SUSPENDED',
+            tags: { none: { equals: 'ARCHIVED' } },
+            contracts: {
+              some: {
+                status: 'ACTIVE',
+              },
+            },
           },
         }),
       ) as Promise<number>,
+
+      // With expiring contracts
       this.findWithTenant(() =>
         this.prisma.client.count({
           where: {
             ...this.getTenantFilter(),
-            contractStatus: 'EXPIRED',
+            tags: { none: { equals: 'ARCHIVED' } },
+            contracts: {
+              some: {
+                status: 'ACTIVE',
+                endDate: {
+                  lte: nextMonth,
+                  gte: new Date(),
+                },
+              },
+            },
           },
         }),
       ) as Promise<number>,
+
+      // With multiple contracts
       this.findWithTenant(() =>
         this.prisma.client.count({
           where: {
             ...this.getTenantFilter(),
-            contractStatus: 'TERMINATED',
+            tags: { none: { equals: 'ARCHIVED' } },
+            contracts: {
+              _count: {
+                gt: 1,
+              },
+            },
           },
         }),
       ) as Promise<number>,
+
+      // With client users
       this.findWithTenant(() =>
         this.prisma.client.count({
           where: {
             ...this.getTenantFilter(),
-            contractStatus: 'ACTIVE',
-            contractEnd: {
-              lte: nextMonth,
-              gte: new Date(),
+            tags: { none: { equals: 'ARCHIVED' } },
+            clientUsers: {
+              some: {
+                isActive: true,
+              },
             },
           },
         }),
       ) as Promise<number>,
     ]);
 
+    // Convert organization type stats to record
+    const orgTypeStats: Record<string, number> = {};
+    (byOrganizationType as any[]).forEach((item) => {
+      orgTypeStats[item.organizationType] = item._count;
+    });
+
     return {
       total,
-      active,
-      suspended,
-      expired,
-      terminated,
-      expiringThisMonth,
+      byOrganizationType: orgTypeStats,
+      withActiveContracts,
+      withExpiringContracts,
+      withMultipleContracts,
+      withClientUsers,
     };
   }
 
@@ -306,13 +476,74 @@ export class ClientRepository extends TenantAwareRepository {
    * Find clients by contract status
    */
   async findByContractStatus(status: string): Promise<Client[]> {
-    this.logOperation('SEARCH', 'Client', `status:${status}`);
+    this.logOperation('SEARCH', 'Client', `contractStatus:${status}`);
 
     return this.findWithTenant(() =>
       this.prisma.client.findMany({
         where: {
           ...this.getTenantFilter(),
-          contractStatus: status,
+          contracts: {
+            some: {
+              status: status as any,
+            },
+          },
+        },
+        include: {
+          accountManager: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          contracts: {
+            where: { status: status as any },
+            select: {
+              id: true,
+              contractNumber: true,
+              title: true,
+              status: true,
+              startDate: true,
+              endDate: true,
+            },
+          },
+          _count: {
+            select: {
+              contracts: true,
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+      }),
+    );
+  }
+
+  /**
+   * Find clients by organization type
+   */
+  async findByOrganizationType(organizationType: ClientOrganizationType): Promise<Client[]> {
+    this.logOperation('SEARCH', 'Client', `orgType:${organizationType}`);
+
+    return this.findWithTenant(() =>
+      this.prisma.client.findMany({
+        where: {
+          ...this.getTenantFilter(),
+          organizationType,
+          tags: { none: { equals: 'ARCHIVED' } },
+        },
+        include: {
+          accountManager: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          _count: {
+            select: {
+              contracts: true,
+            },
+          },
         },
         orderBy: { name: 'asc' },
       }),
@@ -331,18 +562,35 @@ export class ClientRepository extends TenantAwareRepository {
       conditions.push(textSearch);
     }
 
-    // Contract status filter
-    if (filters.contractStatus) {
+    // Organization type filter
+    if (filters.organizationType) {
       conditions.push({
-        contractStatus: filters.contractStatus as any,
+        organizationType: filters.organizationType,
       });
     }
 
-    // Contract expiring before date filter
-    if (filters.contractExpiringBefore) {
+    // Industry filter
+    if (filters.industry) {
       conditions.push({
-        contractEnd: {
-          lte: filters.contractExpiringBefore,
+        industry: {
+          contains: filters.industry,
+          mode: 'insensitive',
+        },
+      });
+    }
+
+    // Account manager filter
+    if (filters.accountManagerId) {
+      conditions.push({
+        accountManagerId: filters.accountManagerId,
+      });
+    }
+
+    // Tags filter
+    if (filters.tags && filters.tags.length > 0) {
+      conditions.push({
+        tags: {
+          hasSome: filters.tags,
         },
       });
     }
@@ -355,63 +603,131 @@ export class ClientRepository extends TenantAwareRepository {
    */
   async getClientPerformanceMetrics(clientId: string): Promise<{
     serviceQualityScore: number;
-    paymentTimelinessScore: number;
-    contractComplianceScore: number;
+    contractCompliance: number;
     satisfactionRating: number;
-    complaintsThisYear: number;
-    escalationsThisYear: number;
+    activeContracts: number;
+    totalSites: number;
     avgResponseTime: number;
   }> {
     this.logOperation('METRICS', 'Client', clientId);
 
-    // For now, return mock data since the interaction and document models aren't available yet
+    const client = await this.findWithTenant(() =>
+      this.prisma.client.findFirst({
+        where: {
+          id: clientId,
+          ...this.getTenantFilter(),
+        },
+        include: {
+          contracts: {
+            where: { status: 'ACTIVE' },
+            include: {
+              sites: true,
+            },
+          },
+        },
+      }),
+    ) as Client & {
+      contracts: Array<Contract & { sites: Site[] }>;
+    };
+
+    if (!client) {
+      throw new Error('Client not found');
+    }
+
+    const activeContracts = client.contracts?.length || 0;
+    const totalSites = client.contracts?.reduce((sum, contract) => sum + (contract.sites?.length || 0), 0) || 0;
+
+    // Extract performance data from JSON field or use defaults
+    const performanceData = client.performanceMetrics as any || {};
+
     return {
-      serviceQualityScore: 8.5,
-      paymentTimelinessScore: 9.0,
-      contractComplianceScore: 8.8,
-      satisfactionRating: 4.2,
-      complaintsThisYear: 0,
-      escalationsThisYear: 0,
-      avgResponseTime: 2.5,
+      serviceQualityScore: performanceData.serviceQualityScore || 8.5,
+      contractCompliance: performanceData.contractCompliance || 95.0,
+      satisfactionRating: performanceData.satisfactionRating || 4.2,
+      activeContracts,
+      totalSites,
+      avgResponseTime: performanceData.avgResponseTime || 2.5,
     };
   }
 
   /**
-   * Get contract renewal information
+   * Get contract renewal information for a client
    */
   async getContractRenewalInfo(clientId: string): Promise<{
-    daysUntilExpiry: number;
-    renewalStatus: string;
-    notificationSent: boolean;
-    lastDiscussionDate?: Date;
-    renewalProbability: number;
+    contractsNearExpiry: Array<{
+      contractId: string;
+      contractNumber: string;
+      title: string;
+      daysUntilExpiry: number;
+      renewalStatus: string;
+    }>;
+    totalContracts: number;
+    renewalOpportunities: number;
   }> {
     this.logOperation('RENEWAL', 'Client', clientId);
 
-    const client = await this.findById(clientId);
-    if (!client || !client.contractEnd) {
-      throw new Error('Client not found or no contract end date');
+    const client = await this.findWithTenant(() =>
+      this.prisma.client.findFirst({
+        where: {
+          id: clientId,
+          ...this.getTenantFilter(),
+        },
+        include: {
+          contracts: {
+            where: { status: 'ACTIVE' },
+            select: {
+              id: true,
+              contractNumber: true,
+              title: true,
+              endDate: true,
+            },
+          },
+        },
+      }),
+    ) as Client & {
+      contracts: Array<{
+        id: string;
+        contractNumber: string;
+        title: string;
+        endDate: Date | null;
+      }>;
+    };
+
+    if (!client) {
+      throw new Error('Client not found');
     }
 
     const now = new Date();
-    const contractEnd = new Date(client.contractEnd);
-    const daysUntilExpiry = Math.ceil((contractEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const contractsNearExpiry = (client.contracts || [])
+      .filter(contract => contract.endDate)
+      .map(contract => {
+        const endDate = new Date(contract.endDate!);
+        const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let renewalStatus = 'NOT_STARTED';
+        if (daysUntilExpiry <= 90 && daysUntilExpiry > 60) {
+          renewalStatus = 'PENDING_REVIEW';
+        } else if (daysUntilExpiry <= 60 && daysUntilExpiry > 30) {
+          renewalStatus = 'IN_DISCUSSION';
+        } else if (daysUntilExpiry <= 30) {
+          renewalStatus = 'URGENT';
+        }
 
-    // Determine renewal status
-    let renewalStatus = 'NOT_STARTED';
-    if (daysUntilExpiry <= 90 && daysUntilExpiry > 60) {
-      renewalStatus = 'PENDING_REVIEW';
-    } else if (daysUntilExpiry <= 60 && daysUntilExpiry > 30) {
-      renewalStatus = 'IN_DISCUSSION';
-    } else if (daysUntilExpiry <= 30) {
-      renewalStatus = 'URGENT';
-    }
+        return {
+          contractId: contract.id,
+          contractNumber: contract.contractNumber,
+          title: contract.title,
+          daysUntilExpiry,
+          renewalStatus,
+        };
+      })
+      .filter(contract => contract.daysUntilExpiry <= 90 && contract.daysUntilExpiry > 0)
+      .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
 
     return {
-      daysUntilExpiry,
-      renewalStatus,
-      notificationSent: daysUntilExpiry <= 90, // Default notification threshold
-      renewalProbability: 8, // Default probability score
+      contractsNearExpiry,
+      totalContracts: client.contracts?.length || 0,
+      renewalOpportunities: contractsNearExpiry.length,
     };
   }
 
@@ -425,19 +741,52 @@ export class ClientRepository extends TenantAwareRepository {
     documentsCollected: number;
     documentsRequired: number;
     status: string;
-    expectedCompletion?: Date;
+    checklist: Array<{
+      item: string;
+      completed: boolean;
+      dueDate?: Date;
+    }>;
   }> {
     this.logOperation('ONBOARDING', 'Client', clientId);
 
-    const client = await this.findById(clientId);
+    const client = await this.findWithTenant(() =>
+      this.prisma.client.findFirst({
+        where: {
+          id: clientId,
+          ...this.getTenantFilter(),
+        },
+        include: {
+          contracts: {
+            include: {
+              sites: true,
+            },
+          },
+        }
+      })
+    ) as Client & {
+      contracts: Array<Contract & { sites: Site[] }>;
+    };
+
     if (!client) {
       throw new Error('Client not found');
     }
 
-    // For now, return mock data since document management models aren't available yet
-    const totalItems = 5;
-    const completedItems = client.contractStatus === 'ACTIVE' ? 5 : 2;
-    const completionPercentage = Math.round((completedItems / totalItems) * 100);
+    const totalSites = client.contracts?.reduce((sum, contract) => sum + (contract.sites?.length || 0), 0) || 0;
+
+    const checklistData = client.onboardingChecklist as any || {
+      items: [
+        { item: 'Contract Signed', completed: (client.contracts?.length || 0) > 0 },
+        { item: 'Site Information Collected', completed: totalSites > 0 },
+        { item: 'Contact Information Verified', completed: !!client.contactEmail },
+        { item: 'Payment Terms Agreed', completed: true },
+        { item: 'Security Requirements Defined', completed: true },
+      ]
+    };
+
+    const checklist = checklistData.items || [];
+    const completedItems = checklist.filter((item: any) => item.completed).length;
+    const totalItems = checklist.length;
+    const completionPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
     let status = 'NOT_STARTED';
     if (completionPercentage > 0 && completionPercentage < 100) {
@@ -446,19 +795,89 @@ export class ClientRepository extends TenantAwareRepository {
       status = 'COMPLETED';
     }
 
-    // Calculate expected completion (30 days from contract start by default)
-    const expectedCompletion = client.contractStart 
-      ? new Date(new Date(client.contractStart).getTime() + (30 * 24 * 60 * 60 * 1000))
-      : undefined;
-
     return {
       completionPercentage,
       completedItems,
       totalItems,
-      documentsCollected: client.contractStatus === 'ACTIVE' ? 4 : 1,
-      documentsRequired: 4,
+      documentsCollected: completedItems,
+      documentsRequired: totalItems,
       status,
-      expectedCompletion,
+      checklist
     };
+  }
+
+  /**
+   * Create a client user
+   */
+  async createClientUser(clientId: string, userData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    phone?: string;
+    jobTitle?: string;
+    department?: string;
+  }): Promise<any> {
+    this.logOperation('CREATE', 'ClientUser', clientId);
+
+    // Verify client exists and belongs to current tenant
+    const client = await this.findById(clientId);
+    if (!client) {
+      throw new Error('Client not found');
+    }
+
+    return this.writeWithTenant(() =>
+      this.prisma.clientUser.create({
+        data: {
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          role: userData.role as any,
+          phone: userData.phone,
+          jobTitle: userData.jobTitle,
+          department: userData.department,
+          invitedAt: new Date(),
+          client: {
+            connect: { id: clientId },
+          },
+        },
+      }),
+    );
+  }
+
+  /**
+   * Get client users for a client
+   */
+  async getClientUsers(clientId: string): Promise<any[]> {
+    this.logOperation('LIST', 'ClientUser', clientId);
+
+    return this.findWithTenant(() =>
+      this.prisma.clientUser.findMany({
+        where: {
+          clientId,
+          client: this.getTenantFilter(),
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
+  }
+
+  /**
+   * Update client user status
+   */
+  async updateClientUserStatus(clientId: string, userId: string, isActive: boolean): Promise<any> {
+    this.logOperation('UPDATE', 'ClientUser', `${clientId}:${userId}`);
+
+    return this.writeWithTenant(() =>
+      this.prisma.clientUser.update({
+        where: {
+          id: userId,
+          client: this.getTenantFilter(),
+        },
+        data: {
+          isActive,
+        },
+      }),
+    );
   }
 }

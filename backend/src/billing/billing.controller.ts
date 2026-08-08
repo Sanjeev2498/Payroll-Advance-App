@@ -135,6 +135,41 @@ export class BillingController {
   }
 
   /**
+   * Get billing analytics for frontend
+   */
+  @Get('analytics')
+  @RequirePermissions(BillingPermissions.VIEW_BILLING_REPORTS)
+  async getAnalytics(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const period = startDate && endDate ? {
+      start: new Date(startDate),
+      end: new Date(endDate),
+    } : undefined;
+
+    return this.billingService.getInvoiceStatistics(period);
+  }
+
+  /**
+   * Get detailed billing analytics
+   */
+  @Get('analytics/detailed')
+  @RequirePermissions(BillingPermissions.VIEW_BILLING_REPORTS)
+  async getDetailedAnalytics(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('groupBy') groupBy?: 'month' | 'quarter' | 'client',
+  ) {
+    const period = startDate && endDate ? {
+      start: new Date(startDate),
+      end: new Date(endDate),
+    } : undefined;
+
+    return this.billingService.getDetailedAnalytics(period, groupBy);
+  }
+
+  /**
    * Validate GSTIN
    */
   @Post('validate-gstin')
@@ -176,10 +211,10 @@ export class BillingController {
   /**
    * Generate invoice number preview
    */
-  @Get('clients/:clientId/invoice-number-preview')
+  @Get('contracts/:contractId/invoice-number-preview')  // FIXED: Changed from clients to contracts
   @RequirePermissions(BillingPermissions.READ_INVOICE)
-  async generateInvoiceNumberPreview(@Param('clientId') clientId: string) {
-    const invoiceNumber = await this.billingService.generateInvoiceNumberPreview(clientId);
+  async generateInvoiceNumberPreview(@Param('contractId') contractId: string) {  // FIXED: Changed from clientId to contractId
+    const invoiceNumber = await this.billingService.generateInvoiceNumberPreview(contractId);
     return { invoiceNumber };
   }
 

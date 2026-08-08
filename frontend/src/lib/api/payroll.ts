@@ -79,7 +79,7 @@ export const payrollApi = {
   async getAnalytics(): Promise<PayrollAnalytics> {
     try {
       const response = await apiClient.get('/payroll/analytics');
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to fetch payroll analytics:', error);
       // Return mock data for development
@@ -95,7 +95,7 @@ export const payrollApi = {
   async createPayrollRun(data: CreatePayrollRunRequest): Promise<any> {
     try {
       const response = await apiClient.post('/payroll/runs', data);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to create payroll run:', error);
       // Mock success for development
@@ -114,7 +114,7 @@ export const payrollApi = {
   async approvePayrollRun(runId: string, approval: any): Promise<any> {
     try {
       const response = await apiClient.post(`/payroll/runs/${runId}/approve`, approval);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to approve payroll run:', error);
       // Mock success for development
@@ -152,7 +152,7 @@ export const payrollApi = {
   async getPayrollRunDetails(runId: string): Promise<any> {
     try {
       const response = await apiClient.get(`/payroll/runs/${runId}`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to get payroll run details:', error);
       // Return mock data for development
@@ -226,7 +226,7 @@ export const payrollApi = {
     try {
       const searchParams = new URLSearchParams(params);
       const response = await apiClient.get(`/payroll/analytics/detailed?${searchParams.toString()}`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Failed to get payroll analytics:', error);
       // Return mock data for development

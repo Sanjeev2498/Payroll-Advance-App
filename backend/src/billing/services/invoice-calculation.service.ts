@@ -39,24 +39,27 @@ export class InvoiceCalculationService {
       throw new BadRequestException('Billing period start date must be before end date');
     }
 
-    // Get client information
-    const client = await this.prisma.client.findFirst({
-      where: { id: dto.clientId, companyId },
+    // Get contract and client information
+    const contract = await this.prisma.contract.findFirst({
+      where: { id: dto.contractId, client: { companyId } },
       include: {
+        client: true,
         sites: {
           where: dto.siteIds ? { id: { in: dto.siteIds } } : undefined,
         },
       },
     });
 
-    if (!client) {
-      throw new BadRequestException('Client not found');
+    if (!contract) {
+      throw new BadRequestException('Contract not found');
     }
+
+    const client = contract.client;
 
     // Get deployment data (attendance records with site and assignment information)
     const deploymentData = await this.getDeploymentData(
       companyId,
-      dto.clientId,
+      dto.contractId,
       startDate,
       endDate,
       dto.siteIds,
@@ -101,6 +104,7 @@ export class InvoiceCalculationService {
     }
 
     return {
+      contractId: contract.id,
       clientId: client.id,
       clientName: client.name,
       billingPeriod: {
@@ -118,7 +122,7 @@ export class InvoiceCalculationService {
    */
   private async getDeploymentData(
     companyId: string,
-    clientId: string,
+    contractId: string,
     startDate: Date,
     endDate: Date,
     siteIds?: string[],
@@ -126,7 +130,7 @@ export class InvoiceCalculationService {
   ) {
     // Build shift filter
     const shiftFilter: any = {
-      site: { clientId },
+      site: { contractId },
       shiftDate: {
         gte: startDate,
         lte: endDate,
@@ -418,28 +422,33 @@ export class InvoiceCalculationService {
   }
 
   /**
-   * Generate invoice number
+   * Generate invoice number - FIXED: Updated to use contractId
    */
-  async generateInvoiceNumber(companyId: string, clientId: string): Promise<string> {
+  async generateInvoiceNumber(companyId: string, contractId: string): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
 
-    // Get client code (first 3 characters of name)
-    const client = await this.prisma.client.findFirst({
-      where: { id: clientId, companyId },
-      select: { name: true },
+    // Get contract and client information through contract relationship
+    const contract = await this.prisma.contract.findFirst({
+      where: { id: contractId },
+      include: { 
+        client: {
+          where: { companyId },
+          select: { name: true }
+        }
+      },
     });
 
-    const clientCode = client?.name
+    const clientCode = contract?.client?.name
       .replace(/[^A-Z0-9]/gi, '')
       .substring(0, 3)
       .toUpperCase() || 'CLI';
 
-    // Count invoices for this client in current month
+    // Count invoices for this contract in current month - FIXED: Use contractId
     const count = await this.prisma.invoice.count({
       where: {
-        clientId,
+        contractId, // FIXED: Changed from clientId to contractId
         createdAt: {
           gte: new Date(year, now.getMonth(), 1),
           lt: new Date(year, now.getMonth() + 1, 1),

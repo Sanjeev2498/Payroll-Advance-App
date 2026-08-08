@@ -64,6 +64,7 @@ export class AuthService {
       if (error instanceof ForbiddenException) {
         throw error;
       }
+      console.error('Database error in validateUser:', error);
       return null;
     }
   }

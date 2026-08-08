@@ -10,6 +10,8 @@ export interface CreateAssignmentDto {
   role: string;
   responsibilities?: Prisma.JsonValue;
   hourlyRate: number;
+  hourlyRateIv?: string; // Required encryption field
+  hourlyRateTag?: string; // Required encryption field
   status?: string;
   startDate: Date;
   endDate?: Date;
@@ -50,9 +52,11 @@ export interface AssignmentSearchFilters {
 export interface AssignmentWithRelations extends Assignment {
   employee: Employee;
   site: Site & {
-    client: {
-      id: string;
-      name: string;
+    contract: {
+      client: {
+        id: string;
+        name: string;
+      };
     };
   };
 }
@@ -93,20 +97,29 @@ export class AssignmentRepository extends TenantAwareRepository {
     await this.validateEmployeeBelongsToTenant(data.employeeId);
     await this.validateSiteBelongsToTenant(data.siteId);
 
+    // Ensure encryption fields are provided or use placeholder values
+    const assignmentData = {
+      ...data,
+      hourlyRateIv: data.hourlyRateIv || "placeholder_iv_value_32chars",
+      hourlyRateTag: data.hourlyRateTag || "placeholder_tag_value", 
+      status: (data.status as any) || 'ACTIVE',
+    };
+
     return this.writeWithTenant(() =>
       this.prisma.assignment.create({
-        data: {
-          ...data,
-          status: (data.status as any) || 'ACTIVE',
-        },
+        data: assignmentData,
         include: {
           employee: true,
           site: {
             include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+              contract: {
+                include: {
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -129,10 +142,14 @@ export class AssignmentRepository extends TenantAwareRepository {
           employee: true,
           site: {
             include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+              contract: {
+                include: {
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -169,10 +186,14 @@ export class AssignmentRepository extends TenantAwareRepository {
           employee: true,
           site: {
             include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+              contract: {
+                include: {
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -205,10 +226,14 @@ export class AssignmentRepository extends TenantAwareRepository {
           employee: true,
           site: {
             include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+              contract: {
+                include: {
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -249,10 +274,14 @@ export class AssignmentRepository extends TenantAwareRepository {
             employee: true,
             site: {
               include: {
-                client: {
-                  select: {
-                    id: true,
-                    name: true,
+                contract: {
+                  include: {
+                    client: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
                   },
                 },
               },
@@ -296,10 +325,14 @@ export class AssignmentRepository extends TenantAwareRepository {
           employee: true,
           site: {
             include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+              contract: {
+                include: {
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -331,10 +364,14 @@ export class AssignmentRepository extends TenantAwareRepository {
           employee: true,
           site: {
             include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+              contract: {
+                include: {
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -366,10 +403,14 @@ export class AssignmentRepository extends TenantAwareRepository {
           employee: true,
           site: {
             include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+              contract: {
+                include: {
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -729,25 +770,29 @@ export class AssignmentRepository extends TenantAwareRepository {
   }
 
   /**
-   * Validate that a site belongs to the current tenant (through client relationship)
+   * Validate that a site belongs to the current tenant (through contract -> client relationship)
    */
   private async validateSiteBelongsToTenant(siteId: string): Promise<void> {
     const site = await this.findWithTenant(() =>
       this.prisma.site.findUnique({
         where: { id: siteId },
         include: {
-          client: {
-            select: { companyId: true },
+          contract: {
+            include: {
+              client: {
+                select: { companyId: true },
+              },
+            },
           },
         },
       }),
-    ) as { client: { companyId: string } } | null;
+    ) as { contract: { client: { companyId: string } } } | null;
 
     if (!site) {
       throw new NotFoundException(`Site with ID ${siteId} not found`);
     }
 
-    this.validateTenantOwnership(site.client.companyId);
+    this.validateTenantOwnership(site.contract.client.companyId);
   }
 
   /**

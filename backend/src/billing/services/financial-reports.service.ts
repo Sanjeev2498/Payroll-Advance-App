@@ -261,16 +261,26 @@ export class FinancialReportsService {
     // Get invoices for the period
     const invoices = await this.prisma.invoice.findMany({
       where: {
-        client: { companyId },
+        contract: { 
+          client: { companyId } 
+        },
         billingPeriodStart: { gte: options.startDate },
         billingPeriodEnd: { lte: options.endDate },
-        ...(options.clientIds?.length ? { clientId: { in: options.clientIds } } : {}),
+        ...(options.clientIds?.length ? { 
+          contract: { 
+            clientId: { in: options.clientIds } 
+          }
+        } : {}),
       },
       include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
+        contract: {
+          include: {
+            client: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -307,8 +317,8 @@ export class FinancialReportsService {
       }
 
       // Track by client
-      const clientId = invoice.clientId;
-      const clientName = invoice.client.name;
+      const clientId = invoice.contract.client.id;
+      const clientName = invoice.contract.client.name;
       if (!clientData.has(clientId)) {
         clientData.set(clientId, {
           name: clientName,
@@ -338,7 +348,9 @@ export class FinancialReportsService {
 
     const previousInvoices = await this.prisma.invoice.findMany({
       where: {
-        client: { companyId },
+        contract: { 
+          client: { companyId } 
+        },
         billingPeriodStart: { gte: previousPeriodStart },
         billingPeriodEnd: { lte: previousPeriodEnd },
       },
@@ -400,14 +412,20 @@ export class FinancialReportsService {
     // Get sites with their financial data
     const sites = await this.prisma.site.findMany({
       where: {
-        client: { companyId },
+        contract: { 
+          client: { companyId } 
+        },
         ...(options.siteIds?.length ? { id: { in: options.siteIds } } : {}),
       },
       include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
+        contract: {
+          include: {
+            client: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         assignments: {
@@ -439,7 +457,7 @@ export class FinancialReportsService {
       // Calculate revenue from invoices for this site
       const siteInvoices = await this.prisma.invoice.findMany({
         where: {
-          clientId: site.clientId,
+          contractId: site.contract.id,
           billingPeriodStart: { gte: options.startDate },
           billingPeriodEnd: { lte: options.endDate },
           // Assuming invoices can be filtered by site somehow
@@ -490,7 +508,7 @@ export class FinancialReportsService {
       profitabilityData.push({
         siteId: site.id,
         siteName: site.name,
-        clientName: site.client.name,
+        clientName: site.contract.client.name,
         revenue: siteRevenue,
         payrollCosts,
         operationalCosts,
@@ -739,7 +757,9 @@ export class FinancialReportsService {
 
       const invoices = await this.prisma.invoice.findMany({
         where: {
-          client: { companyId },
+          contract: { 
+            client: { companyId } 
+          },
           billingPeriodStart: { gte: monthStart },
           billingPeriodEnd: { lte: monthEnd },
         },

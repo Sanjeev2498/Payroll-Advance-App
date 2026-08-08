@@ -18,7 +18,7 @@ export enum BillingModel {
 
 export class CreateInvoiceDto {
   @IsUUID()
-  clientId: string;
+  contractId: string;
 
   @IsOptional()
   @IsString()

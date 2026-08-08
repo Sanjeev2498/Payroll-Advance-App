@@ -113,11 +113,26 @@ export class DeploymentTestDataGenerator {
         contactInfo: {
           phone: '555-0123',
           address: '123 Business St'
+        }
+      }
+    });
+
+    // Create contract for the client
+    const contract = await this.prisma.contract.create({
+      data: {
+        id: uuidv4(),
+        clientId: client.id,
+        contractNumber: `CONT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: `${scenario.companyName} Service Agreement`,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        billingPreferences: {
+          frequency: 'MONTHLY',
+          method: 'PORTAL',
+          paymentTerms: 30
         },
-        contractStatus: 'ACTIVE',
-        contractStart: new Date(),
-        contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-        billingPreferences: {}
+        serviceDefinitions: { services: ['security'] }
       }
     });
 
@@ -131,7 +146,7 @@ export class DeploymentTestDataGenerator {
       const site = await this.prisma.site.create({
         data: {
           id: uuidv4(),
-          clientId: client.id,
+          contractId: contract.id,
           name: `Site ${i + 1}`,
           address: {
             street: `${100 + i} Site Street`,
@@ -170,13 +185,45 @@ export class DeploymentTestDataGenerator {
           firstName: `Employee${i}`,
           lastName: 'Test',
           email: `employee${i}@test.com`,
+          emailIv: 'test-iv-32chars-placeholder-val',
+          emailTag: 'test-tag-32chars-placeholder',
           phone: `555-020${i}`,
+          phoneIv: 'test-iv-32chars-placeholder-val',
+          phoneTag: 'test-tag-32chars-placeholder',
           address: {
             street: `${200 + i} Employee St`,
             city: 'Employee City',
             state: 'EC',
             zipCode: `2000${i}`
           },
+          basicSalary: '45000',
+          basicSalaryIv: 'test-iv-32chars-placeholder-val',
+          basicSalaryTag: 'test-tag-32chars-placeholder',
+          hraAmount: '4500',
+          hraAmountIv: 'test-iv-32chars-placeholder-val',
+          hraAmountTag: 'test-tag-32chars-placeholder',
+          otherAllowances: '1500',
+          otherAllowancesIv: 'test-iv-32chars-placeholder-val',
+          otherAllowancesTag: 'test-tag-32chars-placeholder',
+          grossSalary: '51000',
+          grossSalaryIv: 'test-iv-32chars-placeholder-val',
+          grossSalaryTag: 'test-tag-32chars-placeholder',
+          salaryType: 'MONTHLY',
+          bankName: 'Test Bank Limited',
+          bankNameIv: 'test-iv-32chars-placeholder-val',
+          bankNameTag: 'test-tag-32chars-placeholder',
+          accountNumber: `12345678${String(i).padStart(2, '0')}`,
+          accountNumberIv: 'test-iv-32chars-placeholder-val',
+          accountNumberTag: 'test-tag-32chars-placeholder',
+          ifscCode: 'TEST0123456',
+          ifscCodeIv: 'test-iv-32chars-placeholder-val',
+          ifscCodeTag: 'test-tag-32chars-placeholder',
+          accountType: 'SAVINGS',
+          epfApplicable: true,
+          esicApplicable: true,
+          ptApplicable: true,
+          tdsApplicable: true,
+          dateOfBirth: new Date('1990-01-01'),
           certifications: {
             security: true,
             firstAid: Math.random() > 0.5
@@ -184,6 +231,7 @@ export class DeploymentTestDataGenerator {
           skills: employeeSkills,
           employmentStatus: 'ACTIVE',
           hireDate: new Date(Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000)),
+          metadata: { training: 'completed', clearance: 'active' },
         }
       });
       employees.push(employee);
@@ -215,7 +263,7 @@ export class DeploymentTestDataGenerator {
       assignments.push(assignment);
     }
 
-    return { company, client, sites, employees, assignments };
+    return { company, client, contract, sites, employees, assignments };
   }
 
   async createConflictScenario(scenario: ConflictScenario) {
@@ -235,11 +283,26 @@ export class DeploymentTestDataGenerator {
         companyId: company.id,
         name: `${scenario.companyName} Client`,
         contactEmail: `contact@${scenario.companyName.toLowerCase()}.com`,
-        contactInfo: {},
-        contractStatus: 'ACTIVE',
-        contractStart: new Date(),
-        contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        billingPreferences: {}
+        contactInfo: {}
+      }
+    });
+
+    // Create contract for the client
+    const contract = await this.prisma.contract.create({
+      data: {
+        id: uuidv4(),
+        clientId: client.id,
+        contractNumber: `CONT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: `${scenario.companyName} Conflict Service Agreement`,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        billingPreferences: {
+          frequency: 'MONTHLY',
+          method: 'PORTAL',
+          paymentTerms: 30
+        },
+        serviceDefinitions: { services: ['security'] }
       }
     });
 
@@ -251,7 +314,7 @@ export class DeploymentTestDataGenerator {
       const site = await this.prisma.site.create({
         data: {
           id: uuidv4(),
-          clientId: client.id,
+          contractId: contract.id,
           name: `Conflict Site ${i + 1}`,
           address: {},
           accessRequirements: {},
@@ -272,12 +335,45 @@ export class DeploymentTestDataGenerator {
           firstName: `ConflictEmployee${i}`,
           lastName: 'Test',
           email: `conflict${i}@test.com`,
+          emailIv: 'test-iv-32chars-placeholder-val',
+          emailTag: 'test-tag-32chars-placeholder',
           phone: `555-030${i}`,
-          address: {},
-          certifications: {},
+          phoneIv: 'test-iv-32chars-placeholder-val',
+          phoneTag: 'test-tag-32chars-placeholder',
+          address: { street: 'Test Address' },
+          basicSalary: '45000',
+          basicSalaryIv: 'test-iv-32chars-placeholder-val',
+          basicSalaryTag: 'test-tag-32chars-placeholder',
+          hraAmount: '4500',
+          hraAmountIv: 'test-iv-32chars-placeholder-val',
+          hraAmountTag: 'test-tag-32chars-placeholder',
+          otherAllowances: '1500',
+          otherAllowancesIv: 'test-iv-32chars-placeholder-val',
+          otherAllowancesTag: 'test-tag-32chars-placeholder',
+          grossSalary: '51000',
+          grossSalaryIv: 'test-iv-32chars-placeholder-val',
+          grossSalaryTag: 'test-tag-32chars-placeholder',
+          salaryType: 'MONTHLY',
+          bankName: 'Test Bank Limited',
+          bankNameIv: 'test-iv-32chars-placeholder-val',
+          bankNameTag: 'test-tag-32chars-placeholder',
+          accountNumber: `87654321${String(i).padStart(2, '0')}`,
+          accountNumberIv: 'test-iv-32chars-placeholder-val',
+          accountNumberTag: 'test-tag-32chars-placeholder',
+          ifscCode: 'TEST0123456',
+          ifscCodeIv: 'test-iv-32chars-placeholder-val',
+          ifscCodeTag: 'test-tag-32chars-placeholder',
+          accountType: 'SAVINGS',
+          epfApplicable: true,
+          esicApplicable: true,
+          ptApplicable: true,
+          tdsApplicable: true,
+          dateOfBirth: new Date('1990-01-01'),
+          certifications: { security: true, conflict: true },
           skills: ['security'],
           employmentStatus: 'ACTIVE',
-          hireDate: new Date()
+          hireDate: new Date(),
+          metadata: { training: 'completed', clearance: 'active' },
         }
       });
       employees.push(employee);
@@ -323,7 +419,7 @@ export class DeploymentTestDataGenerator {
       conflictingAssignments.push(assignment1, assignment2);
     }
 
-    return { company, client, sites, employees, conflictingAssignments };
+    return { company, client, contract, sites, employees, conflictingAssignments };
   }
 
   async createEfficiencyScenario(scenario: EfficiencyScenario) {
@@ -344,11 +440,26 @@ export class DeploymentTestDataGenerator {
         companyId: company.id,
         name: `${scenario.companyName} Client`,
         contactEmail: `efficiency@${scenario.companyName.toLowerCase()}.com`,
-        contactInfo: {},
-        contractStatus: 'ACTIVE',
-        contractStart: new Date(),
-        contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        billingPreferences: {}
+        contactInfo: {}
+      }
+    });
+
+    // Create contract for the client
+    const contract = await this.prisma.contract.create({
+      data: {
+        id: uuidv4(),
+        clientId: client.id,
+        contractNumber: `CONT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: `${scenario.companyName} Efficiency Service Agreement`,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        billingPreferences: {
+          frequency: 'MONTHLY',
+          method: 'PORTAL',
+          paymentTerms: 30
+        },
+        serviceDefinitions: { services: ['security'] }
       }
     });
 
@@ -357,7 +468,7 @@ export class DeploymentTestDataGenerator {
       const site = await this.prisma.site.create({
         data: {
           id: uuidv4(),
-          clientId: client.id,
+          contractId: contract.id,
           name: `Efficiency Site ${i + 1}`,
           address: {},
           accessRequirements: {},
@@ -377,12 +488,45 @@ export class DeploymentTestDataGenerator {
             firstName: `EfficiencyEmployee${i}`,
             lastName: 'Test',
             email: `efficiency${i}@test.com`,
+            emailIv: 'test-iv-32chars-placeholder-val',
+            emailTag: 'test-tag-32chars-placeholder',
             phone: `555-040${i}`,
-            address: {},
-            certifications: {},
+            phoneIv: 'test-iv-32chars-placeholder-val',
+            phoneTag: 'test-tag-32chars-placeholder',
+            address: { street: 'Efficiency Street' },
+            basicSalary: '45000',
+            basicSalaryIv: 'test-iv-32chars-placeholder-val',
+            basicSalaryTag: 'test-tag-32chars-placeholder',
+            hraAmount: '4500',
+            hraAmountIv: 'test-iv-32chars-placeholder-val',
+            hraAmountTag: 'test-tag-32chars-placeholder',
+            otherAllowances: '1500',
+            otherAllowancesIv: 'test-iv-32chars-placeholder-val',
+            otherAllowancesTag: 'test-tag-32chars-placeholder',
+            grossSalary: '51000',
+            grossSalaryIv: 'test-iv-32chars-placeholder-val',
+            grossSalaryTag: 'test-tag-32chars-placeholder',
+            salaryType: 'MONTHLY',
+            bankName: 'Test Bank Limited',
+            bankNameIv: 'test-iv-32chars-placeholder-val',
+            bankNameTag: 'test-tag-32chars-placeholder',
+            accountNumber: `55667788${String(i).padStart(2, '0')}`,
+            accountNumberIv: 'test-iv-32chars-placeholder-val',
+            accountNumberTag: 'test-tag-32chars-placeholder',
+            ifscCode: 'TEST0123456',
+            ifscCodeIv: 'test-iv-32chars-placeholder-val',
+            ifscCodeTag: 'test-tag-32chars-placeholder',
+            accountType: 'SAVINGS',
+            epfApplicable: true,
+            esicApplicable: true,
+            ptApplicable: true,
+            tdsApplicable: true,
+            dateOfBirth: new Date('1990-01-01'),
+            certifications: { security: true, efficiency: true },
             skills: ['security'],
             employmentStatus: 'ACTIVE',
-            hireDate: new Date()
+            hireDate: new Date(),
+            metadata: { training: 'completed', clearance: 'active' },
           }
         });
 
@@ -423,18 +567,33 @@ export class DeploymentTestDataGenerator {
         companyId: company.id,
         name: `${scenario.companyName} Client`,
         contactEmail: `recommendation@${scenario.companyName.toLowerCase()}.com`,
-        contactInfo: {},
-        contractStatus: 'ACTIVE',
-        contractStart: new Date(),
-        contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        billingPreferences: {}
+        contactInfo: {}
+      }
+    });
+
+    // Create contract for the client
+    const contract = await this.prisma.contract.create({
+      data: {
+        id: uuidv4(),
+        clientId: client.id,
+        contractNumber: `CONT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: `${scenario.companyName} Recommendation Service Agreement`,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        billingPreferences: {
+          frequency: 'MONTHLY',
+          method: 'PORTAL',
+          paymentTerms: 30
+        },
+        serviceDefinitions: { services: ['security'] }
       }
     });
 
     const site = await this.prisma.site.create({
       data: {
         id: uuidv4(),
-        clientId: client.id,
+        contractId: contract.id,
         name: scenario.siteName,
         address: {},
         accessRequirements: {},
@@ -454,14 +613,47 @@ export class DeploymentTestDataGenerator {
           firstName: `RecommendationGuard${i}`,
           lastName: 'Test',
           email: `recommendation${i}@test.com`,
+          emailIv: 'test-iv-32chars-placeholder-val',
+          emailTag: 'test-tag-32chars-placeholder',
           phone: `555-050${i}`,
-          address: {},
-          certifications: {},
+          phoneIv: 'test-iv-32chars-placeholder-val',
+          phoneTag: 'test-tag-32chars-placeholder',
+          address: { street: 'Recommendation Street' },
+          basicSalary: '45000',
+          basicSalaryIv: 'test-iv-32chars-placeholder-val',
+          basicSalaryTag: 'test-tag-32chars-placeholder',
+          hraAmount: '4500',
+          hraAmountIv: 'test-iv-32chars-placeholder-val',
+          hraAmountTag: 'test-tag-32chars-placeholder',
+          otherAllowances: '1500',
+          otherAllowancesIv: 'test-iv-32chars-placeholder-val',
+          otherAllowancesTag: 'test-tag-32chars-placeholder',
+          grossSalary: '51000',
+          grossSalaryIv: 'test-iv-32chars-placeholder-val',
+          grossSalaryTag: 'test-tag-32chars-placeholder',
+          salaryType: 'MONTHLY',
+          bankName: 'Test Bank Limited',
+          bankNameIv: 'test-iv-32chars-placeholder-val',
+          bankNameTag: 'test-tag-32chars-placeholder',
+          accountNumber: `99887766${String(i).padStart(2, '0')}`,
+          accountNumberIv: 'test-iv-32chars-placeholder-val',
+          accountNumberTag: 'test-tag-32chars-placeholder',
+          ifscCode: 'TEST0123456',
+          ifscCodeIv: 'test-iv-32chars-placeholder-val',
+          ifscCodeTag: 'test-tag-32chars-placeholder',
+          accountType: 'SAVINGS',
+          epfApplicable: true,
+          esicApplicable: true,
+          ptApplicable: true,
+          tdsApplicable: true,
+          dateOfBirth: new Date('1990-01-01'),
+          certifications: { security: true, recommendation: true },
           skills: scenario.requiredSkills.length > 0 ? 
                  scenario.requiredSkills.slice(0, Math.min(2, scenario.requiredSkills.length)) : 
                  ['security'],
           employmentStatus: 'ACTIVE',
           hireDate: new Date(),
+          metadata: { training: 'completed', clearance: 'active' },
         }
       });
       availableGuards.push(guard);
@@ -487,18 +679,33 @@ export class DeploymentTestDataGenerator {
         companyId: company.id,
         name: `${scenario.companyName} Client`,
         contactEmail: `quickassign@${scenario.companyName.toLowerCase()}.com`,
-        contactInfo: {},
-        contractStatus: 'ACTIVE',
-        contractStart: new Date(),
-        contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        billingPreferences: {}
+        contactInfo: {}
+      }
+    });
+
+    // Create contract for the client
+    const contract = await this.prisma.contract.create({
+      data: {
+        id: uuidv4(),
+        clientId: client.id,
+        contractNumber: `CONT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: `${scenario.companyName} QuickAssign Service Agreement`,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        billingPreferences: {
+          frequency: 'MONTHLY',
+          method: 'PORTAL',
+          paymentTerms: 30
+        },
+        serviceDefinitions: { services: ['security'] }
       }
     });
 
     const site = await this.prisma.site.create({
       data: {
         id: uuidv4(),
-        clientId: client.id,
+        contractId: contract.id,
         name: scenario.siteName,
         address: {},
         accessRequirements: {},
@@ -518,12 +725,45 @@ export class DeploymentTestDataGenerator {
           firstName: 'QuickAssignGuard',
           lastName: 'Test',
           email: 'quickassign@test.com',
+          emailIv: 'test-iv-32chars-placeholder-val',
+          emailTag: 'test-tag-32chars-placeholder',
           phone: '555-060000',
-          address: {},
-          certifications: {},
+          phoneIv: 'test-iv-32chars-placeholder-val',
+          phoneTag: 'test-tag-32chars-placeholder',
+          address: { street: 'Quick Assign Street' },
+          basicSalary: '45000',
+          basicSalaryIv: 'test-iv-32chars-placeholder-val',
+          basicSalaryTag: 'test-tag-32chars-placeholder',
+          hraAmount: '4500',
+          hraAmountIv: 'test-iv-32chars-placeholder-val',
+          hraAmountTag: 'test-tag-32chars-placeholder',
+          otherAllowances: '1500',
+          otherAllowancesIv: 'test-iv-32chars-placeholder-val',
+          otherAllowancesTag: 'test-tag-32chars-placeholder',
+          grossSalary: '51000',
+          grossSalaryIv: 'test-iv-32chars-placeholder-val',
+          grossSalaryTag: 'test-tag-32chars-placeholder',
+          salaryType: 'MONTHLY',
+          bankName: 'Test Bank Limited',
+          bankNameIv: 'test-iv-32chars-placeholder-val',
+          bankNameTag: 'test-tag-32chars-placeholder',
+          accountNumber: '1122334455',
+          accountNumberIv: 'test-iv-32chars-placeholder-val',
+          accountNumberTag: 'test-tag-32chars-placeholder',
+          ifscCode: 'TEST0123456',
+          ifscCodeIv: 'test-iv-32chars-placeholder-val',
+          ifscCodeTag: 'test-tag-32chars-placeholder',
+          accountType: 'SAVINGS',
+          epfApplicable: true,
+          esicApplicable: true,
+          ptApplicable: true,
+          tdsApplicable: true,
+          dateOfBirth: new Date('1990-01-01'),
+          certifications: { security: true, quickAssign: true },
           skills: scenario.guardSkills,
           employmentStatus: 'ACTIVE',
-          hireDate: new Date()
+          hireDate: new Date(),
+          metadata: { training: 'completed', clearance: 'active' },
         }
       });
     }
@@ -538,6 +778,7 @@ export class DeploymentTestDataGenerator {
     await this.prisma.attendance.deleteMany({});
     await this.prisma.employee.deleteMany({});
     await this.prisma.site.deleteMany({});
+    await this.prisma.contract.deleteMany({});
     await this.prisma.client.deleteMany({});
     await this.prisma.company.deleteMany({});
   }

@@ -1,5 +1,5 @@
-import { IsOptional, IsNumber, Min, Max, IsEnum } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsOptional, IsNumber, Min, Max, IsEnum, IsString, IsDateString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum SortOrder {
@@ -33,11 +33,12 @@ export class PaginationDto {
   limit?: number = 20;
 }
 
-export class SortOrderDto {
+export class SortingDto {
   @ApiPropertyOptional({
     description: 'Field to sort by',
   })
   @IsOptional()
+  @IsString()
   sortBy?: string;
 
   @ApiPropertyOptional({
@@ -49,3 +50,61 @@ export class SortOrderDto {
   @IsEnum(SortOrder)
   sortOrder?: SortOrder = SortOrder.ASC;
 }
+
+export class FilteringDto {
+  @ApiPropertyOptional({
+    description: 'Search query string',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by date from (ISO format)',
+  })
+  @IsOptional()
+  @IsDateString()
+  dateFrom?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by date to (ISO format)',
+  })
+  @IsOptional()
+  @IsDateString()
+  dateTo?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by status',
+  })
+  @IsOptional()
+  @IsString()
+  status?: string;
+}
+
+export class StandardQueryDto extends PaginationDto {
+  @ApiPropertyOptional({
+    description: 'Field to sort by',
+  })
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @ApiPropertyOptional({
+    description: 'Sort order',
+    enum: SortOrder,
+    default: SortOrder.ASC,
+  })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder = SortOrder.ASC;
+
+  @ApiPropertyOptional({
+    description: 'Search query string',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
+// Legacy export for backward compatibility
+export class SortOrderDto extends SortingDto {}

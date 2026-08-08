@@ -19,7 +19,7 @@ const mockSitesService = {
 
 const mockSite = {
   id: 'test-site-id',
-  clientId: 'test-client-id',
+  contractId: 'test-contract-id',
   name: 'Test Site',
   address: {
     street: '123 Test St',
@@ -31,10 +31,12 @@ const mockSite = {
   operationalStatus: SiteOperationalStatus.ACTIVE,
   createdAt: new Date(),
   updatedAt: new Date(),
-  client: {
-    id: 'test-client-id',
-    name: 'Test Client',
-    contractStatus: 'ACTIVE',
+  contract: {
+    client: {
+      id: 'test-client-id',
+      name: 'Test Client',
+    },
+    status: 'ACTIVE',
   },
   _count: {
     assignments: 2,
@@ -77,7 +79,7 @@ describe('SitesController', () => {
   describe('create', () => {
     it('should create a new site', async () => {
       const createSiteDto: CreateSiteDto = {
-        clientId: 'test-client-id',
+        contractId: 'test-contract-id',
         name: 'Test Site',
         address: {
           street: '123 Test St',

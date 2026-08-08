@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../common/tenant-context.service';
 import { ClientRepository } from '../common/repositories/client.repository';
 import { SiteRepository } from '../common/repositories/site.repository';
@@ -18,6 +19,7 @@ import {
   ClientReportsResponseDto,
   ReportDownloadResponseDto,
   CommunicationResponseDto,
+  IncidentStatus,
   CreateComplaintDto,
   CreateServiceRequestDto,
   GuardReplacementRequestDto,
@@ -29,6 +31,7 @@ export class ClientPortalService {
   private readonly logger = new Logger(ClientPortalService.name);
 
   constructor(
+    private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContextService,
     private readonly clientRepository: ClientRepository,
     private readonly siteRepository: SiteRepository,
@@ -294,16 +297,37 @@ export class ClientPortalService {
     await this.validateClientAccess(clientId);
     await this.validateSiteAccess(clientId, dto.siteId);
 
-    // Mock implementation - in production, this would create actual complaint records
-    const complaintId = `comp-${Date.now()}`;
+    // Create complaint record using ClientInteraction
+    const complaint = await this.prisma.clientInteraction.create({
+      data: {
+        clientId,
+        interactionType: 'COMPLAINT_HANDLING',
+        subject: dto.subject,
+        description: dto.description,
+        method: 'PORTAL',
+        priority: this.mapComplaintPriorityToInteractionPriority(dto.priority),
+        status: 'SCHEDULED',
+        metadata: {
+          complaintType: dto.type,
+          siteId: dto.siteId,
+          guardId: dto.guardId,
+          priority: dto.priority,
+          attachments: dto.attachments,
+          submittedVia: 'CLIENT_PORTAL'
+        },
+        createdBy: clientId, // Using clientId as creator for now
+      }
+    });
 
-    this.logger.log(`Created complaint ${complaintId} for client ${clientId}`);
+    this.logger.log(`Created complaint ${complaint.id} for client ${clientId}`);
 
     return {
-      id: complaintId,
+      id: complaint.id,
       status: 'SUBMITTED',
-      submittedAt: new Date().toISOString(),
+      submittedAt: complaint.createdAt.toISOString(),
       message: 'Your complaint has been submitted and will be reviewed within 24 hours.',
+      trackingNumber: `COMP-${complaint.id.substring(0, 8).toUpperCase()}`,
+      estimatedResolution: this.calculateComplaintResolutionTime(dto.priority)
     };
   }
 
@@ -316,17 +340,38 @@ export class ClientPortalService {
     await this.validateClientAccess(clientId);
     await this.validateSiteAccess(clientId, dto.siteId);
 
-    // Mock implementation
-    const requestId = `req-${Date.now()}`;
+    // Create service request record
+    const serviceRequest = await this.prisma.clientInteraction.create({
+      data: {
+        clientId,
+        interactionType: 'SERVICE_UPGRADE', // Map to closest available type
+        subject: dto.title,
+        description: dto.description,
+        method: 'PORTAL',
+        scheduledAt: dto.preferredDate ? new Date(dto.preferredDate) : null,
+        priority: this.mapUrgencyToPriority(dto.urgency),
+        status: 'SCHEDULED',
+        metadata: {
+          requestType: dto.type,
+          siteId: dto.siteId,
+          urgency: dto.urgency,
+          duration: dto.duration,
+          specialRequirements: dto.specialRequirements,
+          submittedVia: 'CLIENT_PORTAL'
+        },
+        createdBy: clientId, // Using clientId as creator for now
+      }
+    });
 
-    this.logger.log(`Created service request ${requestId} for client ${clientId}`);
+    this.logger.log(`Created service request ${serviceRequest.id} for client ${clientId}`);
 
     return {
-      id: requestId,
+      id: serviceRequest.id,
       status: 'SUBMITTED',
-      submittedAt: new Date().toISOString(),
+      submittedAt: serviceRequest.createdAt.toISOString(),
       estimatedResponse: this.calculateResponseTime(dto.urgency),
-      message: 'Your request has been submitted and our team will respond shortly.',
+      message: 'Your service request has been submitted and our team will respond shortly.',
+      trackingNumber: `SR-${serviceRequest.id.substring(0, 8).toUpperCase()}`
     };
   }
 
@@ -339,15 +384,81 @@ export class ClientPortalService {
     await this.validateClientAccess(clientId);
     await this.validateSiteAccess(clientId, dto.siteId);
 
-    // Mock implementation
-    const requestId = `repl-${Date.now()}`;
+    // Create guard replacement request using service request
+    const replacementRequest = await this.prisma.clientInteraction.create({
+      data: {
+        clientId,
+        interactionType: 'SERVICE_UPGRADE',
+        subject: `Guard replacement request - ${dto.reason}`,
+        description: `Replacement needed for site. Reason: ${dto.reason}. Duration: ${dto.durationHours} hours.`,
+        method: 'PORTAL',
+        scheduledAt: new Date(dto.preferredStartTime),
+        priority: this.mapUrgencyToPriority(dto.urgency),
+        status: 'SCHEDULED',
+        metadata: {
+          requestType: 'GUARD_REPLACEMENT',
+          siteId: dto.siteId,
+          currentGuardId: dto.currentGuardId,
+          reason: dto.reason,
+          urgency: dto.urgency,
+          preferredStartTime: dto.preferredStartTime,
+          durationHours: dto.durationHours,
+          specialRequirements: dto.specialRequirements,
+          submittedVia: 'CLIENT_PORTAL'
+        },
+        createdBy: clientId,
+      }
+    });
+
+    // Find available replacement guards based on skills and availability
+    const site = await this.prisma.site.findUnique({
+      where: { id: dto.siteId },
+      include: {
+        contract: {
+          include: {
+            client: true
+          }
+        }
+      }
+    });
+    
+    const skillRequirements = (site?.skillRequirements as any)?.skills || [];
+    
+    const availableGuards = await this.prisma.employee.findMany({
+      where: {
+        employmentStatus: 'ACTIVE',
+        skills: skillRequirements.length > 0 ? { hasAll: skillRequirements } : undefined,
+        // Not currently assigned to active shifts at the same time
+        assignments: {
+          none: {
+            shifts: {
+              some: {
+                shiftDate: new Date(dto.preferredStartTime),
+                status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] }
+              }
+            }
+          }
+        }
+      },
+      take: 5, // Limit to top 5 candidates
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        employeeNumber: true,
+        skills: true
+      }
+    });
 
     return {
-      id: requestId,
+      id: replacementRequest.id,
       status: 'PROCESSING',
-      submittedAt: new Date().toISOString(),
+      submittedAt: replacementRequest.createdAt.toISOString(),
       estimatedFulfillment: this.calculateReplacementTime(dto.urgency),
-      message: 'Guard replacement request is being processed. We will confirm availability shortly.',
+      message: `Guard replacement request submitted. ${availableGuards.length} suitable candidates found.`,
+      trackingNumber: `GR-${replacementRequest.id.substring(0, 8).toUpperCase()}`,
+      availableCandidates: availableGuards.length,
+      nextUpdate: new Date(Date.now() + (dto.urgency === 'EMERGENCY' ? 30 : 60) * 60 * 1000).toISOString()
     };
   }
   // Private helper methods
@@ -366,8 +477,28 @@ export class ClientPortalService {
    * Validate site belongs to client
    */
   private async validateSiteAccess(clientId: string, siteId: string): Promise<void> {
-    const site = await this.siteRepository.findById(siteId);
-    if (!site || site.clientId !== clientId) {
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        contracts: {
+          include: {
+            sites: {
+              where: { id: siteId }
+            }
+          }
+        }
+      }
+    });
+
+    if (!client) {
+      throw new BadRequestException(`Client ${clientId} not found`);
+    }
+
+    const siteExists = client.contracts.some(contract => 
+      contract.sites.some(site => site.id === siteId)
+    );
+
+    if (!siteExists) {
       throw new BadRequestException(`Site ${siteId} does not belong to client ${clientId}`);
     }
   }
@@ -377,7 +508,7 @@ export class ClientPortalService {
    */
   private async validateInvoiceAccess(clientId: string, invoiceId: string): Promise<void> {
     const invoice = await this.billingService.getInvoice(invoiceId);
-    if (!invoice || invoice.client.id !== clientId) {
+    if (!invoice || invoice.contract.client.id !== clientId) {
       throw new BadRequestException(`Invoice ${invoiceId} does not belong to client ${clientId}`);
     }
   }
@@ -400,12 +531,44 @@ export class ClientPortalService {
    * Get site overview metrics
    */
   private async getSiteOverview(clientId: string) {
-    // Mock implementation - in production, this would query actual data
+    // Get sites through contracts for this client
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        contracts: {
+          include: {
+            sites: true
+          }
+        }
+      }
+    });
+
+    if (!client) {
+      throw new NotFoundException('Client not found');
+    }
+
+    const allSites = client.contracts.flatMap(contract => contract.sites);
+    
+    const totalSites = allSites.length;
+    const activeSites = allSites.filter(site => site.operationalStatus === 'ACTIVE').length;
+    const inactiveSites = allSites.filter(site => site.operationalStatus === 'INACTIVE').length;
+    const maintenanceSites = allSites.filter(site => site.operationalStatus === 'MAINTENANCE').length;
+    const suspendedSites = allSites.filter(site => site.operationalStatus === 'SUSPENDED').length;
+    
+    // Sites with issues: those in maintenance, suspended, or with staffing shortages
+    const sitesWithIssues = maintenanceSites + suspendedSites;
+
     return {
-      totalSites: 15,
-      activeSites: 12,
-      inactiveSites: 3,
-      sitesWithIssues: 1,
+      totalSites,
+      activeSites,
+      inactiveSites: inactiveSites + maintenanceSites + suspendedSites,
+      sitesWithIssues,
+      breakdown: {
+        active: activeSites,
+        inactive: inactiveSites,
+        maintenance: maintenanceSites,
+        suspended: suspendedSites,
+      }
     };
   }
 
@@ -413,11 +576,114 @@ export class ClientPortalService {
    * Get guard deployment metrics
    */
   private async getGuardDeploymentMetrics(clientId: string) {
+    // Get all sites for this client through contracts
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        contracts: {
+          include: {
+            sites: true
+          }
+        }
+      }
+    });
+
+    if (!client) {
+      return {
+        totalGuards: 0,
+        activeGuards: 0,
+        onDutyGuards: 0,
+        vacantPositions: 0,
+        deploymentRate: 0
+      };
+    }
+
+    const allSites = client.contracts.flatMap(contract => contract.sites);
+    const siteIds = allSites.map(site => site.id);
+    
+    if (siteIds.length === 0) {
+      return {
+        totalGuards: 0,
+        activeGuards: 0,
+        onDutyGuards: 0,
+        vacantPositions: 0,
+        deploymentRate: 0
+      };
+    }
+
+    // Get active assignments for these sites
+    const assignments = await this.prisma.assignment.findMany({
+      where: {
+        siteId: { in: siteIds },
+        status: 'ACTIVE',
+        employee: {
+          employmentStatus: 'ACTIVE'
+        }
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employmentStatus: true
+          }
+        }
+      }
+    });
+
+    // Get today's shifts to determine who's on duty
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todaysShifts = await this.prisma.shift.findMany({
+      where: {
+        siteId: { in: siteIds },
+        shiftDate: {
+          gte: today,
+          lt: tomorrow
+        },
+        status: { in: ['SCHEDULED', 'IN_PROGRESS', 'CONFIRMED'] }
+      },
+      include: {
+        assignment: {
+          include: {
+            employee: true
+          }
+        },
+        attendanceRecords: {
+          where: {
+            clockIn: { not: null }
+          }
+        }
+      }
+    });
+
+    const totalGuards = assignments.length;
+    const activeGuards = assignments.filter(a => a.employee.employmentStatus === 'ACTIVE').length;
+    
+    // Guards who have clocked in today or have confirmed shifts
+    const onDutyGuards = todaysShifts.filter(shift => 
+      shift.attendanceRecords.length > 0 || shift.status === 'CONFIRMED'
+    ).length;
+    
+    // Calculate required vs assigned positions
+    const totalRequiredPositions = allSites.reduce((sum, site) => sum + (site.minStaffingLevel || 1), 0);
+    const vacantPositions = Math.max(0, totalRequiredPositions - activeGuards);
+    
+    const deploymentRate = totalRequiredPositions > 0 
+      ? Math.round((activeGuards / totalRequiredPositions) * 100) 
+      : 0;
+
     return {
-      totalGuards: 45,
-      activeGuards: 42,
-      onDutyGuards: 38,
-      vacantPositions: 3,
+      totalGuards,
+      activeGuards,
+      onDutyGuards,
+      vacantPositions,
+      deploymentRate,
+      requiredPositions: totalRequiredPositions
     };
   }
 
@@ -425,59 +691,318 @@ export class ClientPortalService {
    * Get attendance metrics
    */
   private async getAttendanceMetrics(clientId: string, startDate: Date, endDate: Date) {
+    // Get all sites for this client through contracts
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        contracts: {
+          include: {
+            sites: true
+          }
+        }
+      }
+    });
+
+    if (!client) {
+      return {
+        attendanceRate: 0,
+        lateArrivals: 0,
+        earlyDepartures: 0,
+        missedShifts: 0,
+        totalShifts: 0,
+        presentCount: 0
+      };
+    }
+
+    const allSites = client.contracts.flatMap(contract => contract.sites);
+    const siteIds = allSites.map(site => site.id);
+    
+    if (siteIds.length === 0) {
+      return {
+        attendanceRate: 0,
+        lateArrivals: 0,
+        earlyDepartures: 0,
+        missedShifts: 0,
+        totalShifts: 0,
+        presentCount: 0
+      };
+    }
+
+    // Get attendance records for the period
+    const attendanceStats = await this.attendanceRepository.getStats(
+      startDate, 
+      endDate, 
+      undefined, // siteId - we want all sites
+      undefined  // employeeId - we want all employees
+    );
+
+    // Get shifts in the period to calculate missed shifts
+    const shifts = await this.prisma.shift.findMany({
+      where: {
+        siteId: { in: siteIds },
+        shiftDate: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      include: {
+        attendanceRecords: true
+      }
+    });
+
+    const totalShifts = shifts.length;
+    const shiftsWithAttendance = shifts.filter(shift => shift.attendanceRecords.length > 0).length;
+    const missedShifts = totalShifts - shiftsWithAttendance;
+
     return {
-      attendanceRate: 96.5,
-      lateArrivals: 5,
-      earlyDepartures: 2,
-      missedShifts: 1,
+      attendanceRate: attendanceStats.attendanceRate,
+      lateArrivals: attendanceStats.lateCount,
+      earlyDepartures: attendanceStats.earlyDepartureCount,
+      missedShifts,
+      totalShifts,
+      presentCount: attendanceStats.presentCount,
+      onTimeRate: attendanceStats.onTimeRate
     };
   }
   /**
    * Get recent incidents
    */
   private async getRecentIncidents(clientId: string) {
-    return [
-      {
-        id: 'incident-1',
-        type: 'LATE_ARRIVAL',
-        siteName: 'Main Office',
-        employeeName: 'John Doe',
-        timestamp: '2024-01-15T08:15:00Z',
-        severity: 'LOW' as const,
-      },
-    ];
+    // Get all sites for this client through contracts
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        contracts: {
+          include: {
+            sites: true
+          }
+        }
+      }
+    });
+
+    if (!client) {
+      return [];
+    }
+
+    const allSites = client.contracts.flatMap(contract => contract.sites);
+    const siteIds = allSites.map(site => site.id);
+    
+    if (siteIds.length === 0) {
+      return [];
+    }
+
+    // Get attendance anomalies as incidents
+    const anomalies = await this.attendanceRepository.detectAnomalies(
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+      new Date(),
+      ['LATE_ARRIVAL', 'EARLY_DEPARTURE', 'MISSED_CLOCK_OUT'],
+      undefined,
+      undefined
+    );
+
+    // Transform anomalies into incidents format
+    const incidents = anomalies.slice(0, 10).map(anomaly => ({
+      id: `incident-${anomaly.attendanceId}`,
+      type: anomaly.anomalyType,
+      siteName: anomaly.attendance.shift.site.name,
+      employeeName: `${anomaly.attendance.employee.firstName} ${anomaly.attendance.employee.lastName}`,
+      timestamp: anomaly.detectedAt.toISOString(),
+      severity: anomaly.severity as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+      description: anomaly.description
+    }));
+
+    return incidents;
   }
 
   /**
    * Get notifications
    */
   private async getNotifications(clientId: string) {
-    return [
-      {
-        id: 'notification-1',
-        type: 'GUARD_REPLACEMENT_REQUEST',
-        message: 'Guard replacement needed at Site A',
-        priority: 'HIGH' as const,
-        timestamp: '2024-01-15T09:00:00Z',
+    const notifications = [];
+    
+    // Get all sites for this client through contracts
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        contracts: {
+          include: {
+            sites: true
+          }
+        }
+      }
+    });
+
+    if (!client) {
+      return notifications;
+    }
+
+    const allSites = client.contracts.flatMap(contract => contract.sites);
+    const siteIds = allSites.map(site => site.id);
+    
+    if (siteIds.length === 0) {
+      return notifications;
+    }
+
+    // Check for vacant positions
+    const totalRequiredPositions = allSites.reduce((sum, site) => sum + (site.minStaffingLevel || 1), 0);
+    const activeAssignments = await this.prisma.assignment.count({
+      where: {
+        siteId: { in: siteIds },
+        status: 'ACTIVE'
+      }
+    });
+
+    const vacantPositions = totalRequiredPositions - activeAssignments;
+    if (vacantPositions > 0) {
+      notifications.push({
+        id: 'notification-vacant-positions',
+        type: 'STAFFING_SHORTAGE',
+        message: `${vacantPositions} vacant position${vacantPositions > 1 ? 's' : ''} require${vacantPositions === 1 ? 's' : ''} immediate attention`,
+        priority: vacantPositions > 5 ? 'URGENT' : 'HIGH' as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+        timestamp: new Date().toISOString(),
         actionRequired: true,
-      },
-    ];
+      });
+    }
+
+    // Check for sites in maintenance
+    const maintenanceSites = allSites.filter(site => site.operationalStatus === 'MAINTENANCE');
+    if (maintenanceSites.length > 0) {
+      notifications.push({
+        id: 'notification-maintenance',
+        type: 'SITE_MAINTENANCE',
+        message: `${maintenanceSites.length} site${maintenanceSites.length > 1 ? 's' : ''} currently under maintenance`,
+        priority: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+        timestamp: new Date().toISOString(),
+        actionRequired: false,
+      });
+    }
+
+    // Check for recent attendance issues
+    const recentAnomalies = await this.attendanceRepository.detectAnomalies(
+      new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+      new Date(),
+      ['MISSED_CLOCK_OUT'],
+      undefined,
+      undefined
+    );
+
+    if (recentAnomalies.length > 0) {
+      notifications.push({
+        id: 'notification-attendance-issues',
+        type: 'ATTENDANCE_ALERT',
+        message: `${recentAnomalies.length} attendance issue${recentAnomalies.length > 1 ? 's' : ''} need${recentAnomalies.length === 1 ? 's' : ''} supervisor approval`,
+        priority: 'HIGH' as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+        timestamp: new Date().toISOString(),
+        actionRequired: true,
+      });
+    }
+
+    return notifications;
   }
 
   /**
    * Get site health indicators
    */
   private async getSiteHealthIndicators(clientId: string) {
-    return [
-      {
-        siteId: 'site-1',
-        siteName: 'Main Office',
-        healthScore: 95,
-        status: 'EXCELLENT' as const,
-        lastUpdate: '2024-01-15T10:00:00Z',
-        issues: [],
-      },
-    ];
+    // Get all sites for this client through contracts
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        contracts: {
+          include: {
+            sites: true
+          }
+        }
+      }
+    });
+
+    if (!client) {
+      return [];
+    }
+
+    const allSites = client.contracts.flatMap(contract => contract.sites);
+    
+    const healthIndicators = await Promise.all(
+      allSites.map(async (site) => {
+        // Calculate health score based on multiple factors
+        let healthScore = 100;
+        const issues = [];
+
+        // Factor 1: Staffing level
+        const requiredStaff = site.minStaffingLevel || 1;
+        const assignedStaff = await this.prisma.assignment.count({
+          where: {
+            siteId: site.id,
+            status: 'ACTIVE'
+          }
+        });
+
+        if (assignedStaff < requiredStaff) {
+          const shortage = requiredStaff - assignedStaff;
+          healthScore -= (shortage / requiredStaff) * 30; // Up to 30 points for staffing
+          issues.push(`${shortage} guard${shortage > 1 ? 's' : ''} short of requirement`);
+        }
+
+        // Factor 2: Attendance rate (last 7 days)
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const attendanceStats = await this.attendanceRepository.getStats(
+          weekAgo,
+          new Date(),
+          site.id
+        );
+
+        if (attendanceStats.attendanceRate < 95) {
+          healthScore -= (95 - attendanceStats.attendanceRate) * 2; // Up to 20 points for attendance
+          issues.push(`Attendance rate: ${attendanceStats.attendanceRate.toFixed(1)}%`);
+        }
+
+        // Factor 3: Recent incidents
+        const recentAnomalies = await this.attendanceRepository.detectAnomalies(
+          weekAgo,
+          new Date(),
+          undefined,
+          undefined,
+          site.id
+        );
+
+        if (recentAnomalies.length > 0) {
+          healthScore -= Math.min(recentAnomalies.length * 5, 25); // Up to 25 points for incidents
+          issues.push(`${recentAnomalies.length} recent incident${recentAnomalies.length > 1 ? 's' : ''}`);
+        }
+
+        // Factor 4: Operational status
+        if (site.operationalStatus !== 'ACTIVE') {
+          healthScore -= 40;
+          issues.push(`Site status: ${site.operationalStatus.toLowerCase()}`);
+        }
+
+        // Ensure health score is between 0 and 100
+        healthScore = Math.max(0, Math.min(100, Math.round(healthScore)));
+
+        // Determine status based on health score
+        let status: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR' | 'CRITICAL';
+        if (healthScore >= 95) status = 'EXCELLENT';
+        else if (healthScore >= 85) status = 'GOOD';
+        else if (healthScore >= 70) status = 'FAIR';
+        else if (healthScore >= 50) status = 'POOR';
+        else status = 'CRITICAL';
+
+        return {
+          siteId: site.id,
+          siteName: site.name,
+          healthScore,
+          status,
+          lastUpdate: new Date().toISOString(),
+          issues,
+          operationalStatus: site.operationalStatus,
+          assignedStaff,
+          requiredStaff,
+          attendanceRate: attendanceStats.attendanceRate
+        };
+      })
+    );
+
+    return healthIndicators;
   }
 
   /**
@@ -598,24 +1123,171 @@ export class ClientPortalService {
       slaMetrics: [],
     };
   }
+  /**
+   * Get incident reports from recent attendance anomalies and site issues  
+   */
   private async getIncidentReports(clientId: string) {
-    return [];
+    const sites = await this.siteRepository.findByClientId(clientId);
+    const siteIds = sites.map(site => site.id);
+    
+    if (siteIds.length === 0) {
+      return [];
+    }
+
+    // Get recent attendance anomalies as incidents
+    const anomalies = await this.attendanceRepository.detectAnomalies(
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+      new Date(),
+      undefined,
+      undefined,
+      undefined
+    );
+
+    // Transform anomalies to incident reports
+    const incidents = anomalies.slice(0, 20).map(anomaly => ({
+      id: `inc-${anomaly.attendanceId}`,
+      type: anomaly.anomalyType,
+      title: this.getIncidentTitle(anomaly.anomalyType),
+      description: anomaly.description,
+      site: {
+        id: anomaly.attendance.shift.site.id,
+        name: anomaly.attendance.shift.site.name,
+        address: 'Site Address' // Would need to get from site data
+      },
+      reportedBy: {
+        id: anomaly.attendance.employee.id,
+        name: `${anomaly.attendance.employee.firstName} ${anomaly.attendance.employee.lastName}`,
+        employeeNumber: anomaly.attendance.employee.employeeNumber
+      },
+      severity: anomaly.severity,
+      status: IncidentStatus.OPEN, // Use enum instead of string
+      occurredAt: anomaly.attendance.shift.shiftDate.toISOString(),
+      reportedAt: anomaly.detectedAt.toISOString(),
+      actionsTaken: this.getDefaultAction(anomaly.anomalyType),
+      attachments: [],
+      followUpRequired: anomaly.severity === 'HIGH' || anomaly.severity === 'CRITICAL' ? 'Supervisor review required' : undefined
+    }));
+
+    return incidents;
   }
 
+  /**
+   * Get client complaints from interactions
+   */
   private async getClientComplaints(clientId: string) {
-    return [];
+    const complaints = await this.prisma.clientInteraction.findMany({
+      where: {
+        clientId,
+        interactionType: 'COMPLAINT_HANDLING',
+        metadata: {
+          path: ['submittedVia'],
+          equals: 'CLIENT_PORTAL'
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+
+    return complaints.map(complaint => ({
+      id: complaint.id,
+      type: (complaint.metadata as any)?.complaintType || 'OTHER',
+      subject: complaint.subject,
+      status: this.mapInteractionStatusToComplaintStatus(complaint.status),
+      submittedAt: complaint.createdAt.toISOString(),
+      priority: (complaint.metadata as any)?.priority || 'MEDIUM',
+      expectedResolution: complaint.followUpDate?.toISOString(),
+      description: complaint.description,
+      trackingNumber: `COMP-${complaint.id.substring(0, 8).toUpperCase()}`
+    }));
   }
 
+  /**
+   * Get service requests from interactions
+   */
   private async getServiceRequests(clientId: string) {
-    return [];
+    const serviceRequests = await this.prisma.clientInteraction.findMany({
+      where: {
+        clientId,
+        interactionType: 'SERVICE_UPGRADE',
+        metadata: {
+          path: ['submittedVia'],
+          equals: 'CLIENT_PORTAL'
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+
+    return serviceRequests.map(request => ({
+      id: request.id,
+      type: (request.metadata as any)?.requestType || 'OTHER',
+      title: request.subject,
+      status: this.mapInteractionStatusToRequestStatus(request.status),
+      submittedAt: request.createdAt.toISOString(),
+      urgency: (request.metadata as any)?.urgency || 'MEDIUM',
+      estimatedCompletion: request.scheduledAt?.toISOString(),
+      description: request.description,
+      trackingNumber: `SR-${request.id.substring(0, 8).toUpperCase()}`
+    }));
   }
 
+  /**
+   * Get communication statistics
+   */
   private async getCommunicationStatistics(clientId: string) {
+    const [totalIncidents, openComplaints, pendingRequests, interactions] = await Promise.all([
+      // Count recent attendance incidents
+      this.attendanceRepository.detectAnomalies(
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+        new Date()
+      ).then(anomalies => anomalies.length),
+      
+      // Count open complaints
+      this.prisma.clientInteraction.count({
+        where: {
+          clientId,
+          interactionType: 'COMPLAINT_HANDLING',
+          status: { in: ['SCHEDULED', 'IN_PROGRESS'] }
+        }
+      }),
+      
+      // Count pending service requests  
+      this.prisma.clientInteraction.count({
+        where: {
+          clientId,
+          interactionType: 'SERVICE_UPGRADE',
+          status: { in: ['SCHEDULED', 'IN_PROGRESS'] }
+        }
+      }),
+
+      // Get completed interactions for resolution time calculation
+      this.prisma.clientInteraction.findMany({
+        where: {
+          clientId,
+          status: 'COMPLETED',
+          completedAt: { not: null }
+        },
+        select: {
+          createdAt: true,
+          completedAt: true
+        }
+      })
+    ]);
+
+    // Calculate average resolution time in hours
+    const avgResolutionTime = interactions.length > 0
+      ? interactions.reduce((sum, interaction) => {
+          const resolutionHours = (interaction.completedAt!.getTime() - interaction.createdAt.getTime()) / (1000 * 60 * 60);
+          return sum + resolutionHours;
+        }, 0) / interactions.length
+      : 24; // Default 24 hours if no data
+
     return {
-      totalIncidents: 12,
-      openComplaints: 2,
-      pendingRequests: 1,
-      avgResolutionTime: 24,
+      totalIncidents,
+      openComplaints,
+      pendingRequests,
+      avgResolutionTime: Math.round(avgResolutionTime * 10) / 10, // Round to 1 decimal
+      totalInteractions: interactions.length
     };
   }
 
@@ -653,6 +1325,78 @@ export class ClientPortalService {
     return replacementMap[urgency] || '24 hours';
   }
 
+  private calculateComplaintResolutionTime(priority: string): string {
+    const resolutionMap = {
+      URGENT: '4 hours',
+      HIGH: '12 hours', 
+      MEDIUM: '24 hours',
+      LOW: '48 hours',
+    };
+    return resolutionMap[priority] || '24 hours';
+  }
+
+  private mapUrgencyToPriority(urgency: string): string {
+    const priorityMap = {
+      EMERGENCY: 'URGENT',
+      HIGH: 'HIGH',
+      MEDIUM: 'NORMAL',
+      LOW: 'LOW'
+    };
+    return priorityMap[urgency] || 'NORMAL';
+  }
+
+  private mapComplaintPriorityToInteractionPriority(priority: string): string {
+    const priorityMap = {
+      URGENT: 'URGENT',
+      HIGH: 'HIGH',
+      MEDIUM: 'NORMAL',
+      LOW: 'LOW'
+    };
+    return priorityMap[priority] || 'NORMAL';
+  }
+
+  private mapInteractionStatusToRequestStatus(status: string): string {
+    const statusMap = {
+      'SCHEDULED': 'SUBMITTED',
+      'IN_PROGRESS': 'IN_PROGRESS', 
+      'COMPLETED': 'COMPLETED',
+      'CANCELLED': 'CANCELLED',
+      'RESCHEDULED': 'PENDING'
+    };
+    return statusMap[status] || 'PENDING';
+  }
+
+  private mapInteractionStatusToComplaintStatus(status: string): string {
+    const statusMap = {
+      'SCHEDULED': 'SUBMITTED',
+      'IN_PROGRESS': 'INVESTIGATING',
+      'COMPLETED': 'RESOLVED', 
+      'CANCELLED': 'CLOSED',
+      'RESCHEDULED': 'ACKNOWLEDGED'
+    };
+    return statusMap[status] || 'SUBMITTED';
+  }
+
+  private getIncidentTitle(anomalyType: string): string {
+    const titleMap = {
+      'LATE_ARRIVAL': 'Late Arrival Detected',
+      'EARLY_DEPARTURE': 'Early Departure Detected', 
+      'MISSED_CLOCK_OUT': 'Missed Clock Out',
+      'OVERTIME_THRESHOLD': 'Overtime Threshold Exceeded'
+    };
+    return titleMap[anomalyType] || 'Attendance Anomaly';
+  }
+
+  private getDefaultAction(anomalyType: string): string {
+    const actionMap = {
+      'LATE_ARRIVAL': 'Employee notified, supervisor informed',
+      'EARLY_DEPARTURE': 'Reason documented, supervisor approval required',
+      'MISSED_CLOCK_OUT': 'Automatic notification sent, manual verification needed',
+      'OVERTIME_THRESHOLD': 'Overtime recorded, payroll adjustment processed'
+    };
+    return actionMap[anomalyType] || 'Standard protocol followed';
+  }
+
   /**
    * Map InvoiceResponse to InvoiceDto for client portal
    */
@@ -661,10 +1405,10 @@ export class ClientPortalService {
       id: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
       client: {
-        id: invoice.clientId,
-        name: invoice.client?.name || 'Unknown Client',
-        contactEmail: invoice.client?.contactEmail || '',
-        billingAddress: invoice.client?.contactInfo?.address || '',
+        id: invoice.contract.client.id,
+        name: invoice.contract.client?.name || 'Unknown Client',
+        contactEmail: invoice.contract.client?.contactEmail || '',
+        billingAddress: invoice.contract.client?.contactInfo?.address || '',
       },
       billingPeriod: {
         start: invoice.billingPeriodStart,

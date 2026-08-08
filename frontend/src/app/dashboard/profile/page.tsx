@@ -222,7 +222,7 @@ export default function ProfilePage() {
                       </Label>
                       <Input
                         id="firstName"
-                        error={!!profileForm.formState.errors.firstName}
+                        error={profileForm.formState.errors.firstName ? profileForm.formState.errors.firstName.message : undefined}
                         {...profileForm.register('firstName')}
                       />
                       {profileForm.formState.errors.firstName && (
@@ -236,7 +236,7 @@ export default function ProfilePage() {
                       </Label>
                       <Input
                         id="lastName"
-                        error={!!profileForm.formState.errors.lastName}
+                        error={profileForm.formState.errors.lastName ? profileForm.formState.errors.lastName.message : undefined}
                         {...profileForm.register('lastName')}
                       />
                       {profileForm.formState.errors.lastName && (
@@ -252,7 +252,7 @@ export default function ProfilePage() {
                     <Input
                       id="email"
                       type="email"
-                      error={!!profileForm.formState.errors.email}
+                      error={profileForm.formState.errors.email ? profileForm.formState.errors.email.message : undefined}
                       {...profileForm.register('email')}
                     />
                     {profileForm.formState.errors.email && (
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                       id="phone"
                       type="tel"
                       placeholder="+1 (555) 000-0000"
-                      error={!!profileForm.formState.errors.phone}
+                      error={profileForm.formState.errors.phone ? profileForm.formState.errors.phone.message : undefined}
                       {...profileForm.register('phone')}
                     />
                     {profileForm.formState.errors.phone && (
@@ -296,7 +296,7 @@ export default function ProfilePage() {
                     <Input
                       id="currentPassword"
                       type="password"
-                      error={!!passwordForm.formState.errors.currentPassword}
+                      error={passwordForm.formState.errors.currentPassword ? passwordForm.formState.errors.currentPassword.message : undefined}
                       {...passwordForm.register('currentPassword')}
                     />
                     {passwordForm.formState.errors.currentPassword && (
@@ -311,7 +311,7 @@ export default function ProfilePage() {
                     <Input
                       id="newPassword"
                       type="password"
-                      error={!!passwordForm.formState.errors.newPassword}
+                      error={passwordForm.formState.errors.newPassword ? passwordForm.formState.errors.newPassword.message : undefined}
                       {...passwordForm.register('newPassword')}
                     />
                     {passwordForm.formState.errors.newPassword && (
@@ -329,7 +329,7 @@ export default function ProfilePage() {
                     <Input
                       id="confirmPassword"
                       type="password"
-                      error={!!passwordForm.formState.errors.confirmPassword}
+                      error={passwordForm.formState.errors.confirmPassword ? passwordForm.formState.errors.confirmPassword.message : undefined}
                       {...passwordForm.register('confirmPassword')}
                     />
                     {passwordForm.formState.errors.confirmPassword && (

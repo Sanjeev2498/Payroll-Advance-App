@@ -3,7 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { ClientRepository } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
-import { CreateClientDto, UpdateClientDto, ContractStatus } from './dto';
+import { CreateClientDto, UpdateClientDto } from './dto';
 import { Client } from '@prisma/client';
 
 describe('ClientsService', () => {
@@ -17,10 +17,17 @@ describe('ClientsService', () => {
     name: 'Test Client',
     contactEmail: 'test@client.com',
     contactInfo: null,
-    contractStatus: 'ACTIVE' as any,
-    contractStart: new Date('2024-01-01'),
-    contractEnd: new Date('2024-12-31'),
-    billingPreferences: null,
+    organizationType: 'CORPORATE_OFFICE' as any,
+    industry: null,
+    companySize: null,
+    documentRequirements: null,
+    onboardingChecklist: null,
+    tags: [],
+    accountManagerId: null,
+    performanceMetrics: null,
+    relationshipNotes: null,
+    lastContactDate: null,
+    nextFollowUpDate: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -34,6 +41,8 @@ describe('ClientsService', () => {
     getClientStats: jest.fn(),
     findExpiringContracts: jest.fn(),
     findByContractStatus: jest.fn(),
+    findWithExpiringContracts: jest.fn(),
+    findByOrganizationType: jest.fn(),
   };
 
   const mockTenantContext = {
@@ -59,7 +68,7 @@ describe('ClientsService', () => {
 
     service = module.get<ClientsService>(ClientsService);
     clientRepository = module.get(ClientRepository);
-    tenantContext = module.get(TenantContextService);
+    tenantContext = await module.resolve(TenantContextService);
   });
 
   afterEach(() => {
@@ -70,9 +79,7 @@ describe('ClientsService', () => {
     const createClientDto: CreateClientDto = {
       name: 'Test Client',
       contactEmail: 'test@client.com',
-      contractStatus: ContractStatus.PENDING,
-      contractStart: new Date('2024-01-01'),
-      contractEnd: new Date('2024-12-31'),
+      organizationType: 'CORPORATE_OFFICE' as any,
     };
 
     it('should create a client successfully', async () => {
@@ -84,29 +91,34 @@ describe('ClientsService', () => {
       expect(result).toEqual(mockClient);
     });
 
-    it('should throw BadRequestException for invalid contract dates', async () => {
-      const invalidDto = {
+    it('should create client with organization type and industry', async () => {
+      const dtoWithDetails = {
         ...createClientDto,
-        contractStart: new Date('2024-12-31'),
-        contractEnd: new Date('2024-01-01'), // End before start
+        organizationType: 'CORPORATE_OFFICE' as any,
+        industry: 'Technology',
+        companySize: '500-1000',
       };
-
-      await expect(service.create(invalidDto)).rejects.toThrow(BadRequestException);
-      expect(clientRepository.create).not.toHaveBeenCalled();
-    });
-
-    it('should set default contract status if not provided', async () => {
-      const dtoWithoutStatus = { ...createClientDto };
-      delete dtoWithoutStatus.contractStatus;
 
       clientRepository.create.mockResolvedValue(mockClient);
 
-      await service.create(dtoWithoutStatus);
+      const result = await service.create(dtoWithDetails);
 
-      expect(clientRepository.create).toHaveBeenCalledWith({
-        ...dtoWithoutStatus,
-        contractStatus: ContractStatus.PENDING,
-      });
+      expect(clientRepository.create).toHaveBeenCalledWith(dtoWithDetails);
+      expect(result).toEqual(mockClient);
+    });
+
+    it('should create client with tags and account manager', async () => {
+      const dtoWithTags = { 
+        ...createClientDto,
+        tags: ['high-priority', 'tech-client'],
+        accountManagerId: 'manager-123',
+      };
+
+      clientRepository.create.mockResolvedValue(mockClient);
+
+      await service.create(dtoWithTags);
+
+      expect(clientRepository.create).toHaveBeenCalledWith(dtoWithTags);
     });
 
     it('should handle repository errors', async () => {
@@ -140,12 +152,12 @@ describe('ClientsService', () => {
       expect(clientRepository.findMany).toHaveBeenCalledWith(
         {
           search: undefined,
-          contractStatus: undefined,
-          contractExpiringBefore: undefined,
+          organizationType: undefined,
+          industry: undefined,
         },
         1,
         20,
-        undefined,
+        'createdAt',
         undefined,
       );
       expect(result).toEqual(mockListResult);
@@ -193,14 +205,22 @@ describe('ClientsService', () => {
       expect(result).toEqual(updatedClient);
     });
 
-    it('should throw BadRequestException for invalid contract dates', async () => {
-      const invalidDto = {
-        contractStart: new Date('2024-12-31'),
-        contractEnd: new Date('2024-01-01'), // End before start
+    it('should update client with organization and performance data', async () => {
+      const validDto = {
+        organizationType: 'HOSPITAL' as any,
+        industry: 'Healthcare',
+        performanceMetrics: { satisfactionScore: 4.5 },
+        relationshipNotes: 'Excellent long-term client',
       };
 
-      await expect(service.update('client-1', invalidDto)).rejects.toThrow(BadRequestException);
-      expect(clientRepository.update).not.toHaveBeenCalled();
+      const updatedClientWithData = { ...mockClient, ...validDto };
+      clientRepository.findById.mockResolvedValue(mockClient);
+      clientRepository.update.mockResolvedValue(updatedClientWithData as any);
+
+      const result = await service.update('client-1', validDto);
+
+      expect(clientRepository.update).toHaveBeenCalledWith('client-1', validDto);
+      expect(result).toEqual(updatedClientWithData);
     });
 
     it('should handle not found errors from repository', async () => {
@@ -213,7 +233,7 @@ describe('ClientsService', () => {
 
   describe('remove', () => {
     it('should soft delete a client successfully', async () => {
-      const deletedClient = { ...mockClient, contractStatus: 'TERMINATED' as any };
+      const deletedClient = { ...mockClient };
       clientRepository.delete.mockResolvedValue(deletedClient);
 
       const result = await service.remove('client-1');
@@ -257,52 +277,50 @@ describe('ClientsService', () => {
   });
 
   describe('findExpiringContracts', () => {
-    it('should return expiring contracts with default days', async () => {
-      const expiringClients = [mockClient];
-      clientRepository.findExpiringContracts.mockResolvedValue(expiringClients);
+    it('should return clients with expiring contracts with default days', async () => {
+      const clientsWithExpiringContracts = [mockClient];
+      clientRepository.findWithExpiringContracts.mockResolvedValue(clientsWithExpiringContracts);
 
       const result = await service.findExpiringContracts();
 
-      expect(clientRepository.findExpiringContracts).toHaveBeenCalledWith(30);
-      expect(result).toEqual(expiringClients);
+      expect(clientRepository.findWithExpiringContracts).toHaveBeenCalledWith(30);
+      expect(result).toEqual(clientsWithExpiringContracts);
     });
 
-    it('should return expiring contracts with custom days', async () => {
-      const expiringClients = [mockClient];
-      clientRepository.findExpiringContracts.mockResolvedValue(expiringClients);
+    it('should return clients with expiring contracts with custom days', async () => {
+      const clientsWithExpiringContracts = [mockClient];
+      clientRepository.findWithExpiringContracts.mockResolvedValue(clientsWithExpiringContracts);
 
       const result = await service.findExpiringContracts(60);
 
-      expect(clientRepository.findExpiringContracts).toHaveBeenCalledWith(60);
-      expect(result).toEqual(expiringClients);
+      expect(clientRepository.findWithExpiringContracts).toHaveBeenCalledWith(60);
+      expect(result).toEqual(clientsWithExpiringContracts);
     });
 
     it('should handle repository errors', async () => {
       const error = new Error('Database error');
-      clientRepository.findExpiringContracts.mockRejectedValue(error);
+      clientRepository.findWithExpiringContracts.mockRejectedValue(error);
 
       await expect(service.findExpiringContracts()).rejects.toThrow(BadRequestException);
     });
   });
 
-  describe('findByContractStatus', () => {
-    it('should return clients by status', async () => {
-      const activeClients = [mockClient];
-      clientRepository.findByContractStatus.mockResolvedValue(activeClients);
+  describe('findByOrganizationType', () => {
+    it('should return clients by organization type', async () => {
+      const corporateClients = [mockClient];
+      clientRepository.findByOrganizationType.mockResolvedValue(corporateClients);
 
-      const result = await service.findByContractStatus(ContractStatus.ACTIVE);
+      const result = await service.findByOrganizationType('CORPORATE_OFFICE');
 
-      expect(clientRepository.findByContractStatus).toHaveBeenCalledWith(ContractStatus.ACTIVE);
-      expect(result).toEqual(activeClients);
+      expect(clientRepository.findByOrganizationType).toHaveBeenCalledWith('CORPORATE_OFFICE');
+      expect(result).toEqual(corporateClients);
     });
 
     it('should handle repository errors', async () => {
       const error = new Error('Database error');
-      clientRepository.findByContractStatus.mockRejectedValue(error);
+      clientRepository.findByOrganizationType.mockRejectedValue(error);
 
-      await expect(service.findByContractStatus(ContractStatus.ACTIVE)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findByOrganizationType('CORPORATE_OFFICE')).rejects.toThrow(BadRequestException);
     });
   });
 });

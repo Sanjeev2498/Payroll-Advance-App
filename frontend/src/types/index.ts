@@ -15,17 +15,40 @@ export interface Client {
   name: string
   contactEmail: string
   contactInfo: Record<string, any>
-  contractStatus: 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'CANCELLED'
-  contractStart: string
-  contractEnd: string
-  billingPreferences: Record<string, any>
+  organizationType: 'CORPORATE_OFFICE' | 'RESIDENTIAL_SOCIETY' | 'HOSPITAL' | 'SHOPPING_MALL' | 'FACTORY' | 'WAREHOUSE' | 'EDUCATIONAL_INSTITUTION' | 'GOVERNMENT_BUILDING' | 'HOTEL'
+  industry?: string
+  accountManagerId?: string
   createdAt: string
   updatedAt: string
+  
+  // Relations
+  contracts?: Contract[]
+}
+
+export interface Contract {
+  id: string
+  clientId: string
+  contractNumber: string
+  title: string
+  description?: string
+  status: 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'TERMINATED'
+  startDate: string
+  endDate?: string
+  serviceDefinitions: Record<string, any>
+  serviceLevelAgreement?: Record<string, any>
+  billingPreferences?: Record<string, any>
+  contractValue?: number
+  createdAt: string
+  updatedAt: string
+  
+  // Relations
+  client?: Client
+  sites?: Site[]
 }
 
 export interface Site {
   id: string
-  clientId: string
+  contractId: string  // FIXED: Changed from clientId to contractId 
   name: string
   address: Record<string, any>
   accessRequirements: Record<string, any>
@@ -36,7 +59,7 @@ export interface Site {
   updatedAt: string
   
   // Relations
-  client?: Client
+  contract?: Contract  // FIXED: Changed from client to contract
 }
 
 export interface Employee {

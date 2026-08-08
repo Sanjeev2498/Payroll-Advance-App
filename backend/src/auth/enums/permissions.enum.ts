@@ -34,6 +34,20 @@ export enum ClientPermissions {
   VIEW_CLIENT_BILLING = 'client:view_billing',
 }
 
+// Contract Management Permissions
+export enum ContractPermissions {
+  CREATE_CONTRACT = 'contract:create',
+  READ_CONTRACT = 'contract:read',
+  UPDATE_CONTRACT = 'contract:update',
+  DELETE_CONTRACT = 'contract:delete',
+  APPROVE_CONTRACT = 'contract:approve',
+  MANAGE_CONTRACT_AMENDMENTS = 'contract:manage_amendments',
+  MANAGE_CONTRACT_RENEWALS = 'contract:manage_renewals',
+  VIEW_SLA_COMPLIANCE = 'contract:view_sla_compliance',
+  MANAGE_SLA_REPORTS = 'contract:manage_sla_reports',
+  VIEW_CONTRACT_ANALYTICS = 'contract:view_analytics',
+}
+
 // Site Management Permissions
 export enum SitePermissions {
   CREATE_SITE = 'site:create',
@@ -140,11 +154,74 @@ export enum SystemPermissions {
   MANAGE_SECURITY_SETTINGS = 'system:manage_security',
 }
 
+// Client User Management Permissions (for company users managing client users)
+export enum ClientUserPermissions {
+  CREATE_CLIENT_USER = 'client_user:create',
+  READ_CLIENT_USER = 'client_user:read',
+  UPDATE_CLIENT_USER = 'client_user:update',
+  DELETE_CLIENT_USER = 'client_user:delete',
+  INVITE_CLIENT_USER = 'client_user:invite',
+  ACTIVATE_CLIENT_USER = 'client_user:activate',
+  DEACTIVATE_CLIENT_USER = 'client_user:deactivate',
+  MANAGE_CLIENT_USER_ROLES = 'client_user:manage_roles',
+  RESET_CLIENT_USER_PASSWORD = 'client_user:reset_password',
+}
+
+// Client Portal Permissions (for client users accessing their portal)
+export enum ClientPortalPermissions {
+  // Dashboard and Overview
+  VIEW_CLIENT_DASHBOARD = 'client_portal:view_dashboard',
+  VIEW_SITE_OVERVIEW = 'client_portal:view_site_overview',
+  
+  // Deployment and Guard Management
+  VIEW_GUARD_DEPLOYMENTS = 'client_portal:view_guard_deployments',
+  VIEW_GUARD_MONITORING = 'client_portal:view_guard_monitoring',
+  REQUEST_GUARD_REPLACEMENT = 'client_portal:request_guard_replacement',
+  VIEW_DEPLOYMENT_ANALYTICS = 'client_portal:view_deployment_analytics',
+  
+  // Attendance Monitoring
+  VIEW_ATTENDANCE_DASHBOARD = 'client_portal:view_attendance_dashboard',
+  VIEW_ATTENDANCE_RECORDS = 'client_portal:view_attendance_records',
+  VIEW_ATTENDANCE_TRENDS = 'client_portal:view_attendance_trends',
+  VIEW_ATTENDANCE_ANOMALIES = 'client_portal:view_attendance_anomalies',
+  
+  // Billing and Invoicing
+  VIEW_BILLING_DASHBOARD = 'client_portal:view_billing_dashboard',
+  VIEW_INVOICES = 'client_portal:view_invoices',
+  DOWNLOAD_INVOICES = 'client_portal:download_invoices',
+  VIEW_PAYMENT_HISTORY = 'client_portal:view_payment_history',
+  VIEW_BILLING_ANALYTICS = 'client_portal:view_billing_analytics',
+  
+  // Incident and Service Management
+  VIEW_INCIDENTS = 'client_portal:view_incidents',
+  REPORT_INCIDENTS = 'client_portal:report_incidents',
+  SUBMIT_COMPLAINTS = 'client_portal:submit_complaints',
+  SUBMIT_SERVICE_REQUESTS = 'client_portal:submit_service_requests',
+  VIEW_INCIDENT_REPORTS = 'client_portal:view_incident_reports',
+  
+  // Reporting and Analytics
+  VIEW_SITE_PERFORMANCE_REPORTS = 'client_portal:view_site_performance_reports',
+  VIEW_OPERATIONAL_REPORTS = 'client_portal:view_operational_reports',
+  DOWNLOAD_REPORTS = 'client_portal:download_reports',
+  VIEW_COMPLIANCE_REPORTS = 'client_portal:view_compliance_reports',
+  VIEW_SERVICE_ANALYTICS = 'client_portal:view_service_analytics',
+  
+  // Communication and Notifications
+  VIEW_NOTIFICATIONS = 'client_portal:view_notifications',
+  VIEW_COMMUNICATION_HISTORY = 'client_portal:view_communication_history',
+  
+  // Multi-site Management (for Regional Managers)
+  VIEW_MULTI_SITE_DASHBOARD = 'client_portal:view_multi_site_dashboard',
+  VIEW_CROSS_SITE_ANALYTICS = 'client_portal:view_cross_site_analytics',
+  MANAGE_SITE_PRIORITIES = 'client_portal:manage_site_priorities',
+}
+
 // Consolidated permissions type for easier usage
 export type Permission =
   | UserPermissions
   | CompanyPermissions
   | ClientPermissions
+  | ContractPermissions
   | SitePermissions
   | EmployeePermissions
   | AssignmentPermissions
@@ -154,13 +231,16 @@ export type Permission =
   | BillingPermissions
   | ReportingPermissions
   | OperationsPermissions
-  | SystemPermissions;
+  | SystemPermissions
+  | ClientUserPermissions
+  | ClientPortalPermissions;
 
 // Helper to get all permissions as an array
 export const ALL_PERMISSIONS: Permission[] = [
   ...Object.values(UserPermissions),
   ...Object.values(CompanyPermissions),
   ...Object.values(ClientPermissions),
+  ...Object.values(ContractPermissions),
   ...Object.values(SitePermissions),
   ...Object.values(EmployeePermissions),
   ...Object.values(AssignmentPermissions),
@@ -171,4 +251,6 @@ export const ALL_PERMISSIONS: Permission[] = [
   ...Object.values(ReportingPermissions),
   ...Object.values(OperationsPermissions),
   ...Object.values(SystemPermissions),
+  ...Object.values(ClientUserPermissions),
+  ...Object.values(ClientPortalPermissions),
 ];

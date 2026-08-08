@@ -23,11 +23,12 @@ model Company {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  users          User[]
-  clients        Client[]
-  employees      Employee[]
-  payrollRuns    PayrollRun[]
+  users       User[]
+  clients     Client[]
+  employees   Employee[]
+  payrollRuns PayrollRun[]
   shiftTemplates ShiftTemplate[]
+  shiftNotifications ShiftNotification[]
 
   @@map("companies")
 }
@@ -41,15 +42,13 @@ model User {
   passwordHash String    @map("password_hash") @db.VarChar(255)
   role         UserRole  @default(EMPLOYEE)
   isActive     Boolean   @default(true) @map("is_active")
-  settings     Json?     @db.JsonB
   lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   shiftNotifications ShiftNotification[]
-  managedClients    Client[]            @relation("ClientAccountManager")
 
   @@index([companyId])
   @@map("users")
@@ -68,50 +67,26 @@ enum UserRole {
 // ============================================================================
 
 model Client {
-  id                 String         @id @default(uuid()) @db.Uuid
-  companyId          String         @map("company_id") @db.Uuid
-  name               String         @db.VarChar(100)
-  contactEmail       String         @map("contact_email") @db.VarChar(255)
-  contactInfo        Json?          @map("contact_info") @db.JsonB
-  contractStatus     ContractStatus @default(ACTIVE) @map("contract_status")
-  contractStart      DateTime?      @map("contract_start") @db.Timestamptz
-  contractEnd        DateTime?      @map("contract_end") @db.Timestamptz
-  billingPreferences Json?          @map("billing_preferences") @db.JsonB
-  
-  // Enhanced client management fields
-  industry                   String?  @db.VarChar(100)
-  companySize               String?  @map("company_size") @db.VarChar(50)
-  serviceLevelAgreement     Json?    @map("service_level_agreement") @db.JsonB
-  documentRequirements      Json?    @map("document_requirements") @db.JsonB
-  onboardingChecklist       Json?    @map("onboarding_checklist") @db.JsonB
-  renewalNotificationDays   Int?     @default(90) @map("renewal_notification_days")
-  autoRenewalEnabled        Boolean  @default(false) @map("auto_renewal_enabled")
-  tags                      String[] @db.VarChar(50)
-  accountManagerId          String?  @map("account_manager_id") @db.Uuid
-  
-  // Performance and relationship tracking
-  performanceMetrics        Json?    @map("performance_metrics") @db.JsonB
-  contractHistory          Json?     @map("contract_history") @db.JsonB
-  relationshipNotes        String?   @map("relationship_notes") @db.Text
-  lastContactDate          DateTime? @map("last_contact_date") @db.Timestamptz
-  nextFollowUpDate         DateTime? @map("next_follow_up_date") @db.Timestamptz
-  
-  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+  id           String @id @default(uuid()) @db.Uuid
+  companyId    String @map("company_id") @db.Uuid
+  name         String @db.VarChar(100)
+  contactEmail String @map("contact_email") @db.VarChar(255)
+  contactInfo  Json?  @map("contact_info") @db.JsonB
 
-  // Relationships
-  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  accountManager User? @relation("ClientAccountManager", fields: [accountManagerId], references: [id], onDelete: SetNull)
-  sites    Site[]
-  invoices Invoice[]
-  clientDocuments ClientDocument[]
-  clientInteractions ClientInteraction[]
+  // Organization details
+  organizationType ClientOrganizationType @default(CORPORATE_OFFICE) @map("organization_type")
+  industry         String?                @db.VarChar(100)
+  companySize      String?                @map("company_size") @db.VarChar(50)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships (adjusted for contract model)
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contracts Contract[] @relation("ClientContracts")
 
   @@index([companyId])
-  @@index([companyId, contractStatus])
-  @@index([contractEnd])
-  @@index([accountManagerId])
-  @@index([tags])
+  @@index([organizationType])
   @@map("clients")
 }
 
@@ -122,25 +97,94 @@ enum ContractStatus {
   TERMINATED
 }
 
+enum ClientUserRole {
+  SECURITY_MANAGER
+  FACILITY_MANAGER
+  HR_MANAGER
+  FINANCE_MANAGER
+  REGIONAL_MANAGER
+}
+
+enum ClientOrganizationType {
+  CORPORATE_OFFICE
+  RESIDENTIAL_SOCIETY
+  HOSPITAL
+  SHOPPING_MALL
+  FACTORY
+  WAREHOUSE
+  EDUCATIONAL_INSTITUTION
+  GOVERNMENT_BUILDING
+  HOTEL
+}
+
+// Contract entity between Client and Sites
+model Contract {
+  id                      String         @id @default(uuid()) @db.Uuid
+  clientId                String         @map("client_id") @db.Uuid
+  contractNumber          String         @map("contract_number") @db.VarChar(50)
+  title                   String         @db.VarChar(200)
+  description             String?        @db.Text
+  status                  ContractStatus @default(ACTIVE)
+  startDate               DateTime       @map("start_date") @db.Date
+  endDate                 DateTime?      @map("end_date") @db.Date
+  serviceDefinitions      Json?          @map("service_definitions") @db.JsonB
+  serviceLevelAgreement   Json?          @map("service_level_agreement") @db.JsonB
+  billingPreferences      Json?          @map("billing_preferences") @db.JsonB
+  defaultBillingRates     Json?          @map("default_billing_rates") @db.JsonB
+  contractValue           Decimal?       @map("contract_value") @db.Decimal(15, 2)
+  paymentTerms            Json?          @map("payment_terms") @db.JsonB
+  contractHistory         Json?          @map("contract_history") @db.JsonB
+  renewalNotificationDays Int?           @default(90) @map("renewal_notification_days")
+  autoRenewalEnabled      Boolean        @default(false) @map("auto_renewal_enabled")
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  client   Client    @relation("ClientContracts", fields: [clientId], references: [id], onDelete: Cascade)
+  sites    Site[]    @relation("ContractSites")
+  invoices Invoice[] @relation("ContractInvoices")
+
+  @@unique([clientId, contractNumber])
+  @@index([clientId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("contracts")
+}
+
+// Client Users with role-based permissions - COMMENTED OUT until database migration
+// model ClientUser {
+//   ... ClientUser model will be enabled after database migration  
+// }
+
+// Client interactions for complaints, service requests, etc. - COMMENTED OUT until database migration
+// model ClientInteraction {
+//   ... ClientInteraction model will be enabled after database migration
+// }
+
+// Additional enums for client interactions - to be added with later migrations
+// enum ClientInteractionType, ClientInteractionStatus
+
 model Site {
   id                 String            @id @default(uuid()) @db.Uuid
-  clientId           String            @map("client_id") @db.Uuid
+  contractId         String            @map("contract_id") @db.Uuid
   name               String            @db.VarChar(100)
   address            Json              @db.JsonB
   accessRequirements Json?             @map("access_requirements") @db.JsonB
   safetyProtocols    Json?             @map("safety_protocols") @db.JsonB
   operationalStatus  OperationalStatus @default(ACTIVE) @map("operational_status")
   contactInfo        Json?             @map("contact_info") @db.JsonB
-  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz
 
-  // Relationships
-  client         Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  assignments    Assignment[]
-  shifts         Shift[]
-  shiftTemplates ShiftTemplate[]
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  @@index([clientId])
+  // Relationships (adjusted for contract model)
+  contract    Contract     @relation("ContractSites", fields: [contractId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+  shifts      Shift[]
+  // shiftTemplates ShiftTemplate[] // Commented out until migration
+
+  @@index([contractId])
   @@index([operationalStatus])
   @@map("sites")
 }
@@ -157,99 +201,44 @@ enum OperationalStatus {
 // ============================================================================
 
 model Employee {
-  id               String           @id @default(uuid()) @db.Uuid
-  companyId        String           @map("company_id") @db.Uuid
-  employeeNumber   String           @map("employee_number") @db.VarChar(20)
-  firstName        String           @map("first_name") @db.VarChar(50)
-  lastName         String           @map("last_name") @db.VarChar(50)
-  
-  // Contact Information (Encrypted - Sensitive Level)
-  email            String?          @db.VarChar(500)  // Increased for encrypted data
-  emailIv          String?          @map("email_iv") @db.VarChar(32)
-  emailTag         String?          @map("email_tag") @db.VarChar(32)
-  
-  phone            String?          @db.VarChar(500)  // Increased for encrypted data  
-  phoneIv          String?          @map("phone_iv") @db.VarChar(32)
-  phoneTag         String?          @map("phone_tag") @db.VarChar(32)
-  
-  address          Json?            @db.JsonB
-  
-  // Indian Identity Documents (Encrypted - Restricted Level)
-  aadhaarNumber    String?          @map("aadhaar_number") @db.VarChar(500)  // Encrypted
-  aadhaarIv        String?          @map("aadhaar_iv") @db.VarChar(32)
-  aadhaarTag       String?          @map("aadhaar_tag") @db.VarChar(32)
-  
-  panNumber        String?          @map("pan_number") @db.VarChar(500)      // Encrypted
-  panIv            String?          @map("pan_iv") @db.VarChar(32)
-  panTag           String?          @map("pan_tag") @db.VarChar(32)
-  
-  // Salary Structure (Encrypted - Financial Level)
-  basicSalary      String?          @map("basic_salary") @db.VarChar(500)     // Encrypted
-  basicSalaryIv    String?          @map("basic_salary_iv") @db.VarChar(32)
-  basicSalaryTag   String?          @map("basic_salary_tag") @db.VarChar(32)
-  
-  hraAmount        String?          @map("hra_amount") @db.VarChar(500)       // Encrypted
-  hraAmountIv      String?          @map("hra_amount_iv") @db.VarChar(32)
-  hraAmountTag     String?          @map("hra_amount_tag") @db.VarChar(32)
-  
-  otherAllowances  String?          @map("other_allowances") @db.VarChar(500) // Encrypted
-  otherAllowancesIv String?         @map("other_allowances_iv") @db.VarChar(32)
-  otherAllowancesTag String?        @map("other_allowances_tag") @db.VarChar(32)
-  
-  grossSalary      String?          @map("gross_salary") @db.VarChar(500)     // Encrypted
-  grossSalaryIv    String?          @map("gross_salary_iv") @db.VarChar(32)
-  grossSalaryTag   String?          @map("gross_salary_tag") @db.VarChar(32)
-  
-  salaryType       SalaryType       @default(MONTHLY) @map("salary_type")
-  
-  // Bank Details (Encrypted - Financial Level)
-  bankName         String?          @map("bank_name") @db.VarChar(500)        // Encrypted
-  bankNameIv       String?          @map("bank_name_iv") @db.VarChar(32)
-  bankNameTag      String?          @map("bank_name_tag") @db.VarChar(32)
-  
-  accountNumber    String?          @map("account_number") @db.VarChar(500)   // Encrypted
-  accountNumberIv  String?          @map("account_number_iv") @db.VarChar(32)
-  accountNumberTag String?          @map("account_number_tag") @db.VarChar(32)
-  
-  ifscCode         String?          @map("ifsc_code") @db.VarChar(500)        // Encrypted
-  ifscCodeIv       String?          @map("ifsc_code_iv") @db.VarChar(32)
-  ifscCodeTag      String?          @map("ifsc_code_tag") @db.VarChar(32)
-  
-  accountType      AccountType      @default(SAVINGS) @map("account_type")
-  
-  // Statutory IDs (Encrypted - Restricted Level)
-  uanNumber        String?          @map("uan_number") @db.VarChar(500)       // Encrypted
-  uanNumberIv      String?          @map("uan_number_iv") @db.VarChar(32)
-  uanNumberTag     String?          @map("uan_number_tag") @db.VarChar(32)
-  
-  esicNumber       String?          @map("esic_number") @db.VarChar(500)      // Encrypted
-  esicNumberIv     String?          @map("esic_number_iv") @db.VarChar(32)
-  esicNumberTag    String?          @map("esic_number_tag") @db.VarChar(32)
-  
-  // Payroll Configuration
-  epfApplicable    Boolean          @default(true) @map("epf_applicable")
-  esicApplicable   Boolean          @default(true) @map("esic_applicable")
-  ptApplicable     Boolean          @default(true) @map("pt_applicable")
-  tdsApplicable    Boolean          @default(true) @map("tds_applicable")
-  
-  // Additional Employee Information
-  dateOfBirth      DateTime?        @map("date_of_birth") @db.Date
-  
+  id             String @id @default(uuid()) @db.Uuid
+  companyId      String @map("company_id") @db.Uuid
+  employeeNumber String @map("employee_number") @db.VarChar(20)
+  firstName      String @map("first_name") @db.VarChar(50)
+  lastName       String @map("last_name") @db.VarChar(50)
+
+  // Contact information with encryption support
+  email         String? @db.VarChar(255)
+  emailIv       String? @map("email_iv") @db.VarChar(255)
+  emailTag      String? @map("email_tag") @db.VarChar(255)
+  phone         String? @db.VarChar(20)
+  phoneIv       String? @map("phone_iv") @db.VarChar(255)
+  phoneTag      String? @map("phone_tag") @db.VarChar(255)
+  address       Json?   @db.JsonB
+
+  // Salary information with encryption support
+  basicSalary     String? @map("basic_salary") @db.VarChar(255)
+  basicSalaryIv   String? @map("basic_salary_iv") @db.VarChar(255)
+  basicSalaryTag  String? @map("basic_salary_tag") @db.VarChar(255)
+  hraAmount       String? @map("hra_amount") @db.VarChar(255)
+  hraAmountIv     String? @map("hra_amount_iv") @db.VarChar(255)
+  hraAmountTag    String? @map("hra_amount_tag") @db.VarChar(255)
+
+  // Metadata and other fields
+  metadata         Json?            @db.JsonB
   certifications   Json?            @db.JsonB
   skills           String[]         @db.VarChar(50)
-  metadata         Json?            @db.JsonB
   employmentStatus EmploymentStatus @default(ACTIVE) @map("employment_status")
-  hireDate         DateTime         @map("hire_date") @db.Timestamptz
-  terminationDate  DateTime?        @map("termination_date") @db.Timestamptz
+  hireDate         DateTime         @map("hire_date") @db.Date
+  terminationDate  DateTime?        @map("termination_date") @db.Date
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  assignments        Assignment[]
-  attendanceRecords  Attendance[]
-  payrollItems       PayrollItem[]
-  shiftNotifications ShiftNotification[]
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignments       Assignment[]
+  attendanceRecords Attendance[]
+  payrollItems      PayrollItem[]
 
   @@unique([companyId, employeeNumber])
   @@index([companyId])
@@ -265,34 +254,33 @@ enum EmploymentStatus {
   ON_LEAVE
 }
 
-enum SalaryType {
-  MONTHLY
-  DAILY
-  HOURLY
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  TEMPORARY
 }
 
-enum AccountType {
-  SAVINGS
-  CURRENT
-}
+// Additional enums to be added with later migrations
+// enum SalaryType, AccountType, etc.
 
 model Assignment {
-  id               String           @id @default(uuid()) @db.Uuid
-  employeeId       String           @map("employee_id") @db.Uuid
-  siteId           String           @map("site_id") @db.Uuid
-  role             String           @db.VarChar(50)
-  responsibilities Json?            @db.JsonB
-  
-  // Financial Data (Encrypted - Financial Level)
-  hourlyRate       String           @map("hourly_rate") @db.VarChar(500)    // Encrypted
-  hourlyRateIv     String           @map("hourly_rate_iv") @db.VarChar(32)
-  hourlyRateTag    String           @map("hourly_rate_tag") @db.VarChar(32)
-  
-  status           AssignmentStatus @default(ACTIVE)
-  startDate        DateTime         @map("start_date") @db.Timestamptz
-  endDate          DateTime?        @map("end_date") @db.Timestamptz
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  id               String @id @default(uuid()) @db.Uuid
+  employeeId       String @map("employee_id") @db.Uuid
+  siteId           String @map("site_id") @db.Uuid
+  role             String @db.VarChar(50)
+  responsibilities Json?  @db.JsonB
+
+  // Basic hourly rate (matching current database)
+  hourlyRate    Decimal @map("hourly_rate") @db.Decimal(10, 2)
+  hourlyRateIv  String? @map("hourly_rate_iv") @db.VarChar(255)
+  hourlyRateTag String? @map("hourly_rate_tag") @db.VarChar(255)
+
+  status    AssignmentStatus @default(ACTIVE)
+  startDate DateTime         @map("start_date") @db.Date
+  endDate   DateTime?        @map("end_date") @db.Date
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
@@ -317,42 +305,28 @@ enum AssignmentStatus {
 // ============================================================================
 
 model Shift {
-  id                String           @id @default(uuid()) @db.Uuid
-  assignmentId      String?          @map("assignment_id") @db.Uuid
-  siteId            String           @map("site_id") @db.Uuid
-  templateId        String?          @map("template_id") @db.Uuid
-  shiftDate         DateTime         @map("shift_date") @db.Date
-  startTime         DateTime         @map("start_time") @db.Time
-  endTime           DateTime         @map("end_time") @db.Time
-  shiftType         ShiftType        @default(REGULAR) @map("shift_type")
-  status            ShiftStatus      @default(SCHEDULED)
-  priority          ShiftPriority    @default(NORMAL)
-  isRecurring       Boolean          @default(false) @map("is_recurring")
-  recurringPattern  Json?            @map("recurring_pattern") @db.JsonB
-  coverageRequired  Int              @default(1) @map("coverage_required")
-  coverageAssigned  Int              @default(0) @map("coverage_assigned")
-  skillRequirements Json?            @map("skill_requirements") @db.JsonB
-  shiftRequirements Json?            @map("shift_requirements") @db.JsonB
-  breakSchedule     Json?            @map("break_schedule") @db.JsonB
-  modificationLog   Json?            @map("modification_log") @db.JsonB
-  notes             Json?            @db.JsonB
-  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  id           String      @id @default(uuid()) @db.Uuid
+  assignmentId String      @map("assignment_id") @db.Uuid
+  siteId       String      @map("site_id") @db.Uuid
+  shiftDate    DateTime    @map("shift_date") @db.Date
+  startTime    DateTime    @map("start_time") @db.Time
+  endTime      DateTime    @map("end_time") @db.Time
+  shiftType    ShiftType   @default(REGULAR) @map("shift_type")
+  status       ShiftStatus @default(SCHEDULED)
+  notes        Json?       @db.JsonB
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  assignment        Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
-  site              Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  template          ShiftTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  assignment        Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  site              Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
   attendanceRecords Attendance[]
   notifications     ShiftNotification[]
 
   @@index([assignmentId])
   @@index([siteId])
-  @@index([templateId])
   @@index([shiftDate])
   @@index([status])
-  @@index([isRecurring])
-  @@index([priority])
   @@map("shifts")
 }
 
@@ -376,37 +350,8 @@ enum ShiftStatus {
   NEEDS_COVERAGE
 }
 
-enum ShiftPriority {
-  LOW
-  NORMAL
-  HIGH
-  CRITICAL
-}
-
-enum RecurrenceType {
-  DAILY
-  WEEKLY
-  BIWEEKLY
-  MONTHLY
-  CUSTOM
-}
-
-enum NotificationType {
-  SHIFT_ASSIGNED
-  SHIFT_CHANGED
-  SHIFT_CANCELLED
-  COVERAGE_REQUEST
-  SHIFT_REMINDER
-  OVERTIME_ALERT
-}
-
-enum NotificationStatus {
-  PENDING
-  SENT
-  READ
-  ACKNOWLEDGED
-  FAILED
-}
+// Additional enums to be added with later migrations
+// enum ShiftPriority, RecurrenceType, NotificationType, NotificationStatus
 
 model Attendance {
   id               String           @id @default(uuid()) @db.Uuid
@@ -475,20 +420,18 @@ enum PayrollStatus {
 }
 
 model PayrollItem {
-  id              String          @id @default(uuid()) @db.Uuid
-  payrollRunId    String          @map("payroll_run_id") @db.Uuid
-  employeeId      String          @map("employee_id") @db.Uuid
-  itemType        PayrollItemType @map("item_type")
-  description     String          @db.VarChar(255)
-  
-  // Financial Data (Encrypted - Financial Level)
-  amount          String          @db.VarChar(500)    // Encrypted
-  amountIv        String          @map("amount_iv") @db.VarChar(32)
-  amountTag       String          @map("amount_tag") @db.VarChar(32)
-  
-  calculationData Json?           @map("calculation_data") @db.JsonB
-  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+  id           String          @id @default(uuid()) @db.Uuid
+  payrollRunId String          @map("payroll_run_id") @db.Uuid
+  employeeId   String          @map("employee_id") @db.Uuid
+  itemType     PayrollItemType @map("item_type")
+  description  String          @db.VarChar(255)
+
+  // Basic amount (matching current database)
+  amount Decimal @db.Decimal(10, 2)
+
+  calculationData Json?    @map("calculation_data") @db.JsonB
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
   payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
@@ -513,7 +456,7 @@ enum PayrollItemType {
 
 model Invoice {
   id                 String        @id @default(uuid()) @db.Uuid
-  clientId           String        @map("client_id") @db.Uuid
+  contractId         String        @map("contract_id") @db.Uuid
   invoiceNumber      String        @map("invoice_number") @db.VarChar(50)
   billingPeriodStart DateTime      @map("billing_period_start") @db.Date
   billingPeriodEnd   DateTime      @map("billing_period_end") @db.Date
@@ -523,22 +466,15 @@ model Invoice {
   status             InvoiceStatus @default(DRAFT)
   dueDate            DateTime      @map("due_date") @db.Date
   paidAt             DateTime?     @map("paid_at") @db.Timestamptz
-  
-  // Additional fields for Indian billing compliance
-  gstDetails         Json?         @map("gst_details") @db.JsonB
-  deploymentSummary  Json?         @map("deployment_summary") @db.JsonB
-  additionalCharges  Json?         @map("additional_charges") @db.JsonB
-  notes              String?       @db.Text
-  paymentReference   String?       @map("payment_reference") @db.VarChar(255)
-  
-  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
-  // Relationships
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships (adjusted for contract model)
+  contract Contract @relation("ContractInvoices", fields: [contractId], references: [id], onDelete: Cascade)
 
   @@unique([invoiceNumber])
-  @@index([clientId])
+  @@index([contractId])
   @@index([status])
   @@index([dueDate])
   @@map("invoices")
@@ -557,163 +493,92 @@ enum InvoiceStatus {
 // ============================================================================
 
 model ShiftTemplate {
-  id                String        @id @default(uuid()) @db.Uuid
-  companyId         String        @map("company_id") @db.Uuid
-  name              String        @db.VarChar(100)
-  description       String?       @db.Text
-  siteId            String?       @map("site_id") @db.Uuid
-  startTime         DateTime      @map("start_time") @db.Time
-  endTime           DateTime      @map("end_time") @db.Time
-  shiftType         ShiftType     @default(REGULAR) @map("shift_type")
-  coverageRequired  Int           @default(1) @map("coverage_required")
-  skillRequirements Json?         @map("skill_requirements") @db.JsonB
-  shiftRequirements Json?         @map("shift_requirements") @db.JsonB
-  breakSchedule     Json?         @map("break_schedule") @db.JsonB
-  recurrencePattern Json?         @map("recurrence_pattern") @db.JsonB
-  isActive          Boolean       @default(true) @map("is_active")
-  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  id                  String            @id @default(uuid()) @db.Uuid
+  companyId           String            @map("company_id") @db.Uuid
+  name                String            @db.VarChar(100)
+  description         String?           @db.Text
+  shiftType           ShiftType         @default(REGULAR) @map("shift_type")
+  startTime           DateTime          @map("start_time") @db.Time
+  endTime             DateTime          @map("end_time") @db.Time
+  daysOfWeek          Int[]             @map("days_of_week") // Array of integers 0-6 (Sunday-Saturday)
+  isActive            Boolean           @default(true) @map("is_active")
+  skillRequirements   String[]          @map("skill_requirements") @db.VarChar(50)
+  minStaffRequired    Int               @default(1) @map("min_staff_required")
+  maxStaffAllowed     Int?              @map("max_staff_allowed")
+  autoAssign          Boolean           @default(false) @map("auto_assign")
+  priority            Int               @default(1) // 1 = highest, 5 = lowest
+  recurrence          Json?             @db.JsonB // For complex recurrence patterns
+  effectiveFrom       DateTime          @map("effective_from") @db.Date
+  effectiveTo         DateTime?         @map("effective_to") @db.Date
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  site    Site?   @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  shifts  Shift[]
+  // sites   Site[]  @relation("SiteShiftTemplates") // Many-to-many relationship
 
   @@index([companyId])
-  @@index([siteId])
   @@index([isActive])
+  @@index([shiftType])
   @@map("shift_templates")
 }
 
 model ShiftNotification {
-  id            String             @id @default(uuid()) @db.Uuid
-  shiftId       String             @map("shift_id") @db.Uuid
-  userId        String?            @map("user_id") @db.Uuid
-  employeeId    String?            @map("employee_id") @db.Uuid
-  type          NotificationType
-  title         String             @db.VarChar(255)
-  message       String             @db.Text
-  status        NotificationStatus @default(PENDING)
-  scheduledFor  DateTime?          @map("scheduled_for") @db.Timestamptz
-  sentAt        DateTime?          @map("sent_at") @db.Timestamptz
-  readAt        DateTime?          @map("read_at") @db.Timestamptz
-  metadata      Json?              @db.JsonB
-  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+  id               String               @id @default(uuid()) @db.Uuid
+  companyId        String               @map("company_id") @db.Uuid
+  userId           String               @map("user_id") @db.Uuid
+  shiftId          String?              @map("shift_id") @db.Uuid
+  notificationType NotificationType     @map("notification_type")
+  title            String               @db.VarChar(200)
+  message          String               @db.Text
+  status           NotificationStatus   @default(PENDING)
+  scheduledFor     DateTime?            @map("scheduled_for") @db.Timestamptz
+  sentAt           DateTime?            @map("sent_at") @db.Timestamptz
+  readAt           DateTime?            @map("read_at") @db.Timestamptz
+  metadata         Json?                @db.JsonB
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime             @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  shift    Shift     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shift   Shift?  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
 
-  @@index([shiftId])
+  @@index([companyId])
   @@index([userId])
-  @@index([employeeId])
-  @@index([type])
+  @@index([shiftId])
   @@index([status])
   @@index([scheduledFor])
   @@map("shift_notifications")
+}
+
+enum NotificationType {
+  SHIFT_ASSIGNED
+  SHIFT_CANCELLED
+  SHIFT_REMINDER
+  SCHEDULE_UPDATED
+  OVERTIME_AVAILABLE
+  COVERAGE_NEEDED
+  ATTENDANCE_REQUIRED
+  EMERGENCY_ALERT
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
 }
 
 // ============================================================================
 // CLIENT DOCUMENT AND INTERACTION MANAGEMENT
 // ============================================================================
 
-model ClientDocument {
-  id             String            @id @default(uuid()) @db.Uuid
-  clientId       String            @map("client_id") @db.Uuid
-  documentType   String            @map("document_type") @db.VarChar(100)
-  documentName   String            @map("document_name") @db.VarChar(255)
-  fileName       String            @map("file_name") @db.VarChar(255)
-  filePath       String            @map("file_path") @db.VarChar(500)
-  fileSize       Int               @map("file_size")
-  mimeType       String            @map("mime_type") @db.VarChar(100)
-  status         DocumentStatus    @default(PENDING)
-  version        Int               @default(1)
-  isRequired     Boolean           @default(false) @map("is_required")
-  expiryDate     DateTime?         @map("expiry_date") @db.Date
-  uploadedBy     String            @map("uploaded_by") @db.Uuid
-  reviewedBy     String?           @map("reviewed_by") @db.Uuid
-  reviewedAt     DateTime?         @map("reviewed_at") @db.Timestamptz
-  reviewNotes    String?           @map("review_notes") @db.Text
-  metadata       Json?             @db.JsonB
-  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+// Client document and interaction management - COMMENTED OUT until database migration  
+// model ClientDocument {
+//   ... ClientDocument model will be enabled after database migration
+// }
 
-  // Relationships
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  @@index([clientId])
-  @@index([documentType])
-  @@index([status])
-  @@index([expiryDate])
-  @@map("client_documents")
-}
-
-enum DocumentStatus {
-  PENDING
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
-  EXPIRED
-  ARCHIVED
-}
-
-model ClientInteraction {
-  id              String            @id @default(uuid()) @db.Uuid
-  clientId        String            @map("client_id") @db.Uuid
-  interactionType InteractionType
-  subject         String            @db.VarChar(255)
-  description     String            @db.Text
-  method          String            @db.VarChar(50) // EMAIL, PHONE, MEETING, etc.
-  participantIds  String[]          @map("participant_ids") @db.Uuid
-  scheduledAt     DateTime?         @map("scheduled_at") @db.Timestamptz
-  completedAt     DateTime?         @map("completed_at") @db.Timestamptz
-  outcome         String?           @db.Text
-  followUpDate    DateTime?         @map("follow_up_date") @db.Timestamptz
-  priority        InteractionPriority @default(NORMAL)
-  status          InteractionStatus @default(SCHEDULED)
-  metadata        Json?             @db.JsonB
-  attachments     Json?             @db.JsonB
-  createdBy       String            @map("created_by") @db.Uuid
-  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  @@index([clientId])
-  @@index([interactionType])
-  @@index([scheduledAt])
-  @@index([status])
-  @@index([priority])
-  @@map("client_interactions")
-}
-
-enum InteractionType {
-  ONBOARDING_CALL
-  REGULAR_CHECKIN
-  ISSUE_RESOLUTION
-  CONTRACT_RENEWAL
-  BILLING_DISCUSSION
-  PERFORMANCE_REVIEW
-  COMPLAINT_HANDLING
-  SERVICE_UPGRADE
-  TERMINATION_DISCUSSION
-  OTHER
-}
-
-enum InteractionPriority {
-  LOW
-  NORMAL
-  HIGH
-  URGENT
-}
-
-enum InteractionStatus {
-  SCHEDULED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  RESCHEDULED
-}
+// Additional enums to be added with later migrations  
+// enum DocumentStatus, InteractionStatus, etc.

@@ -6,48 +6,18 @@ import { Button } from '@/components/ui/button'
 import { Calendar, Clock, MapPin, User, Bell } from 'lucide-react'
 
 export default function MySchedulePage() {
-  // Mock data - this would come from API
+  // No mock data - will come from API
   const todayShift = {
-    site: 'Tech Plaza - Main Entrance',
-    startTime: '09:00 AM',
-    endTime: '06:00 PM',
-    supervisor: 'Rohit Supervisor',
-    status: 'active'
+    site: '',
+    startTime: '',
+    endTime: '',
+    supervisor: '',
+    status: 'not_assigned'
   }
 
-  const upcomingShifts = [
-    {
-      date: '2026-07-10',
-      site: 'Tech Plaza - Main Entrance',
-      time: '09:00 AM - 06:00 PM',
-      supervisor: 'Rohit Supervisor'
-    },
-    {
-      date: '2026-07-11',
-      site: 'Tech Plaza - Parking Area',
-      time: '10:00 AM - 07:00 PM', 
-      supervisor: 'Rohit Supervisor'
-    },
-    {
-      date: '2026-07-12',
-      site: 'Tech Plaza - Main Entrance',
-      time: '09:00 AM - 06:00 PM',
-      supervisor: 'Rohit Supervisor'
-    }
-  ]
+  const upcomingShifts: any[] = []
 
-  const notifications = [
-    {
-      type: 'shift_change',
-      message: 'Your shift for July 11 has been moved to Parking Area',
-      time: '2 hours ago'
-    },
-    {
-      type: 'assignment',
-      message: 'You have been assigned additional evening patrol',
-      time: '5 hours ago'
-    }
-  ]
+  const notifications: any[] = []
 
   return (
     <div className="container mx-auto p-6 space-y-6">

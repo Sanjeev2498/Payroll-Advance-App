@@ -29,6 +29,22 @@ export class ClientQueryDto {
   contractStatus?: ContractStatus;
 
   @ApiPropertyOptional({
+    description: 'Filter by organization type',
+    example: 'CORPORATE_OFFICE',
+  })
+  @IsOptional()
+  @IsString()
+  organizationType?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by industry',
+    example: 'Manufacturing',
+  })
+  @IsOptional()
+  @IsString()
+  industry?: string;
+
+  @ApiPropertyOptional({
     description: 'Find contracts expiring before this date',
     example: '2024-12-31',
   })
@@ -70,10 +86,11 @@ export class ClientQueryDto {
   sortBy?:
     | 'name'
     | 'contactEmail'
-    | 'contractStatus'
-    | 'contractStart'
-    | 'contractEnd'
-    | 'createdAt';
+    | 'organizationType'
+    | 'industry'
+    | 'companySize'
+    | 'createdAt'
+    | 'updatedAt';
 
   @ApiPropertyOptional({
     description: 'Sort order',

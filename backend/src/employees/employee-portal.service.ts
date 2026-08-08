@@ -433,8 +433,8 @@ export class EmployeePortalService {
       phone: employee.phone,
       employeeNumber: employee.employeeNumber,
       hireDate: employee.hireDate,
-      department: metadata.department,
-      jobTitle: metadata.jobTitle,
+      department: employee.department,
+      jobTitle: employee.jobTitle,
       emergencyContact: metadata.emergencyContact,
       address: metadata.address,
       notificationPreferences: metadata.notificationPreferences || {

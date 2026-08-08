@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
+import { sitesApi } from '@/lib/api/sites'
 
 interface CreateSiteDialogProps {
   open: boolean
@@ -22,7 +23,8 @@ export function CreateSiteDialog({ open, onOpenChange, onSiteCreated }: CreateSi
       street: '',
       city: '',
       state: '',
-      zipCode: ''
+      zipCode: '',
+      country: 'United States' // Add required country field
     }
   })
   const { toast } = useToast()
@@ -32,20 +34,50 @@ export function CreateSiteDialog({ open, onOpenChange, onSiteCreated }: CreateSi
     setLoading(true)
     
     try {
-      // TODO: Implement site creation API call
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      // For demo purposes, we'll use a hardcoded contract ID that matches the existing demo data
+      // In a real application, this would come from a contract selection dropdown
+      const demoContractId = '550e8400-e29b-41d4-a716-446655440000';
+      
+      const siteData = {
+        contractId: demoContractId,
+        name: formData.name,
+        address: formData.address,
+        accessRequirements: {
+          securityClearance: 'Standard',
+          requiredCertifications: ['Basic Security Training'],
+          accessProcedures: 'Standard access procedures apply'
+        },
+        safetyProtocols: {
+          evacuationProcedures: 'Standard evacuation procedures',
+          hazardMitigation: 'Basic safety protocols',
+          incidentReporting: 'Report to site manager immediately'
+        },
+        contactInfo: {
+          primaryContact: 'Site Manager',
+          primaryPhone: '+91 98765-43210',
+          primaryEmail: 'sitemanager@client.com'
+        },
+        operationalStatus: 'ACTIVE' as const
+      }
+      
+      // Create site via API
+      const response = await sitesApi.createSite(siteData)
+      console.log('Site created:', response)
       
       toast({
         title: 'Success',
-        description: 'Site created successfully',
-        variant: 'success'
+        description: 'Site created successfully'
       })
       
       onSiteCreated()
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Site creation error:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      
       toast({
         title: 'Error',
-        description: 'Failed to create site',
+        description: `Failed to create site: ${error.response?.data?.message || error.message}`,
         variant: 'destructive'
       })
     } finally {

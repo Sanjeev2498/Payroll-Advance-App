@@ -45,15 +45,21 @@ export class DeploymentService {
 
     const sites = await this.prisma.site.findMany({
       where: {
-        client: { companyId: tenantId },
+        contract: { 
+          client: { companyId: tenantId } 
+        },
         operationalStatus: 'ACTIVE'
       },
       include: {
-        client: { 
-          select: { 
-            name: true,
-            contactInfo: true 
-          } 
+        contract: {
+          include: {
+            client: { 
+              select: { 
+                name: true,
+                contactInfo: true 
+              } 
+            }
+          }
         },
         assignments: {
           where: { status: 'ACTIVE' },
@@ -114,12 +120,12 @@ export class DeploymentService {
       }
 
       // Extract contact information
-      const contactInfo = site.contactInfo || site.client.contactInfo || {};
+      const contactInfo = site.contactInfo || site.contract.client.contactInfo || {};
 
       return {
         siteId: site.id,
         siteName: site.name,
-        clientName: site.client.name,
+        clientName: site.contract.client.name,
         requiredGuards,
         assignedGuards,
         onDutyGuards,
@@ -184,14 +190,20 @@ export class DeploymentService {
 
     const sites = await this.prisma.site.count({
       where: {
-        client: { companyId: tenantId },
+        contract: { 
+          client: { companyId: tenantId } 
+        },
         operationalStatus: 'ACTIVE'
       }
     });
 
     const assignments = await this.prisma.assignment.count({
       where: {
-        site: { client: { companyId: tenantId } },
+        site: { 
+          contract: { 
+            client: { companyId: tenantId } 
+          } 
+        },
         status: 'ACTIVE'
       }
     });
@@ -270,10 +282,16 @@ export class DeploymentService {
     const site = await this.prisma.site.findFirst({
       where: {
         id: siteId,
-        client: { companyId: tenantId }
+        contract: { 
+          client: { companyId: tenantId } 
+        }
       },
       include: {
-        requirements: true
+        contract: {
+          include: {
+            client: true
+          }
+        }
       }
     });
 
@@ -297,7 +315,7 @@ export class DeploymentService {
         firstName: true,
         lastName: true,
         skills: true,
-        experience: true
+        // experience field doesn't exist in Employee model - removing it
       }
     });
 
@@ -359,7 +377,9 @@ export class DeploymentService {
         siteId: quickAssignDto.siteId,
         role: 'Security Guard',
         responsibilities: { patrol: true, monitoring: true },
-        hourlyRate: 25.0, // Default rate - should come from employee or site config
+        hourlyRate: "25.00", // Placeholder encrypted value
+        hourlyRateIv: "placeholder_iv_value_32chars", // Required encrypted field
+        hourlyRateTag: "placeholder_tag_value", // Required encrypted field
         status: 'ACTIVE',
         startDate: new Date(),
       }
@@ -393,7 +413,9 @@ export class DeploymentService {
             siteId: assignment.siteId,
             role: assignment.role,
             responsibilities: { assigned: true },
-            hourlyRate: 25.0, // Default rate
+            hourlyRate: "25.00", // Placeholder encrypted value
+            hourlyRateIv: "placeholder_iv_value_32chars", // Required encrypted field
+            hourlyRateTag: "placeholder_tag_value", // Required encrypted field
             status: 'ACTIVE',
             startDate: new Date(assignment.startDate),
             endDate: assignment.endDate ? new Date(assignment.endDate) : null,

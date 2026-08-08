@@ -24,7 +24,10 @@ const locationDataGenerator = () => fc.record({
   longitude: validLongitudeGenerator(),
   accuracy: fc.option(accuracyGenerator()),
   address: fc.option(fc.string({ minLength: 10, maxLength: 100 })),
-  capturedAt: fc.option(fc.date().map(d => d.toISOString())),
+  capturedAt: fc.option(
+    fc.integer({ min: new Date(2020, 0, 1).getTime(), max: new Date(2030, 11, 31).getTime() })
+      .map(timestamp => new Date(timestamp).toISOString())
+  ),
   method: fc.option(fc.constantFrom('GPS', 'Network', 'Manual')),
 });
 
@@ -99,7 +102,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
     service = module.get<AttendanceService>(AttendanceService);
     attendanceRepository = module.get<AttendanceRepository>(AttendanceRepository);
     prisma = module.get<PrismaService>(PrismaService);
-    tenantContext = module.get<TenantContextService>(TenantContextService);
+    tenantContext = await module.resolve<TenantContextService>(TenantContextService);
   });
 
   afterAll(async () => {

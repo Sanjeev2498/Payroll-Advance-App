@@ -17,6 +17,7 @@ describe('Billing Integration Tests', () => {
   // Test data
   let testCompanyId: string;
   let testClientId: string;
+  let testContractId: string;
   let testSiteId: string;
   let testEmployeeId: string;
   let testAssignmentId: string;
@@ -30,7 +31,28 @@ describe('Billing Integration Tests', () => {
         }),
         BillingModule
       ],
-    }).compile();
+      providers: [
+        {
+          provide: TenantContextService,
+          useValue: {
+            getTenantId: () => 'test-company-id',
+            setTenantId: jest.fn(),
+            getUserId: () => 'test-user-id',
+            setUserId: jest.fn(),
+            isContextSet: true,
+          },
+        },
+      ],
+    })
+    .overrideProvider(TenantContextService)
+    .useValue({
+      getTenantId: () => 'test-company-id',
+      setTenantId: jest.fn(),
+      getUserId: () => 'test-user-id',
+      setUserId: jest.fn(),
+      isContextSet: true,
+    })
+    .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
@@ -56,11 +78,8 @@ describe('Billing Integration Tests', () => {
 
   describe('Invoice Creation', () => {
     it('should create invoice with basic deployment data', async () => {
-      // Set tenant context
-      jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
-
       const createInvoiceDto: CreateInvoiceDto = {
-        clientId: testClientId,
+        contractId: testContractId,
         billingPeriodStart: '2024-01-01',
         billingPeriodEnd: '2024-01-31',
         siteIds: [testSiteId],
@@ -69,7 +88,7 @@ describe('Billing Integration Tests', () => {
       const invoice = await billingService.createInvoice(createInvoiceDto);
 
       expect(invoice).toBeDefined();
-      expect(invoice.clientId).toBe(testClientId);
+      expect(invoice.contractId).toBe(testContractId);
       expect(invoice.status).toBe(InvoiceStatus.DRAFT);
       expect(invoice.subtotal).toBeGreaterThan(0);
       expect(invoice.totalAmount).toBeGreaterThan(0);
@@ -77,11 +96,8 @@ describe('Billing Integration Tests', () => {
     });
 
     it('should calculate GST correctly for Indian billing', async () => {
-      // Set tenant context
-      jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
-
       const createInvoiceDto: CreateInvoiceDto = {
-        clientId: testClientId,
+        contractId: testContractId,
         billingPeriodStart: '2024-01-01',
         billingPeriodEnd: '2024-01-31',
         siteIds: [testSiteId],
@@ -104,11 +120,8 @@ describe('Billing Integration Tests', () => {
     });
 
     it('should handle additional charges correctly', async () => {
-      // Set tenant context
-      jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
-
       const createInvoiceDto: CreateInvoiceDto = {
-        clientId: testClientId,
+        contractId: testContractId,
         billingPeriodStart: '2024-01-01',
         billingPeriodEnd: '2024-01-31',
         siteIds: [testSiteId],
@@ -136,12 +149,9 @@ describe('Billing Integration Tests', () => {
 
   describe('Invoice Management', () => {
     it('should list invoices with pagination', async () => {
-      // Set tenant context
-      jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
-
       // Create a few test invoices
       const invoiceDto: CreateInvoiceDto = {
-        clientId: testClientId,
+        contractId: testContractId,
         billingPeriodStart: '2024-01-01',
         billingPeriodEnd: '2024-01-31',
         siteIds: [testSiteId],
@@ -166,11 +176,8 @@ describe('Billing Integration Tests', () => {
     });
 
     it('should update invoice status', async () => {
-      // Set tenant context
-      jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
-
       const createInvoiceDto: CreateInvoiceDto = {
-        clientId: testClientId,
+        contractId: testContractId,
         billingPeriodStart: '2024-01-01',
         billingPeriodEnd: '2024-01-31',
         siteIds: [testSiteId],
@@ -186,11 +193,8 @@ describe('Billing Integration Tests', () => {
 
   describe('Billing Calculations', () => {
     it('should calculate billing preview correctly', async () => {
-      // Set tenant context
-      jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
-
       const createInvoiceDto: CreateInvoiceDto = {
-        clientId: testClientId,
+        contractId: testContractId,
         billingPeriodStart: '2024-01-01',
         billingPeriodEnd: '2024-01-31',
         siteIds: [testSiteId],
@@ -237,18 +241,31 @@ describe('Billing Integration Tests', () => {
         name: 'Test Client',
         contactEmail: 'client@test.com',
         contactInfo: {},
-        contractStatus: 'ACTIVE',
-        contractStart: new Date('2023-01-01'),
-        contractEnd: new Date('2024-12-31'),
-        billingPreferences: {},
+        organizationType: 'CORPORATE_OFFICE',
       },
     });
     testClientId = client.id;
 
+    // Create test contract for the client
+    const contract = await prismaService.contract.create({
+      data: {
+        clientId: testClientId,
+        contractNumber: 'CNT-TEST-001',
+        title: 'Test Contract',
+        status: 'ACTIVE',
+        startDate: new Date('2023-01-01'),
+        endDate: new Date('2024-12-31'),
+        serviceDefinitions: {},
+        billingPreferences: {},
+        defaultBillingRates: {},
+      },
+    });
+    testContractId = contract.id;
+
     // Create test site
     const site = await prismaService.site.create({
       data: {
-        clientId: testClientId,
+        contractId: testContractId,
         name: 'Test Site',
         address: {
           street: '123 Test Street',
@@ -311,8 +328,6 @@ describe('Billing Integration Tests', () => {
           endTime: new Date(`1970-01-01T17:00:00.000Z`),
           shiftType: 'REGULAR',
           status: 'COMPLETED',
-          coverageRequired: 1,
-          coverageAssigned: 1,
         },
       });
 
@@ -343,7 +358,7 @@ describe('Billing Integration Tests', () => {
 
       await prismaService.shift.deleteMany({
         where: {
-          site: { client: { companyId: testCompanyId } },
+          site: { contract: { client: { companyId: testCompanyId } } },
         },
       });
 
@@ -355,7 +370,7 @@ describe('Billing Integration Tests', () => {
 
       await prismaService.invoice.deleteMany({
         where: {
-          client: { companyId: testCompanyId },
+          contract: { client: { companyId: testCompanyId } },
         },
       });
 
@@ -364,6 +379,10 @@ describe('Billing Integration Tests', () => {
       });
 
       await prismaService.site.deleteMany({
+        where: { contract: { client: { companyId: testCompanyId } } },
+      });
+
+      await prismaService.contract.deleteMany({
         where: { client: { companyId: testCompanyId } },
       });
 

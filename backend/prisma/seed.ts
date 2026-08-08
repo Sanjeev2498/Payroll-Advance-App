@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, ContractStatus, EmploymentStatus } from '@prisma/client';
+import { PrismaClient, UserRole, ContractStatus, EmploymentStatus, ClientOrganizationType } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -114,23 +114,45 @@ async function main() {
         phone: '+91 80456-78901',
         address: '142, City Square, Whitefield Road, Bangalore, Karnataka 560066'
       },
-      contractStatus: ContractStatus.ACTIVE,
-      contractStart: new Date('2024-01-01'),
-      contractEnd: new Date('2024-12-31'),
-      billingPreferences: {
-        invoiceFrequency: 'monthly',
-        paymentTerms: 30,
-        preferredFormat: 'email'
-      }
+      organizationType: 'SHOPPING_MALL' as ClientOrganizationType,
+      industry: 'Retail',
+      companySize: 'Large'
     }
   });
 
   console.log(`✅ Created client: ${client.name}`);
 
+  // Create demo contract for the client
+  const contract = await prisma.contract.create({
+    data: {
+      client: {
+        connect: { id: client.id }
+      },
+      contractNumber: 'CON-2024-001',
+      title: 'Annual Security Services Contract',
+      description: 'Comprehensive security services for mall operations',
+      status: 'ACTIVE',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      contractValue: 1200000,
+      billingPreferences: {
+        billingFrequency: 'MONTHLY',
+        serviceLevel: 'STANDARD'
+      },
+      serviceDefinitions: {
+        guardCount: 15,
+        shifts: 3,
+        coverage: '24x7'
+      }
+    }
+  });
+
+  console.log(`✅ Created contract: ${contract.title}`);
+
   // Create demo sites for the client
   const site1 = await prisma.site.create({
     data: {
-      clientId: client.id,
+      contractId: contract.id,
       name: 'Main Mall Entrance',
       address: {
         street: '142, City Square, Whitefield Road',
@@ -158,7 +180,7 @@ async function main() {
 
   const site2 = await prisma.site.create({
     data: {
-      clientId: client.id,
+      contractId: contract.id,
       name: 'Parking Area',
       address: {
         street: '142, City Square, Whitefield Road',
@@ -250,7 +272,129 @@ async function main() {
     }
   });
 
-  console.log(`✅ Created employees: ${employee1.firstName} ${employee1.lastName}, ${employee2.firstName} ${employee2.lastName}`);
+  // Create additional employees for more realistic data
+  const employee3 = await prisma.employee.create({
+    data: {
+      companyId: company.id,
+      employeeNumber: 'EMP003',
+      firstName: 'Rajesh',
+      lastName: 'Kumar',
+      email: 'rajesh.kumar@demosecurity.co.in',
+      phone: '+91 76543-21098',
+      aadhaarNumber: '456789012345',
+      panNumber: 'LMNOP9876Q',
+      address: {
+        street: '22, Commercial Street',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        zipCode: '560001'
+      },
+      certifications: {
+        securityLicense: {
+          number: 'KAR789012',
+          expiryDate: '2025-12-31',
+          issuingAuthority: 'Karnataka Police'
+        }
+      },
+      skills: ['patrol', 'emergency_response', 'access_control'],
+      employmentStatus: EmploymentStatus.ACTIVE,
+      hireDate: new Date('2023-09-15')
+    }
+  });
+
+  const employee4 = await prisma.employee.create({
+    data: {
+      companyId: company.id,
+      employeeNumber: 'EMP004',
+      firstName: 'Sneha',
+      lastName: 'Patel',
+      email: 'sneha.patel@demosecurity.co.in',
+      phone: '+91 65432-10987',
+      aadhaarNumber: '567890123456',
+      panNumber: 'RSTUV5432W',
+      address: {
+        street: '88, Indiranagar',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        zipCode: '560038'
+      },
+      certifications: {
+        securityLicense: {
+          number: 'KAR345678',
+          expiryDate: '2026-03-15',
+          issuingAuthority: 'Karnataka Police'
+        },
+        supervisorLicense: {
+          number: 'SUP123456',
+          expiryDate: '2026-06-30',
+          issuingAuthority: 'Security Training Institute'
+        }
+      },
+      skills: ['supervision', 'team_leadership', 'incident_management', 'training'],
+      employmentStatus: EmploymentStatus.ACTIVE,
+      hireDate: new Date('2023-05-01')
+    }
+  });
+
+  const employee5 = await prisma.employee.create({
+    data: {
+      companyId: company.id,
+      employeeNumber: 'EMP005',
+      firstName: 'Vikash',
+      lastName: 'Singh',
+      email: 'vikash.singh@demosecurity.co.in',
+      phone: '+91 54321-09876',
+      aadhaarNumber: '678901234567',
+      panNumber: 'WXYZ4321X',
+      address: {
+        street: '12, Koramangala',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        zipCode: '560034'
+      },
+      certifications: {
+        securityLicense: {
+          number: 'KAR567890',
+          expiryDate: '2024-12-15', // Expiring soon
+          issuingAuthority: 'Karnataka Police'
+        }
+      },
+      skills: ['vehicle_patrol', 'parking_management', 'cctv_monitoring'],
+      employmentStatus: EmploymentStatus.ON_LEAVE,
+      hireDate: new Date('2023-07-01')
+    }
+  });
+
+  const employee6 = await prisma.employee.create({
+    data: {
+      companyId: company.id,
+      employeeNumber: 'EMP006',
+      firstName: 'Anjali',
+      lastName: 'Reddy',
+      email: 'anjali.reddy@demosecurity.co.in',
+      phone: '+91 43210-98765',
+      aadhaarNumber: '789012345678',
+      panNumber: 'ABCD6789Y',
+      address: {
+        street: '67, HSR Layout',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        zipCode: '560102'
+      },
+      certifications: {
+        securityLicense: {
+          number: 'KAR890123',
+          expiryDate: '2024-09-30', // Expired
+          issuingAuthority: 'Karnataka Police'
+        }
+      },
+      skills: ['reception_security', 'visitor_management', 'customer_service'],
+      employmentStatus: EmploymentStatus.INACTIVE,
+      hireDate: new Date('2023-10-01')
+    }
+  });
+
+  console.log(`✅ Created employees: ${employee1.firstName} ${employee1.lastName}, ${employee2.firstName} ${employee2.lastName}, ${employee3.firstName} ${employee3.lastName}, ${employee4.firstName} ${employee4.lastName}, ${employee5.firstName} ${employee5.lastName}, ${employee6.firstName} ${employee6.lastName}`);
 
   console.log('🇮🇳 Database seeding completed successfully with Indian localization!');
 }

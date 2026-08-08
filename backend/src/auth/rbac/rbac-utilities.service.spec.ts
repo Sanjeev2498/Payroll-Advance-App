@@ -40,7 +40,7 @@ describe('RbacUtilitiesService', () => {
 
     service = module.get<RbacUtilitiesService>(RbacUtilitiesService);
     rbacService = module.get(RbacService);
-    tenantContextService = module.get(TenantContextService);
+    tenantContextService = await module.resolve(TenantContextService);
   });
 
   beforeEach(() => {

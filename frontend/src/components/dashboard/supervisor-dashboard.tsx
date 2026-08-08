@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useAuthPermissions } from '@/components/auth/protected-route'
+import { supervisorPortalApi } from '@/lib/api/supervisor-portal'
 import Link from 'next/link'
 
 interface SupervisorDashboardProps {
@@ -14,34 +15,77 @@ interface SupervisorDashboardProps {
 
 export function SupervisorDashboard({ className }: SupervisorDashboardProps) {
   const { user } = useAuthPermissions()
-  
-  const [teamMetrics] = useState({
-    totalEmployees: 12,
-    activeToday: 8,
-    attendanceRate: 95,
-    sitesManaged: 4,
-    hoursThisWeek: 256,
-  })
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const [siteStatus] = useState([
-    { name: 'Downtown Office Building', status: 'fully-staffed', employees: 3, capacity: 3 },
-    { name: 'Mall Security Post', status: 'understaffed', employees: 2, capacity: 3 },
-    { name: 'Warehouse Complex', status: 'fully-staffed', employees: 2, capacity: 2 },
-    { name: 'Corporate Campus', status: 'overstaffed', employees: 4, capacity: 3 },
-  ])
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await supervisorPortalApi.getDashboard()
+        setDashboardData(response)
+      } catch (error) {
+        console.error('Failed to fetch supervisor dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const [recentAlerts] = useState([
-    { id: 1, type: 'late', message: 'John Smith - Late arrival at Downtown Office', time: '2 min ago', severity: 'medium' },
-    { id: 2, type: 'no-show', message: 'Sarah Johnson - No show at Mall Security', time: '15 min ago', severity: 'high' },
-    { id: 3, type: 'overtime', message: 'Mike Davis - Overtime started at Warehouse', time: '1 hour ago', severity: 'low' },
-  ])
+    fetchData()
+  }, [])
 
-  const [teamActivity] = useState([
-    { employee: 'John Smith', site: 'Downtown Office', action: 'Clocked In', time: '09:02 AM' },
-    { employee: 'Lisa Wilson', site: 'Corporate Campus', action: 'Clocked In', time: '09:00 AM' },
-    { employee: 'Mike Davis', site: 'Warehouse Complex', action: 'Break Started', time: '12:00 PM' },
-    { employee: 'Amy Chen', site: 'Mall Security', action: 'Clocked In', time: '08:58 AM' },
-  ])
+  if (loading || !dashboardData) {
+    return (
+      <div className={className}>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Use real API data
+  const teamMetrics = {
+    totalEmployees: dashboardData.overview?.totalGuards || 0,
+    activeToday: dashboardData.overview?.guardsOnDuty || 0,
+    attendanceRate: dashboardData.attendanceOverview?.attendanceRate || 0,
+    sitesManaged: dashboardData.overview?.totalSites || 0,
+    hoursThisWeek: dashboardData.todayStats?.activeAssignments * 8 || 0, // Estimate
+  }
+
+  const siteStatus: Array<{
+    name: string;
+    status: string;
+    employees: number;
+    capacity: number;
+  }> = dashboardData.assignedSites?.map((site: any) => ({
+    name: site.name,
+    status: site.currentGuards === site.requiredGuards ? 'fully-staffed' : 
+           site.currentGuards < site.requiredGuards ? 'understaffed' : 'overstaffed',
+    employees: site.currentGuards,
+    capacity: site.requiredGuards
+  })) || []
+
+  const recentAlerts: Array<{
+    id: number;
+    type: string;
+    message: string;
+    time: string;
+    severity: string;
+  }> = dashboardData.activeAlerts?.map((alert: any, index: number) => ({
+    id: index + 1,
+    type: 'alert',
+    message: alert.message,
+    time: new Date(alert.timestamp).toLocaleTimeString(),
+    severity: alert.severity?.toLowerCase() || 'medium'
+  })) || []
+
+  // For team activity, we'll use a placeholder until we have real endpoint
+  const teamActivity = [
+    { employee: 'Real-time activity', site: 'All Sites', action: 'Data from API', time: new Date().toLocaleTimeString() }
+  ]
 
   const getStatusColor = (status: string) => {
     switch (status) {

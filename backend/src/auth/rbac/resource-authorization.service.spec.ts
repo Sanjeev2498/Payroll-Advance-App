@@ -41,7 +41,7 @@ describe('ResourceAuthorizationService', () => {
 
     service = module.get<ResourceAuthorizationService>(ResourceAuthorizationService);
     rbacService = module.get(RbacService);
-    tenantContextService = module.get(TenantContextService);
+    tenantContextService = await module.resolve(TenantContextService);
   });
 
   beforeEach(() => {
