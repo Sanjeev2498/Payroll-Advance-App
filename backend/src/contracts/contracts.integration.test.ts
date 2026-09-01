@@ -1,32 +1,105 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContractsModule } from './contracts.module';
 import { CommonModule } from '../common/common.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
-import { ContractStatus } from '@prisma/client';
+import { ContractStatus, UserRole } from '@prisma/client';
+import { TestDataUtil } from '../test/utils/test-data.util';
+import { JwtService } from '@nestjs/jwt';
+import { TenantContextService } from '../common/tenant-context.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 describe('ContractsController (e2e)', () => {
   let app: INestApplication;
   let prismaService: PrismaService;
+  let jwtService: JwtService;
+  let moduleRef: TestingModule;
 
   const testTenantId = '123e4567-e89b-12d3-a456-426614174000';
   const testClientId = '123e4567-e89b-12d3-a456-426614174001';
+  
+  // Test user for authentication
+  const testUser = {
+    id: '123e4567-e89b-12d3-a456-426614174002',
+    email: 'admin@test.com',
+    role: UserRole.COMPANY_ADMIN,
+    tenantId: testTenantId,
+  };
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+    const mockTenantContextService = {
+      hasContext: jest.fn().mockReturnValue(true),
+      getUserId: jest.fn().mockReturnValue(testUser.id),
+      getUserRole: jest.fn().mockReturnValue(testUser.role),
+      getTenantId: jest.fn().mockReturnValue(testUser.tenantId),
+      setContext: jest.fn(),
+      clearContext: jest.fn(),
+    };
+
+    moduleRef = await Test.createTestingModule({
       imports: [
         PrismaModule,
         CommonModule,
         AuthModule,
         ContractsModule,
       ],
-    }).compile();
+    })
+    .overrideGuard(JwtAuthGuard)
+    .useValue({
+      canActivate: (context) => {
+        const request = context.switchToHttp().getRequest();
+        
+        // Extract JWT token and validate
+        const authHeader = request.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return false;
+        }
+        
+        try {
+          const token = authHeader.substring(7);
+          const jwtService = moduleRef.get(JwtService);
+          const payload = jwtService.verify(token);
+          
+          // Set up request.user for the application
+          request.user = {
+            id: payload.sub,
+            email: payload.email,
+            role: payload.role,
+            companyId: payload.companyId,
+            tenantId: payload.companyId,
+          };
+          
+          // Set tenant context
+          mockTenantContextService.setContext(payload.sub, payload.companyId, payload.role);
+          request.tenantContext = mockTenantContextService;
+          
+          return true;
+        } catch (error) {
+          return false;
+        }
+      },
+    })
+    .overrideProvider(TenantContextService)
+    .useValue(mockTenantContextService)
+    .compile();
 
-    app = moduleFixture.createNestApplication();
-    prismaService = moduleFixture.get<PrismaService>(PrismaService);
+    app = moduleRef.createNestApplication();
+    
+    // Set up ValidationPipe to catch validation errors
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }));
+    
+    prismaService = moduleRef.get<PrismaService>(PrismaService);
+    jwtService = moduleRef.get<JwtService>(JwtService);
     await app.init();
 
     // Setup test data
@@ -40,46 +113,36 @@ describe('ContractsController (e2e)', () => {
 
   const setupTestData = async () => {
     // Create test company
-    await prismaService.company.upsert({
+    await prismaService.companies.upsert({
       where: { id: testTenantId },
       update: {},
-      create: {
-        id: testTenantId,
-        name: 'Test Company',
-        slug: 'test-company',
-      },
+      create: TestDataUtil.createTestCompanyData({ id: testTenantId }),
     });
 
     // Create test client
-    await prismaService.client.upsert({
+    await prismaService.clients.upsert({
       where: { id: testClientId },
       update: {},
-      create: {
-        id: testClientId,
-        companyId: testTenantId,
-        name: 'Test Client',
-        contactEmail: 'test@client.com',
-        contactInfo: { phone: '555-0123' },
-      },
+      create: TestDataUtil.createTestClientData(testTenantId, { id: testClientId }),
     });
   };
 
   const cleanupTestData = async () => {
-    await prismaService.contract.deleteMany({
+    await prismaService.contracts.deleteMany({
       where: {
-        client: {
-          companyId: testTenantId,
+        clients: {
+          company_id: testTenantId,
         },
       },
     });
 
-    await prismaService.client.deleteMany({
+    await prismaService.clients.deleteMany({
       where: {
-        companyId: testTenantId,
+        company_id: testTenantId,
       },
     });
 
-    await prismaService.company.deleteMany({
+    await prismaService.companies.deleteMany({
       where: {
         id: testTenantId,
       },
@@ -87,8 +150,15 @@ describe('ContractsController (e2e)', () => {
   };
 
   const createAuthToken = () => {
-    // Mock JWT token for testing - in real implementation this would be generated properly
-    return 'Bearer mock-jwt-token';
+    // Generate proper JWT token using JwtService
+    const payload = {
+      sub: testUser.id,
+      email: testUser.email,
+      role: testUser.role,
+      companyId: testUser.tenantId,
+      type: 'access',
+    };
+    return `Bearer ${jwtService.sign(payload)}`;
   };
 
   describe('POST /contracts', () => {
@@ -167,11 +237,11 @@ describe('ContractsController (e2e)', () => {
         .send(createContractDto)
         .expect(201)
         .expect((res) => {
-          expect(res.body.title).toBe(createContractDto.title);
-          expect(res.body.contractNumber).toMatch(/^CNT-\d{4}-\d{4}$/);
-          expect(res.body.status).toBe(ContractStatus.ACTIVE);
-          expect(res.body.serviceDefinitions.guardCount).toBe(3);
-          expect(res.body.billingPreferences.billingFrequency).toBe('MONTHLY');
+          expect(res.body.data.title).toBe(createContractDto.title);
+          expect(res.body.data.contract_number).toMatch(/^CNT-\d{4}-\d{4}$/);
+          expect(res.body.data.status).toBe(ContractStatus.ACTIVE);
+          expect(res.body.data.service_definitions.guardCount).toBe(3);
+          expect(res.body.data.billing_preferences.billingFrequency).toBe('MONTHLY');
         });
     });
 
@@ -193,17 +263,17 @@ describe('ContractsController (e2e)', () => {
   describe('GET /contracts', () => {
     it('should return paginated contracts', async () => {
       // Create a test contract first
-      const contract = await prismaService.contract.create({
+      const contract = await prismaService.contracts.create({
         data: {
-          contractNumber: 'CNT-2024-TEST',
-          clientId: testClientId,
+          contract_number: 'CNT-2024-TEST',
+          client_id: testClientId,
           title: 'Test Contract',
           status: ContractStatus.ACTIVE,
-          startDate: new Date('2024-01-01'),
-          serviceDefinitions: {
+          start_date: new Date('2024-01-01'),
+          service_definitions: {
             guardCount: 2,
           },
-          billingPreferences: {
+          billing_preferences: {
             billingFrequency: 'MONTHLY',
             rates: { regularHourlyRate: 20 },
           },
@@ -215,9 +285,9 @@ describe('ContractsController (e2e)', () => {
         .set('Authorization', createAuthToken())
         .expect(200)
         .expect((res) => {
-          expect(res.body.contracts).toBeDefined();
-          expect(res.body.pagination).toBeDefined();
-          expect(res.body.pagination.total).toBeGreaterThan(0);
+          expect(res.body.data.contracts).toBeDefined();
+          expect(res.body.data.pagination).toBeDefined();
+          expect(res.body.data.pagination.total).toBeGreaterThan(0);
         });
     });
 
@@ -227,7 +297,7 @@ describe('ContractsController (e2e)', () => {
         .set('Authorization', createAuthToken())
         .expect(200)
         .expect((res) => {
-          expect(res.body.contracts).toBeDefined();
+          expect(res.body.data.contracts).toBeDefined();
         });
     });
   });
@@ -235,17 +305,17 @@ describe('ContractsController (e2e)', () => {
   describe('GET /contracts/:id', () => {
     it('should return a specific contract', async () => {
       // Create a test contract first
-      const contract = await prismaService.contract.create({
+      const contract = await prismaService.contracts.create({
         data: {
-          contractNumber: 'CNT-2024-SPECIFIC',
-          clientId: testClientId,
+          contract_number: 'CNT-2024-SPECIFIC',
+          client_id: testClientId,
           title: 'Specific Test Contract',
           status: ContractStatus.ACTIVE,
-          startDate: new Date('2024-01-01'),
-          serviceDefinitions: {
+          start_date: new Date('2024-01-01'),
+          service_definitions: {
             guardCount: 2,
           },
-          billingPreferences: {
+          billing_preferences: {
             billingFrequency: 'MONTHLY',
             rates: { regularHourlyRate: 20 },
           },
@@ -257,8 +327,8 @@ describe('ContractsController (e2e)', () => {
         .set('Authorization', createAuthToken())
         .expect(200)
         .expect((res) => {
-          expect(res.body.id).toBe(contract.id);
-          expect(res.body.title).toBe('Specific Test Contract');
+          expect(res.body.data.id).toBe(contract.id);
+          expect(res.body.data.title).toBe('Specific Test Contract');
         });
     });
 
@@ -275,21 +345,20 @@ describe('ContractsController (e2e)', () => {
   describe('Contract Amendment Workflow', () => {
     it('should create and approve a contract amendment', async () => {
       // Create a test contract first
-      const contract = await prismaService.contract.create({
+      const contract = await prismaService.contracts.create({
         data: {
-          contractNumber: 'CNT-2024-AMENDMENT',
-          clientId: testClientId,
+          contract_number: 'CNT-2024-AMENDMENT',
+          client_id: testClientId,
           title: 'Amendment Test Contract',
           status: ContractStatus.ACTIVE,
-          startDate: new Date('2024-01-01'),
-          serviceDefinitions: {
+          start_date: new Date('2024-01-01'),
+          service_definitions: {
             guardCount: 2,
           },
-          billingPreferences: {
+          billing_preferences: {
             billingFrequency: 'MONTHLY',
             rates: { regularHourlyRate: 20 },
           },
-          contractHistory: {},
         },
       });
 
@@ -334,7 +403,7 @@ describe('ContractsController (e2e)', () => {
         .send(approvalDto)
         .expect(200)
         .expect((res) => {
-          expect(res.body.status).toBe('IMPLEMENTED');
+          expect(res.body.data.status).toBe('IMPLEMENTED');
         });
     });
   });
@@ -342,21 +411,20 @@ describe('ContractsController (e2e)', () => {
   describe('SLA Compliance Tracking', () => {
     it('should create and retrieve SLA compliance reports', async () => {
       // Create a test contract first
-      const contract = await prismaService.contract.create({
+      const contract = await prismaService.contracts.create({
         data: {
-          contractNumber: 'CNT-2024-SLA',
-          clientId: testClientId,
+          contract_number: 'CNT-2024-SLA',
+          client_id: testClientId,
           title: 'SLA Test Contract',
           status: ContractStatus.ACTIVE,
-          startDate: new Date('2024-01-01'),
-          serviceDefinitions: {
+          start_date: new Date('2024-01-01'),
+          service_definitions: {
             guardCount: 3,
           },
-          billingPreferences: {
+          billing_preferences: {
             billingFrequency: 'MONTHLY',
             rates: { regularHourlyRate: 25 },
           },
-          contractHistory: {},
         },
       });
 
@@ -403,9 +471,9 @@ describe('ContractsController (e2e)', () => {
         .set('Authorization', createAuthToken())
         .expect(200)
         .expect((res) => {
-          expect(res.body.contractId).toBe(contract.id);
-          expect(res.body.reports).toBeDefined();
-          expect(res.body.aggregatedMetrics).toBeDefined();
+          expect(res.body.data.contractId).toBe(contract.id);
+          expect(res.body.data.reports).toBeDefined();
+          expect(res.body.data.aggregatedMetrics).toBeDefined();
         });
     });
   });

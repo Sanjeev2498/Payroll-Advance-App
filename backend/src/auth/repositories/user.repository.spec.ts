@@ -50,6 +50,7 @@ describe('UserRepository', () => {
     const mockPrisma = {
       user: mockPrismaUser,
       company: mockPrismaCompany,
+      companies: mockPrismaCompany, // Add plural form for business service compatibility
       withTenant: jest.fn((tenantId, fn) => fn(mockPrisma)),
       withSystemContext: jest.fn((fn) => fn(mockPrisma)),
     };

@@ -161,7 +161,7 @@ describe('Drag-and-Drop Assignment Validation Properties', () => {
                 assignedGuards: fc.integer({ min: 0, max: 5 }),
                 requiredSkills: fc.array(fc.string({ minLength: 3, maxLength: 20 }), { minLength: 1, maxLength: 3 })
               }),
-              { minLength: 2, max: 8 }
+              { minLength: 2, maxLength: 8 }
             )
           }),
           dragOperations: fc.array(

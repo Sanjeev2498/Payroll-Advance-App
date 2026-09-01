@@ -10,7 +10,7 @@ import { TenantContextService } from '../../common/tenant-context.service';
 import { ClientUserRepository } from '../../common/repositories/client-user.repository';
 import { ClientUserAuthService } from './client-user-auth.service';
 import { ClientUserPermissionsConfig } from '../rbac/client-user-permissions.config';
-import { ClientUserRole, ClientUser } from '@prisma/client';
+import { ClientUserRole, clients, client_users } from '@prisma/client';
 
 export interface CreateClientUserRequest {
   clientId: string;
@@ -56,7 +56,7 @@ export class ClientUserManagementService {
    * Create and invite a new client user
    */
   async createClientUser(data: CreateClientUserRequest): Promise<{
-    clientUser: ClientUser;
+    clientUser: client_users;
     invitationToken: string;
     invitationSent: boolean;
   }> {
@@ -80,12 +80,12 @@ export class ClientUserManagementService {
   /**
    * Get client user by ID
    */
-  async getClientUserById(id: string): Promise<ClientUser | null> {
+  async getClientUserById(id: string): Promise<client_users | null> {
     const clientUser = await this.clientUserRepository.findById(id);
     
     if (clientUser) {
       // Verify the client user's client belongs to current tenant
-      await this.validateClientAccess(clientUser.clientId);
+      await this.validateClientAccess(clientUser.client_id);
     }
 
     return clientUser;
@@ -94,7 +94,7 @@ export class ClientUserManagementService {
   /**
    * Update client user
    */
-  async updateClientUser(id: string, data: UpdateClientUserRequest): Promise<ClientUser> {
+  async updateClientUser(id: string, data: UpdateClientUserRequest): Promise<client_users> {
     this.logger.log(`Updating client user ${id}`);
 
     // Get existing user to verify access
@@ -104,7 +104,7 @@ export class ClientUserManagementService {
     }
 
     // Verify client access
-    await this.validateClientAccess(existingUser.clientId);
+    await this.validateClientAccess(existingUser.id);
 
     // Update the user
     const updatedUser = await this.clientUserRepository.update(id, data);
@@ -121,10 +121,10 @@ export class ClientUserManagementService {
     filters: ClientUserListFilters = {},
     page: number = 1,
     limit: number = 20,
-    sortBy: keyof ClientUser = 'createdAt',
+    sortBy: keyof client_users = 'created_at',
     sortOrder: 'asc' | 'desc' = 'desc',
   ): Promise<{
-    users: (ClientUser & { client: any })[];
+    users: (client_users & { client: any })[];
     total: number;
     page: number;
     limit: number;
@@ -153,7 +153,7 @@ export class ClientUserManagementService {
   /**
    * Get client users by client ID
    */
-  async getClientUsersByClientId(clientId: string): Promise<ClientUser[]> {
+  async getClientUsersByClientId(clientId: string): Promise<client_users[]> {
     await this.validateClientAccess(clientId);
     return this.clientUserRepository.findByClientId(clientId);
   }
@@ -161,14 +161,14 @@ export class ClientUserManagementService {
   /**
    * Get client users by role
    */
-  async getClientUsersByRole(role: ClientUserRole): Promise<ClientUser[]> {
+  async getClientUsersByRole(role: ClientUserRole): Promise<client_users[]> {
     return this.clientUserRepository.findByRole(role);
   }
 
   /**
    * Activate client user
    */
-  async activateClientUser(id: string): Promise<ClientUser> {
+  async activateClientUser(id: string): Promise<client_users> {
     this.logger.log(`Activating client user ${id}`);
 
     const existingUser = await this.getClientUserById(id);
@@ -176,7 +176,7 @@ export class ClientUserManagementService {
       throw new NotFoundException('Client user not found');
     }
 
-    await this.validateClientAccess(existingUser.clientId);
+    await this.validateClientAccess(existingUser.id);
 
     const activatedUser = await this.clientUserRepository.update(id, { isActive: true });
 
@@ -188,7 +188,7 @@ export class ClientUserManagementService {
   /**
    * Deactivate client user
    */
-  async deactivateClientUser(id: string): Promise<ClientUser> {
+  async deactivateClientUser(id: string): Promise<client_users> {
     this.logger.log(`Deactivating client user ${id}`);
 
     const existingUser = await this.getClientUserById(id);
@@ -196,7 +196,7 @@ export class ClientUserManagementService {
       throw new NotFoundException('Client user not found');
     }
 
-    await this.validateClientAccess(existingUser.clientId);
+    await this.validateClientAccess(existingUser.id);
 
     const deactivatedUser = await this.clientUserRepository.deactivate(id);
 
@@ -228,20 +228,20 @@ export class ClientUserManagementService {
       throw new NotFoundException('Client user not found');
     }
 
-    await this.validateClientAccess(existingUser.clientId);
+    await this.validateClientAccess(existingUser.id);
 
-    if (existingUser.activatedAt) {
+    if (existingUser.activated_at) {
       throw new BadRequestException('User is already activated');
     }
 
     // Use auth service to regenerate invitation
-    const result = await this.clientUserAuthService.inviteClientUser(existingUser.clientId, {
+    const result = await this.clientUserAuthService.inviteClientUser(existingUser.client_id, {
       email: existingUser.email,
-      firstName: existingUser.firstName,
-      lastName: existingUser.lastName,
+      firstName: existingUser.first_name,
+      lastName: existingUser.last_name,
       role: existingUser.role,
       phone: existingUser.phone,
-      jobTitle: existingUser.jobTitle,
+      jobTitle: existingUser.job_title,
       department: existingUser.department,
     });
 
@@ -254,7 +254,7 @@ export class ClientUserManagementService {
   /**
    * Update client user permissions
    */
-  async updateClientUserPermissions(id: string, permissions: any): Promise<ClientUser> {
+  async updateClientUserPermissions(id: string, permissions: any): Promise<client_users> {
     this.logger.log(`Updating permissions for client user ${id}`);
 
     const existingUser = await this.getClientUserById(id);
@@ -262,7 +262,7 @@ export class ClientUserManagementService {
       throw new NotFoundException('Client user not found');
     }
 
-    await this.validateClientAccess(existingUser.clientId);
+    await this.validateClientAccess(existingUser.id);
 
     return this.clientUserRepository.updatePermissions(id, permissions);
   }
@@ -330,7 +330,7 @@ export class ClientUserManagementService {
    */
   async checkClientUserPermission(userId: string, permission: string): Promise<boolean> {
     const user = await this.getClientUserById(userId);
-    if (!user || !user.isActive) {
+    if (!user || !user.is_active) {
       return false;
     }
 

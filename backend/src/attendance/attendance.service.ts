@@ -22,10 +22,11 @@ import {
   AttendanceAnomalyQueryDto,
 } from './dto';
 import { 
-  Attendance, 
+  attendance, 
   AttendanceStatus, 
   ShiftStatus,
-  AssignmentStatus 
+  AssignmentStatus,
+  Prisma 
 } from '@prisma/client';
 
 interface LocationValidationResult {
@@ -61,11 +62,11 @@ export class AttendanceService {
   /**
    * Create attendance record with comprehensive validation
    */
-  async create(createAttendanceDto: CreateAttendanceDto): Promise<Attendance> {
+  async create(createAttendanceDto: CreateAttendanceDto): Promise<attendance> {
     this.logger.log(`Creating attendance record for employee ${createAttendanceDto.employeeId}`);
 
     // Validate the attendance data
-    const validation = await this.validateAttendanceData(createAttendanceDto);
+    const validation = await this.validateattendanceData(createAttendanceDto);
     if (!validation.isValid) {
       throw new BadRequestException(`Validation failed: ${validation.warnings.join(', ')}`);
     }
@@ -77,24 +78,25 @@ export class AttendanceService {
     );
 
     if (existing) {
-      throw new ConflictException('Attendance record already exists for this employee and shift');
+      throw new ConflictException('attendance record already exists for this employee and shift');
     }
 
     try {
       const attendanceData = {
-        employee: {
+        employees: {
           connect: { id: createAttendanceDto.employeeId }
         },
-        shift: {
+        shifts: {
           connect: { id: createAttendanceDto.shiftId }
         },
-        clockIn: createAttendanceDto.clockIn ? new Date(createAttendanceDto.clockIn) : null,
-        clockOut: createAttendanceDto.clockOut ? new Date(createAttendanceDto.clockOut) : null,
-        locationData: createAttendanceDto.locationData as any,
-        verificationData: createAttendanceDto.verificationData as any,
+        clock_in: createAttendanceDto.clockIn ? new Date(createAttendanceDto.clockIn) : null,
+        clock_out: createAttendanceDto.clockOut ? new Date(createAttendanceDto.clockOut) : null,
+        location_data: createAttendanceDto.locationData as any,
+        verification_data: createAttendanceDto.verificationData as any,
         status: this.determineAttendanceStatus(createAttendanceDto),
         notes: createAttendanceDto.notes,
-      };
+        updated_at: new Date(),
+      } as Prisma.attendanceCreateInput;
 
       const attendance = await this.attendanceRepository.create(attendanceData);
       this.logger.log(`Successfully created attendance record: ${attendance.id}`);
@@ -127,7 +129,7 @@ export class AttendanceService {
       clockInDto.shiftId,
     );
 
-    if (attendance?.clockIn) {
+    if (attendance?.clock_in) {
       throw new ConflictException('Employee has already clocked in for this shift');
     }
 
@@ -163,9 +165,9 @@ export class AttendanceService {
       // Create or update attendance record
       if (attendance) {
         attendance = await this.attendanceRepository.update(attendance.id, {
-          clockIn: clockInTime,
-          locationData: clockInDto.locationData as any,
-          verificationData: clockInDto.verificationData as any,
+          clock_in: clockInTime,
+          location_data: clockInDto.locationData as any,
+          verification_data: clockInDto.verificationData as any,
           status: timeDiffMinutes > this.GRACE_PERIOD_MINUTES 
             ? AttendanceStatus.LATE 
             : AttendanceStatus.PRESENT,
@@ -173,16 +175,16 @@ export class AttendanceService {
         }) as any;
       } else {
         attendance = await this.attendanceRepository.create({
-          employee: { connect: { id: clockInDto.employeeId } },
-          shift: { connect: { id: clockInDto.shiftId } },
-          clockIn: clockInTime,
-          locationData: clockInDto.locationData as any,
-          verificationData: clockInDto.verificationData as any,
+          employees: { connect: { id: clockInDto.employeeId } },
+          shifts: { connect: { id: clockInDto.shiftId } },
+          clock_in: clockInTime,
+          location_data: clockInDto.locationData as any,
+          verification_data: clockInDto.verificationData as any,
           status: timeDiffMinutes > this.GRACE_PERIOD_MINUTES 
             ? AttendanceStatus.LATE 
             : AttendanceStatus.PRESENT,
           notes: clockInDto.notes,
-        }) as any;
+        } as Prisma.attendanceCreateInput) as any;
       }
 
       this.logger.log(`Successfully processed clock-in for employee ${clockInDto.employeeId}`);
@@ -224,11 +226,11 @@ export class AttendanceService {
       throw new NotFoundException('No attendance record found. Employee must clock in first.');
     }
 
-    if (!attendance.clockIn) {
+    if (!attendance.clock_in) {
       throw new BadRequestException('Cannot clock out without clocking in first');
     }
 
-    if (attendance.clockOut) {
+    if (attendance.clock_out) {
       throw new ConflictException('Employee has already clocked out for this shift');
     }
 
@@ -256,7 +258,7 @@ export class AttendanceService {
     }
 
     // Calculate total hours worked
-    const hoursWorked = (clockOutTime.getTime() - attendance.clockIn.getTime()) / (1000 * 60 * 60);
+    const hoursWorked = (clockOutTime.getTime() - attendance.clock_in.getTime()) / (1000 * 60 * 60);
     const scheduledHours = (shiftEnd.getTime() - this.combineDateTime(shift.shiftDate, shift.startTime).getTime()) / (1000 * 60 * 60);
     const overtimeHours = Math.max(0, hoursWorked - scheduledHours);
 
@@ -283,15 +285,15 @@ export class AttendanceService {
     warnings.push(...locationValidation.warnings);
 
     try {
-      const updatedAttendance = await this.attendanceRepository.update(attendance.id, {
-        clockOut: clockOutTime,
-        locationData: {
-          ...(attendance.locationData as any || {}),
-          clockOut: clockOutDto.locationData,
+      const updatedattendance = await this.attendanceRepository.update(attendance.id, {
+        clock_out: clockOutTime,
+        location_data: {
+          ...(attendance.location_data as any || {}),
+          clock_out: clockOutDto.locationData,
         } as any,
-        verificationData: {
-          ...(attendance.verificationData as any || {}),
-          clockOut: clockOutDto.verificationData,
+        verification_data: {
+          ...(attendance.verification_data as any || {}),
+          clock_out: clockOutDto.verificationData,
         } as any,
         status: this.determineAttendanceStatusOnClockOut(attendance, timeDiffMinutes, overtimeHours),
         notes: clockOutDto.notes ? 
@@ -305,7 +307,7 @@ export class AttendanceService {
         success: true,
         action: 'CLOCK_OUT' as const,
         timestamp: clockOutTime,
-        attendance: updatedAttendance,
+        attendance: updatedattendance,
         warnings,
         anomalies,
         nextExpectedAction: 'NONE' as const,
@@ -351,9 +353,9 @@ export class AttendanceService {
       );
 
       // Calculate additional metrics for each record
-      const enrichedAttendance = result.attendance.map(record => ({
+      const enrichedattendance = result.attendance.map(record => ({
         ...record,
-        ...this.calculateAttendanceMetrics(record),
+        ...this.calculateattendanceMetrics(record),
       }));
 
       // Get stats for the current result set
@@ -367,7 +369,7 @@ export class AttendanceService {
       this.logger.log(`Found ${result.total} attendance records`);
       return {
         ...result,
-        attendance: enrichedAttendance,
+        attendance: enrichedattendance,
         stats,
       };
     } catch (error) {
@@ -385,11 +387,11 @@ export class AttendanceService {
 
     const attendance = await this.attendanceRepository.findById(id);
     if (!attendance) {
-      throw new NotFoundException(`Attendance record with ID ${id} not found`);
+      throw new NotFoundException(`attendance record with ID ${id} not found`);
     }
 
     // Calculate additional metrics
-    const metrics = this.calculateAttendanceMetrics(attendance);
+    const metrics = this.calculateattendanceMetrics(attendance);
 
     return {
       ...attendance,
@@ -400,14 +402,14 @@ export class AttendanceService {
   /**
    * Update attendance record
    */
-  async update(id: string, updateAttendanceDto: UpdateAttendanceDto): Promise<Attendance> {
+  async update(id: string, updateAttendanceDto: UpdateAttendanceDto): Promise<attendance> {
     this.logger.log(`Updating attendance record: ${id}`);
 
     // Get current record
     const currentRecord = await this.findOne(id);
 
     // Validate update permissions and data
-    await this.validateAttendanceUpdate(currentRecord, updateAttendanceDto);
+    await this.validateattendanceUpdate(currentRecord, updateAttendanceDto);
 
     try {
       const updateData: any = {
@@ -416,10 +418,10 @@ export class AttendanceService {
 
       // Handle timestamp updates
       if (updateAttendanceDto.clockIn) {
-        updateData.clockIn = new Date(updateAttendanceDto.clockIn);
+        updateData.clock_in = new Date(updateAttendanceDto.clockIn);
       }
       if (updateAttendanceDto.clockOut) {
-        updateData.clockOut = new Date(updateAttendanceDto.clockOut);
+        updateData.clock_out = new Date(updateAttendanceDto.clockOut);
       }
 
       // Add modification log if provided
@@ -476,20 +478,20 @@ export class AttendanceService {
         requestedBy: this.tenantContext.getUserId() || 'system',
         requestedAt: new Date().toISOString(),
         originalData: {
-          clockIn: attendance.clockIn,
-          clockOut: attendance.clockOut,
+          clockIn: attendance.clock_in,
+          clockOut: attendance.clock_out,
           status: attendance.status,
-          locationData: attendance.locationData,
+          location_data: attendance.location_data,
         },
         requestedChanges: {
           ...(correctionDto.correctedClockIn && {
-            clockIn: new Date(correctionDto.correctedClockIn),
+            clock_in: new Date(correctionDto.correctedClockIn),
           }),
           ...(correctionDto.correctedClockOut && {
-            clockOut: new Date(correctionDto.correctedClockOut),
+            clock_out: new Date(correctionDto.correctedClockOut),
           }),
           ...(correctionDto.correctedLocationData && {
-            locationData: correctionDto.correctedLocationData,
+            location_data: correctionDto.correctedLocationData,
           }),
         },
         supportingEvidence: correctionDto.supportingEvidence || [],
@@ -499,7 +501,7 @@ export class AttendanceService {
 
       const currentVerificationData = attendance.verificationData as any || {};
       const updatedRecord = await this.attendanceRepository.update(attendanceId, {
-        verificationData: {
+        verification_data: {
           ...currentVerificationData,
           correctionRequests: [
             ...(currentVerificationData.correctionRequests || []),
@@ -514,10 +516,10 @@ export class AttendanceService {
         ...(correctionDto.emergencyOverride && {
           // Apply corrections immediately for emergency overrides
           ...(correctionDto.correctedClockIn && {
-            clockIn: new Date(correctionDto.correctedClockIn),
+            clock_in: new Date(correctionDto.correctedClockIn),
           }),
           ...(correctionDto.correctedClockOut && {
-            clockOut: new Date(correctionDto.correctedClockOut),
+            clock_out: new Date(correctionDto.correctedClockOut),
           }),
         }),
       });
@@ -576,7 +578,7 @@ export class AttendanceService {
       };
 
       const updateData: any = {
-        verificationData: {
+        verification_data: {
           ...verificationData,
           correctionRequests,
           flags: {
@@ -592,20 +594,20 @@ export class AttendanceService {
       if (approvalDto.action === 'APPROVE') {
         const requestedChanges = correctionRequest.requestedChanges;
         if (requestedChanges.clockIn) {
-          updateData.clockIn = new Date(requestedChanges.clockIn);
+          updateData.clock_in = new Date(requestedChanges.clockIn);
         }
         if (requestedChanges.clockOut) {
-          updateData.clockOut = new Date(requestedChanges.clockOut);
+          updateData.clock_out = new Date(requestedChanges.clockOut);
         }
         if (requestedChanges.locationData) {
           updateData.locationData = requestedChanges.locationData;
         }
 
         // Recalculate status based on corrected times
-        if (updateData.clockIn || updateData.clockOut) {
+        if (updateData.clock_in || updateData.clock_out) {
           updateData.status = this.recalculateAttendanceStatus(
-            updateData.clockIn || attendance.clockIn,
-            updateData.clockOut || attendance.clockOut,
+            updateData.clockIn || attendance.clock_in,
+            updateData.clockOut || attendance.clock_out,
             attendance.shift,
           );
         }
@@ -726,7 +728,7 @@ export class AttendanceService {
 
         case 'APPROVE_CORRECTIONS':
           updateData = {
-            verificationData: {
+            verification_data: {
               flags: { requiresApproval: false, hasPendingCorrection: false }
             }
           };
@@ -734,7 +736,7 @@ export class AttendanceService {
 
         case 'REJECT_CORRECTIONS':
           updateData = {
-            verificationData: {
+            verification_data: {
               flags: { requiresApproval: false, hasPendingCorrection: false }
             }
           };
@@ -787,13 +789,13 @@ export class AttendanceService {
   /**
    * Validate attendance data before creation
    */
-  private async validateAttendanceData(dto: CreateAttendanceDto): Promise<AttendanceValidationResult> {
+  private async validateattendanceData(dto: CreateAttendanceDto): Promise<AttendanceValidationResult> {
     const warnings: string[] = [];
     const anomalies: any[] = [];
     const autoCorrections: any[] = [];
 
     // Validate employee exists and is active
-    const employee = await this.prisma.employee.findFirst({
+    const employee = await this.prisma.employees.findFirst({
       where: {
         id: dto.employeeId,
         companyId: this.tenantContext.getTenantId(),
@@ -807,7 +809,7 @@ export class AttendanceService {
     }
 
     // Validate shift exists and is assigned to employee
-    const shift = await this.prisma.shift.findFirst({
+    const shift = await this.prisma.shifts.findFirst({
       where: {
         id: dto.shiftId,
         OR: [
@@ -865,7 +867,7 @@ export class AttendanceService {
    */
   private async validateShiftAndEmployee(shiftId: string, employeeId: string) {
     // Get shift with full details
-    const shift = await this.prisma.shift.findFirst({
+    const shift = await this.prisma.shifts.findFirst({
       where: {
         id: shiftId,
         site: {
@@ -877,7 +879,7 @@ export class AttendanceService {
       include: {
         assignment: {
           include: {
-            employee: true,
+            employees: true,
           },
         },
         site: {
@@ -898,7 +900,7 @@ export class AttendanceService {
     }
 
     // Get employee
-    const employee = await this.prisma.employee.findFirst({
+    const employee = await this.prisma.employees.findFirst({
       where: {
         id: employeeId,
         companyId: this.tenantContext.getTenantId(),
@@ -926,7 +928,7 @@ export class AttendanceService {
           ],
         },
         include: {
-          employee: true,
+          employees: true,
         },
       });
 
@@ -1084,7 +1086,7 @@ export class AttendanceService {
   /**
    * Calculate attendance metrics
    */
-  private calculateAttendanceMetrics(attendance: any) {
+  private calculateattendanceMetrics(attendance: any) {
     if (!attendance.shift) {
       return {};
     }
@@ -1095,22 +1097,22 @@ export class AttendanceService {
     const metrics: any = {};
 
     // Calculate late arrival
-    if (attendance.clockIn) {
-      const lateMinutes = Math.max(0, (attendance.clockIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+    if (attendance.clock_in) {
+      const lateMinutes = Math.max(0, (attendance.clock_in.getTime() - shiftStart.getTime()) / (1000 * 60));
       metrics.isLate = lateMinutes > this.GRACE_PERIOD_MINUTES;
       metrics.minutesLate = metrics.isLate ? Math.ceil(lateMinutes) : 0;
     }
 
     // Calculate early departure
-    if (attendance.clockOut) {
-      const earlyMinutes = Math.max(0, (shiftEnd.getTime() - attendance.clockOut.getTime()) / (1000 * 60));
+    if (attendance.clock_out) {
+      const earlyMinutes = Math.max(0, (shiftEnd.getTime() - attendance.clock_out.getTime()) / (1000 * 60));
       metrics.isEarlyDeparture = earlyMinutes > this.GRACE_PERIOD_MINUTES;
       metrics.minutesEarlyDeparture = metrics.isEarlyDeparture ? Math.ceil(earlyMinutes) : 0;
     }
 
     // Calculate hours worked and overtime
-    if (attendance.clockIn && attendance.clockOut) {
-      const hoursWorked = (attendance.clockOut.getTime() - attendance.clockIn.getTime()) / (1000 * 60 * 60);
+    if (attendance.clock_in && attendance.clock_out) {
+      const hoursWorked = (attendance.clock_out.getTime() - attendance.clock_in.getTime()) / (1000 * 60 * 60);
       const scheduledHours = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60 * 60);
       const overtimeHours = Math.max(0, hoursWorked - scheduledHours);
 
@@ -1181,7 +1183,7 @@ export class AttendanceService {
   /**
    * Validate attendance update permissions and data
    */
-  private async validateAttendanceUpdate(currentRecord: any, updateDto: UpdateAttendanceDto) {
+  private async validateattendanceUpdate(currentRecord: any, updateDto: UpdateAttendanceDto) {
     // Add validation logic here if needed
     // For now, allow all updates (permissions are handled by guards)
   }

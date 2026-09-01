@@ -7,6 +7,7 @@ import { BillingService } from './billing.service';
 import { TenantContextService } from '../common/tenant-context.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InvoiceStatus } from '@prisma/client';
+import { TestDataUtil } from '../test/utils/test-data.util';
 
 describe('Billing Integration Tests', () => {
   let app: INestApplication;
@@ -22,6 +23,15 @@ describe('Billing Integration Tests', () => {
   let testEmployeeId: string;
   let testAssignmentId: string;
 
+  // Mock for tenant context that can be updated
+  const mockTenantContext = {
+    getTenantId: jest.fn(() => testCompanyId),
+    setTenantId: jest.fn(),
+    getUserId: jest.fn(() => 'test-user-id'),
+    setUserId: jest.fn(),
+    isContextSet: true,
+  };
+
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [
@@ -34,24 +44,12 @@ describe('Billing Integration Tests', () => {
       providers: [
         {
           provide: TenantContextService,
-          useValue: {
-            getTenantId: () => 'test-company-id',
-            setTenantId: jest.fn(),
-            getUserId: () => 'test-user-id',
-            setUserId: jest.fn(),
-            isContextSet: true,
-          },
+          useValue: mockTenantContext,
         },
       ],
     })
     .overrideProvider(TenantContextService)
-    .useValue({
-      getTenantId: () => 'test-company-id',
-      setTenantId: jest.fn(),
-      getUserId: () => 'test-user-id',
-      setUserId: jest.fn(),
-      isContextSet: true,
-    })
+    .useValue(mockTenantContext)
     .compile();
 
     app = moduleRef.createNestApplication();
@@ -80,8 +78,8 @@ describe('Billing Integration Tests', () => {
     it('should create invoice with basic deployment data', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2024-01-01',
-        billingPeriodEnd: '2024-01-31',
+        billingPeriodStart: '2025-08-01',
+        billingPeriodEnd: '2025-08-31',
         siteIds: [testSiteId],
       };
 
@@ -98,8 +96,8 @@ describe('Billing Integration Tests', () => {
     it('should calculate GST correctly for Indian billing', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2024-01-01',
-        billingPeriodEnd: '2024-01-31',
+        billingPeriodStart: '2025-08-01',
+        billingPeriodEnd: '2025-08-31',
         siteIds: [testSiteId],
         gstDetails: {
           companyGstin: '07AAAPZ2581P1ZF', // Delhi GSTIN
@@ -122,8 +120,8 @@ describe('Billing Integration Tests', () => {
     it('should handle additional charges correctly', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2024-01-01',
-        billingPeriodEnd: '2024-01-31',
+        billingPeriodStart: '2025-08-01',
+        billingPeriodEnd: '2025-08-31',
         siteIds: [testSiteId],
         additionalCharges: [
           {
@@ -152,8 +150,8 @@ describe('Billing Integration Tests', () => {
       // Create a few test invoices
       const invoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2024-01-01',
-        billingPeriodEnd: '2024-01-31',
+        billingPeriodStart: '2025-08-01',
+        billingPeriodEnd: '2025-08-31',
         siteIds: [testSiteId],
       };
 
@@ -178,8 +176,8 @@ describe('Billing Integration Tests', () => {
     it('should update invoice status', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2024-01-01',
-        billingPeriodEnd: '2024-01-31',
+        billingPeriodStart: '2025-08-01',
+        billingPeriodEnd: '2025-08-31',
         siteIds: [testSiteId],
       };
 
@@ -195,8 +193,8 @@ describe('Billing Integration Tests', () => {
     it('should calculate billing preview correctly', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2024-01-01',
-        billingPeriodEnd: '2024-01-31',
+        billingPeriodStart: '2025-08-01',
+        billingPeriodEnd: '2025-08-31',
         siteIds: [testSiteId],
       };
 
@@ -206,7 +204,7 @@ describe('Billing Integration Tests', () => {
       expect(preview.siteDeployments).toBeDefined();
       expect(preview.summary).toBeDefined();
       expect(preview.summary.totalHours).toBeGreaterThan(0);
-      expect(preview.summary.subtotal).toBeGreaterThan(0);
+      expect(preview.summary.subtotal.toNumber()).toBeGreaterThan(0);
     });
 
     it('should validate GSTIN correctly', async () => {
@@ -224,124 +222,96 @@ describe('Billing Integration Tests', () => {
 
   async function setupTestData() {
     // Create test company
-    const company = await prismaService.company.create({
-      data: {
-        name: 'Test Security Company',
-        slug: 'test-security-company',
-        settings: {},
-        branding: {},
-      },
+    const company = await prismaService.companies.create({
+      data: TestDataUtil.createTestCompanyData(),
     });
     testCompanyId = company.id;
+    
+    // Update the mock to use the actual company ID
+    mockTenantContext.getTenantId.mockReturnValue(testCompanyId);
 
     // Create test client
-    const client = await prismaService.client.create({
-      data: {
-        companyId: testCompanyId,
-        name: 'Test Client',
-        contactEmail: 'client@test.com',
-        contactInfo: {},
-        organizationType: 'CORPORATE_OFFICE',
-      },
+    const client = await prismaService.clients.create({
+      data: TestDataUtil.createTestClientData(testCompanyId),
     });
     testClientId = client.id;
 
     // Create test contract for the client
-    const contract = await prismaService.contract.create({
-      data: {
-        clientId: testClientId,
-        contractNumber: 'CNT-TEST-001',
-        title: 'Test Contract',
-        status: 'ACTIVE',
-        startDate: new Date('2023-01-01'),
-        endDate: new Date('2024-12-31'),
-        serviceDefinitions: {},
-        billingPreferences: {},
-        defaultBillingRates: {},
-      },
+    const contract = await prismaService.contracts.create({
+      data: TestDataUtil.createTestContractData(testClientId),
     });
     testContractId = contract.id;
 
     // Create test site
-    const site = await prismaService.site.create({
-      data: {
-        contractId: testContractId,
-        name: 'Test Site',
-        address: {
-          street: '123 Test Street',
-          city: 'Test City',
-          state: 'Test State',
-          zipCode: '12345',
-        },
-        operationalStatus: 'ACTIVE',
-        accessRequirements: {},
-        safetyProtocols: {},
-        contactInfo: {},
-      },
+    const site = await prismaService.sites.create({
+      data: TestDataUtil.createTestSiteData(testContractId, testClientId),
     });
     testSiteId = site.id;
 
-    // Create test employee
-    const employee = await prismaService.employee.create({
-      data: {
-        companyId: testCompanyId,
-        employeeNumber: 'EMP001',
-        firstName: 'John',
-        lastName: 'Doe',
+    // Create test employee using TestDataUtil
+    const employee = await prismaService.employees.create({
+      data: TestDataUtil.createTestEmployeeData(testCompanyId, {
+        employee_number: 'EMP001',
+        first_name: 'John',
+        last_name: 'Doe',
         email: 'john.doe@test.com',
-        phone: '1234567890',
-        address: {},
-        certifications: {},
-        skills: ['Security'],
-        employmentStatus: 'ACTIVE',
-        hireDate: new Date('2022-01-01'),
-      },
+        phone: '+91-1234567890',
+      }),
     });
     testEmployeeId = employee.id;
 
     // Create test assignment
-    const assignment = await prismaService.assignment.create({
+    const assignment = await prismaService.assignments.create({
       data: {
-        employeeId: testEmployeeId,
-        siteId: testSiteId,
+        id: TestDataUtil.generateTestId(),
+        employee_id: testEmployeeId,
+        site_id: testSiteId,
         role: 'Security Guard',
         responsibilities: {},
-        hourlyRate: '250', // Must be string for encrypted field
-        hourlyRateIv: 'test_iv', // Add required encryption IV
-        hourlyRateTag: 'test_tag', // Add required encryption tag
+        hourly_rate: '250', // Must be string for encrypted field
+        hourly_rate_iv: 'test_iv_1234567890123456789012', // 26 chars (max 32)
+        hourly_rate_tag: 'test_tag_123456789012345678901', // 27 chars (max 32)
         status: 'ACTIVE',
-        startDate: new Date('2023-01-01'),
+        start_date: new Date('2025-08-01'), // Current year
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
     testAssignmentId = assignment.id;
 
     // Create test shifts and attendance
     for (let i = 1; i <= 5; i++) {
-      const shiftDate = new Date(`2024-01-0${i}`);
+      const shiftDate = new Date(`2025-08-0${i}`); // Current year
       
-      const shift = await prismaService.shift.create({
+      const shift = await prismaService.shifts.create({
         data: {
-          assignmentId: testAssignmentId,
-          siteId: testSiteId,
-          shiftDate,
-          startTime: new Date(`1970-01-01T09:00:00.000Z`),
-          endTime: new Date(`1970-01-01T17:00:00.000Z`),
-          shiftType: 'REGULAR',
+          id: TestDataUtil.generateTestId(),
+          assignment_id: testAssignmentId,
+          site_id: testSiteId,
+          shift_date: shiftDate,
+          start_time: new Date(`1970-01-01T09:00:00.000Z`),
+          end_time: new Date(`1970-01-01T17:00:00.000Z`),
+          shift_type: 'REGULAR',
           status: 'COMPLETED',
+          created_at: new Date(),
+          updated_at: new Date(),
         },
       });
 
       // Create attendance record
       await prismaService.attendance.create({
         data: {
-          employeeId: testEmployeeId,
-          shiftId: shift.id,
-          clockIn: new Date(`${shiftDate.toISOString().split('T')[0]}T09:00:00.000Z`),
-          clockOut: new Date(`${shiftDate.toISOString().split('T')[0]}T17:00:00.000Z`),
+          id: TestDataUtil.generateTestId(),
+          employee_id: testEmployeeId,
+          shift_id: shift.id,
+          clock_in: new Date(`${shiftDate.toISOString().split('T')[0]}T09:00:00.000Z`),
+          clock_out: new Date(`${shiftDate.toISOString().split('T')[0]}T17:00:00.000Z`),
           status: 'PRESENT',
-          locationData: {},
-          verificationData: {},
+          location_data: {},
+          verification_data: {},
           notes: 'Test attendance record',
+          created_at: new Date(),
+          updated_at: new Date(),
         },
       });
     }
@@ -352,45 +322,45 @@ describe('Billing Integration Tests', () => {
       // Clean up in reverse order of dependencies
       await prismaService.attendance.deleteMany({
         where: {
-          employee: { companyId: testCompanyId },
+          employees: { company_id: testCompanyId },
         },
       });
 
-      await prismaService.shift.deleteMany({
+      await prismaService.shifts.deleteMany({
         where: {
-          site: { contract: { client: { companyId: testCompanyId } } },
+          sites: { contracts: { clients: { company_id: testCompanyId } } },
         },
       });
 
-      await prismaService.assignment.deleteMany({
+      await prismaService.assignments.deleteMany({
         where: {
-          employee: { companyId: testCompanyId },
+          employees: { company_id: testCompanyId },
         },
       });
 
-      await prismaService.invoice.deleteMany({
+      await prismaService.invoices.deleteMany({
         where: {
-          contract: { client: { companyId: testCompanyId } },
+          clients: { company_id: testCompanyId },
         },
       });
 
-      await prismaService.employee.deleteMany({
-        where: { companyId: testCompanyId },
+      await prismaService.employees.deleteMany({
+        where: { company_id: testCompanyId },
       });
 
-      await prismaService.site.deleteMany({
-        where: { contract: { client: { companyId: testCompanyId } } },
+      await prismaService.sites.deleteMany({
+        where: { contracts: { clients: { company_id: testCompanyId } } },
       });
 
-      await prismaService.contract.deleteMany({
-        where: { client: { companyId: testCompanyId } },
+      await prismaService.contracts.deleteMany({
+        where: { clients: { company_id: testCompanyId } },
       });
 
-      await prismaService.client.deleteMany({
-        where: { companyId: testCompanyId },
+      await prismaService.clients.deleteMany({
+        where: { company_id: testCompanyId },
       });
 
-      await prismaService.company.deleteMany({
+      await prismaService.companies.deleteMany({
         where: { id: testCompanyId },
       });
     }

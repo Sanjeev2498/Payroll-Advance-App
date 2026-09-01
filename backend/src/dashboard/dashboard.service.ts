@@ -79,7 +79,7 @@ export class DashboardService {
       billingData
     ] = await Promise.all([
       // Active Guards
-      this.prisma.employee.count({
+      this.prisma.employees.count({
         where: {
           companyId: tenantId,
           employmentStatus: 'ACTIVE'
@@ -87,7 +87,7 @@ export class DashboardService {
       }),
 
       // Active Sites  
-      this.prisma.site.count({
+      this.prisma.sites.count({
         where: {
           contract: { 
             client: { companyId: tenantId }
@@ -111,7 +111,7 @@ export class DashboardService {
       }).then((records: { employeeId: string }[]) => records.length),
 
       // Get all sites to calculate vacant positions
-      this.prisma.site.findMany({
+      this.prisma.sites.findMany({
         where: {
           contract: { 
             client: { companyId: tenantId }
@@ -128,7 +128,7 @@ export class DashboardService {
 
       // Attendance Status for Today
       this.prisma.$transaction(async (tx) => {
-        const scheduledShifts = await tx.shift.count({
+        const scheduledShifts = await tx.shifts.count({
           where: {
             site: { 
               contract: { 
@@ -173,7 +173,7 @@ export class DashboardService {
 
       // Payroll Status
       this.prisma.$transaction(async (tx) => {
-        const processedItems = await tx.payrollItem.count({
+        const processedItems = await tx.payroll_items.count({
           where: {
             payrollRun: {
               companyId: tenantId,
@@ -182,7 +182,7 @@ export class DashboardService {
           }
         });
 
-        const pendingItems = await tx.payrollItem.count({
+        const pendingItems = await tx.payroll_items.count({
           where: {
             payrollRun: {
               companyId: tenantId,
@@ -191,7 +191,7 @@ export class DashboardService {
           }
         });
 
-        const totalAmount = await tx.payrollRun.aggregate({
+        const totalAmount = await tx.payroll_runs.aggregate({
           where: {
             companyId: tenantId,
             status: 'PROCESSING'
@@ -216,7 +216,7 @@ export class DashboardService {
       }),
 
       // Pending Assignments (using INACTIVE status as pending)
-      this.prisma.assignment.count({
+      this.prisma.assignments.count({
         where: {
           site: { 
             contract: { 
@@ -228,7 +228,7 @@ export class DashboardService {
       }),
 
       // Pending Payroll Runs
-      this.prisma.payrollRun.count({
+      this.prisma.payrollRuns.count({
         where: {
           companyId: tenantId,
           status: 'DRAFT'
@@ -237,7 +237,7 @@ export class DashboardService {
 
       // Billing Overview for Current Month
       this.prisma.$transaction(async (tx) => {
-        const monthlyRevenue = await tx.invoice.aggregate({
+        const monthlyRevenue = await tx.invoices.aggregate({
           where: {
             contract: { 
               client: { companyId: tenantId } 
@@ -249,7 +249,7 @@ export class DashboardService {
           _sum: { totalAmount: true }
         });
 
-        const outstandingInvoices = await tx.invoice.count({
+        const outstandingInvoices = await tx.invoices.count({
           where: {
             contract: { 
               client: { companyId: tenantId } 
@@ -258,7 +258,7 @@ export class DashboardService {
           }
         });
 
-        const paidInvoices = await tx.invoice.count({
+        const paidInvoices = await tx.invoices.count({
           where: {
             contract: { 
               client: { companyId: tenantId } 
@@ -268,7 +268,7 @@ export class DashboardService {
           }
         });
 
-        const totalBilled = await tx.invoice.aggregate({
+        const totalBilled = await tx.invoices.aggregate({
           where: {
             contract: { 
               client: { companyId: tenantId } 
@@ -318,7 +318,7 @@ export class DashboardService {
     this.logger.log('Calculating deployment metrics');
     const tenantId = this.tenantContext.getTenantId();
 
-    const sites = await this.prisma.site.findMany({
+    const sites = await this.prisma.sites.findMany({
       where: {
         contract: { 
           client: { companyId: tenantId } 
@@ -399,7 +399,7 @@ export class DashboardService {
     const today = new Date();
 
     const [totalGuards, onDutyGuards, unavailableGuards, onLeaveGuards] = await Promise.all([
-      this.prisma.employee.count({
+      this.prisma.employees.count({
         where: {
           companyId: tenantId,
           employmentStatus: 'ACTIVE'
@@ -419,14 +419,14 @@ export class DashboardService {
         distinct: ['employeeId']
       }).then((records: { employeeId: string }[]) => records.length),
 
-      this.prisma.employee.count({
+      this.prisma.employees.count({
         where: {
           companyId: tenantId,
           employmentStatus: 'INACTIVE'
         }
       }),
 
-      this.prisma.employee.count({
+      this.prisma.employees.count({
         where: {
           companyId: tenantId,
           employmentStatus: 'ON_LEAVE'
@@ -435,7 +435,7 @@ export class DashboardService {
     ]);
 
     // Calculate skill breakdown
-    const employees = await this.prisma.employee.findMany({
+    const employees = await this.prisma.employees.findMany({
       where: {
         companyId: tenantId,
         employmentStatus: 'ACTIVE'
@@ -503,7 +503,7 @@ export class DashboardService {
       }),
 
       // Recent assignments
-      this.prisma.assignment.findMany({
+      this.prisma.assignments.findMany({
         where: { 
           site: { 
             contract: { 
@@ -520,7 +520,7 @@ export class DashboardService {
       }),
 
       // Recent payroll activities
-      this.prisma.payrollRun.findMany({
+      this.prisma.payrollRuns.findMany({
         where: { companyId: tenantId },
         orderBy: { createdAt: 'desc' },
         take: Math.ceil(limit / 3),

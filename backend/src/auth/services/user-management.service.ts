@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import { User, UserRole } from '@prisma/client';
+import { users, UserRole } from '@prisma/client';
 import { UserRepository } from '../repositories/user.repository';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { CreateUserDto, RegisterUserDto } from '../dto/create-user.dto';
@@ -157,7 +157,7 @@ export class UserManagementService {
     if (userId === currentUserId) {
       const isCurrentPasswordValid = await bcrypt.compare(
         changePasswordDto.currentPassword,
-        user.passwordHash,
+        user.password_hash,
       );
 
       if (!isCurrentPasswordValid) {
@@ -358,18 +358,18 @@ export class UserManagementService {
     return adminRoles.includes(role);
   }
 
-  private mapToResponseDto(user: User): UserResponseDto {
+  private mapToResponseDto(user: users): UserResponseDto {
     return {
       id: user.id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName: user.first_name,
+      lastName: user.last_name,
       role: user.role,
-      companyId: user.companyId,
-      isActive: user.isActive,
-      lastLoginAt: user.lastLoginAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      companyId: user.company_id,
+      isActive: user.is_active,
+      lastLoginAt: user.last_login_at,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
     };
   }
 }

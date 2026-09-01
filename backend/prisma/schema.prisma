@@ -1,108 +1,461 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-// ============================================================================
-// CORE TENANT AND USER MANAGEMENT
-// ============================================================================
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model assignments {
+  id               String           @id @db.Uuid
+  employee_id      String           @db.Uuid
+  site_id          String           @db.Uuid
+  role             String           @db.VarChar(50)
+  responsibilities Json?
+  hourly_rate      String           @db.VarChar(500)
+  status           AssignmentStatus @default(ACTIVE)
+  start_date       DateTime         @db.Date
+  end_date         DateTime?        @db.Date
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @db.Timestamptz(6)
+  hourly_rate_iv   String           @db.VarChar(32)
+  hourly_rate_tag  String           @db.VarChar(32)
+  employees        employees        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  sites            sites            @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  shifts           shifts[]
 
-model Company {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @db.VarChar(100)
-  slug      String   @unique @db.VarChar(50)
-  settings  Json?    @db.JsonB
-  branding  Json?    @db.JsonB
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  users       User[]
-  clients     Client[]
-  employees   Employee[]
-  payrollRuns PayrollRun[]
-  shiftTemplates ShiftTemplate[]
-  shiftNotifications ShiftNotification[]
-
-  @@map("companies")
+  @@index([employee_id])
+  @@index([site_id])
+  @@index([status])
+  @@index([employee_id, site_id], map: "idx_assignments_employee_site_rls", where: raw("((employee_id IS NOT NULL) AND (site_id IS NOT NULL))"))
 }
 
-model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  companyId    String    @map("company_id") @db.Uuid
-  email        String    @unique @db.VarChar(255)
-  firstName    String    @map("first_name") @db.VarChar(50)
-  lastName     String    @map("last_name") @db.VarChar(50)
-  passwordHash String    @map("password_hash") @db.VarChar(255)
-  role         UserRole  @default(EMPLOYEE)
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model attendance {
+  id                String           @id @db.Uuid
+  employee_id       String           @db.Uuid
+  shift_id          String           @db.Uuid
+  clock_in          DateTime?        @db.Timestamptz(6)
+  clock_out         DateTime?        @db.Timestamptz(6)
+  location_data     Json?
+  status            AttendanceStatus @default(PENDING)
+  verification_data Json?
+  notes             String?
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime         @db.Timestamptz(6)
+  employees         employees        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  shifts            shifts           @relation(fields: [shift_id], references: [id], onDelete: Cascade)
 
-  // Relationships
-  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  shiftNotifications ShiftNotification[]
-
-  @@index([companyId])
-  @@map("users")
+  @@index([clock_in])
+  @@index([employee_id])
+  @@index([shift_id])
+  @@index([status])
 }
 
-enum UserRole {
-  SUPER_ADMIN
-  COMPANY_ADMIN
-  MANAGER
-  SUPERVISOR
-  EMPLOYEE
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model clients {
+  id                  String                  @id @db.Uuid
+  company_id          String                  @db.Uuid
+  name                String                  @db.VarChar(100)
+  contact_email       String                  @db.VarChar(255)
+  contact_info        Json?
+  contract_status     ContractStatus          @default(ACTIVE)
+  contract_start      DateTime?               @db.Date
+  contract_end        DateTime?               @db.Date
+  billing_preferences Json?
+  created_at          DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime                @db.Timestamptz(6)
+  company_size        String?
+  industry            String?
+  organization_type   ClientOrganizationType?
+  tags                String[]                @default([])
+  companies           companies               @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  contracts           contracts[]
+  invoices            invoices[]
+  sites               sites[]
+  client_users        client_users[]
+
+  @@index([company_id, contract_status])
+  @@index([company_id])
+  @@index([company_id], map: "idx_clients_company_id_rls", where: raw("(company_id IS NOT NULL)"))
+  @@index([organization_type], map: "idx_clients_organization_type")
 }
 
-// ============================================================================
-// CLIENT AND SITE MANAGEMENT
-// ============================================================================
-
-model Client {
-  id           String @id @default(uuid()) @db.Uuid
-  companyId    String @map("company_id") @db.Uuid
-  name         String @db.VarChar(100)
-  contactEmail String @map("contact_email") @db.VarChar(255)
-  contactInfo  Json?  @map("contact_info") @db.JsonB
-
-  // Organization details
-  organizationType ClientOrganizationType @default(CORPORATE_OFFICE) @map("organization_type")
-  industry         String?                @db.VarChar(100)
-  companySize      String?                @map("company_size") @db.VarChar(50)
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships (adjusted for contract model)
-  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  contracts Contract[] @relation("ClientContracts")
-
-  @@index([companyId])
-  @@index([organizationType])
-  @@map("clients")
+/// Client Users - Users who can access client portal
+/// This model contains row level security and requires additional setup for migrations.
+model client_users {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id     String         @db.Uuid
+  email         String         @unique @db.VarChar(255)
+  first_name    String         @db.VarChar(50)
+  last_name     String         @db.VarChar(50)
+  role          ClientUserRole
+  phone         String?        @db.VarChar(20)
+  job_title     String?        @db.VarChar(100)
+  department    String?        @db.VarChar(100)
+  is_active     Boolean        @default(true)
+  last_login_at DateTime?      @db.Timestamptz(6)
+  invited_at    DateTime?      @db.Timestamptz(6)
+  activated_at  DateTime?      @db.Timestamptz(6)
+  permissions   Json?
+  preferences   Json?
+  created_at    DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime       @db.Timestamptz(6)
+  
+  // Relations
+  client        clients        @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  
+  // Indexes for performance
+  @@index([client_id])
+  @@index([email])
+  @@index([role])
+  @@index([is_active])
+  @@index([client_id, is_active])
 }
 
-enum ContractStatus {
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model companies {
+  id              String            @id @db.Uuid
+  name            String            @db.VarChar(100)
+  slug            String            @unique @db.VarChar(50)
+  settings        Json?
+  branding        Json?
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @db.Timestamptz(6)
+  clients         clients[]
+  employees       employees[]
+  payroll_runs    payroll_runs[]
+  shift_templates shift_templates[]
+  users           users[]
+}
+
+model contracts {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id           String         @db.Uuid
+  contract_number     String         @db.VarChar(50)
+  title               String         @db.VarChar(200)
+  description         String?
+  status              ContractStatus @default(ACTIVE)
+  start_date          DateTime       @db.Date
+  end_date            DateTime?      @db.Date
+  service_definitions Json?
+  billing_preferences Json?
+  contract_value      Decimal?       @db.Decimal(15, 2)
+  created_at          DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime       @default(now()) @db.Timestamptz(6)
+  clients             clients        @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sites               sites[]
+
+  @@unique([client_id, contract_number])
+  @@index([client_id], map: "idx_contracts_client_id")
+  @@index([client_id], map: "idx_contracts_client_id_rls", where: raw("(client_id IS NOT NULL)"))
+  @@index([status], map: "idx_contracts_status")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model employees {
+  id                   String                @id @db.Uuid
+  company_id           String                @db.Uuid
+  employee_number      String                @db.VarChar(20)
+  first_name           String                @db.VarChar(50)
+  last_name            String                @db.VarChar(50)
+  email                String?               @db.VarChar(500)
+  phone                String?               @db.VarChar(500)
+  address              Json?
+  certifications       Json?
+  skills               String[]              @db.VarChar(50)
+  employment_status    EmploymentStatus      @default(ACTIVE)
+  hire_date            DateTime              @db.Date
+  termination_date     DateTime?             @db.Date
+  created_at           DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime              @db.Timestamptz(6)
+  aadhaar_number       String?               @db.VarChar(500)
+  metadata             Json?
+  pan_number           String?               @db.VarChar(500)
+  aadhaar_iv           String?               @db.VarChar(32)
+  aadhaar_tag          String?               @db.VarChar(32)
+  email_iv             String?               @db.VarChar(32)
+  email_tag            String?               @db.VarChar(32)
+  pan_iv               String?               @db.VarChar(32)
+  pan_tag              String?               @db.VarChar(32)
+  phone_iv             String?               @db.VarChar(32)
+  phone_tag            String?               @db.VarChar(32)
+  account_number       String?               @db.VarChar(500)
+  account_number_iv    String?               @db.VarChar(32)
+  account_number_tag   String?               @db.VarChar(32)
+  account_type         AccountType           @default(SAVINGS)
+  bank_name            String?               @db.VarChar(500)
+  bank_name_iv         String?               @db.VarChar(32)
+  bank_name_tag        String?               @db.VarChar(32)
+  basic_salary         String?               @db.VarChar(500)
+  basic_salary_iv      String?               @db.VarChar(32)
+  basic_salary_tag     String?               @db.VarChar(32)
+  date_of_birth        DateTime?             @db.Date
+  epf_applicable       Boolean               @default(true)
+  esic_applicable      Boolean               @default(true)
+  esic_number          String?               @db.VarChar(500)
+  esic_number_iv       String?               @db.VarChar(32)
+  esic_number_tag      String?               @db.VarChar(32)
+  gross_salary         String?               @db.VarChar(500)
+  gross_salary_iv      String?               @db.VarChar(32)
+  gross_salary_tag     String?               @db.VarChar(32)
+  hra_amount           String?               @db.VarChar(500)
+  hra_amount_iv        String?               @db.VarChar(32)
+  hra_amount_tag       String?               @db.VarChar(32)
+  ifsc_code            String?               @db.VarChar(500)
+  ifsc_code_iv         String?               @db.VarChar(32)
+  ifsc_code_tag        String?               @db.VarChar(32)
+  other_allowances     String?               @db.VarChar(500)
+  other_allowances_iv  String?               @db.VarChar(32)
+  other_allowances_tag String?               @db.VarChar(32)
+  pt_applicable        Boolean               @default(true)
+  salary_type          SalaryType            @default(MONTHLY)
+  tds_applicable       Boolean               @default(true)
+  uan_number           String?               @db.VarChar(500)
+  uan_number_iv        String?               @db.VarChar(32)
+  uan_number_tag       String?               @db.VarChar(32)
+  assignments          assignments[]
+  attendance           attendance[]
+  companies            companies             @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  payroll_items        payroll_items[]
+  shift_notifications  shift_notifications[]
+
+  @@unique([company_id, employee_number])
+  @@index([company_id, employment_status])
+  @@index([company_id])
+  @@index([skills])
+  @@index([company_id], map: "idx_employees_company_id_rls", where: raw("(company_id IS NOT NULL)"))
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model invoices {
+  id                   String        @id @db.Uuid
+  client_id            String        @db.Uuid
+  invoice_number       String        @unique @db.VarChar(50)
+  billing_period_start DateTime      @db.Date
+  billing_period_end   DateTime      @db.Date
+  subtotal             Decimal       @db.Decimal(12, 2)
+  tax_amount           Decimal       @default(0) @db.Decimal(12, 2)
+  total_amount         Decimal       @db.Decimal(12, 2)
+  status               InvoiceStatus @default(DRAFT)
+  due_date             DateTime      @db.Date
+  paid_at              DateTime?     @db.Timestamptz(6)
+  created_at           DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime      @db.Timestamptz(6)
+  additional_charges   Json?
+  deployment_summary   Json?
+  gst_details          Json?
+  notes                String?
+  payment_reference    String?       @db.VarChar(255)
+  clients              clients       @relation(fields: [client_id], references: [id], onDelete: Cascade)
+
+  @@index([client_id])
+  @@index([due_date])
+  @@index([status])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payroll_items {
+  id               String          @id @db.Uuid
+  payroll_run_id   String          @db.Uuid
+  employee_id      String          @db.Uuid
+  item_type        PayrollItemType
+  description      String          @db.VarChar(255)
+  amount           String          @db.VarChar(500)
+  calculation_data Json?
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @db.Timestamptz(6)
+  amount_iv        String          @db.VarChar(32)
+  amount_tag       String          @db.VarChar(32)
+  employees        employees       @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  payroll_runs     payroll_runs    @relation(fields: [payroll_run_id], references: [id], onDelete: Cascade)
+
+  @@index([payroll_run_id], map: "idx_payroll_items_payroll_run_id_rls", where: raw("(payroll_run_id IS NOT NULL)"))
+  @@index([employee_id])
+  @@index([item_type])
+  @@index([payroll_run_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payroll_runs {
+  id               String          @id @db.Uuid
+  company_id       String          @db.Uuid
+  run_number       String          @db.VarChar(50)
+  pay_period_start DateTime        @db.Date
+  pay_period_end   DateTime        @db.Date
+  status           PayrollStatus   @default(DRAFT)
+  total_amount     Decimal         @default(0) @db.Decimal(12, 2)
+  processed_at     DateTime?       @db.Timestamptz(6)
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @db.Timestamptz(6)
+  payroll_items    payroll_items[]
+  companies        companies       @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@unique([company_id, run_number])
+  @@index([company_id])
+  @@index([status])
+}
+
+model shift_notifications {
+  id            String             @id @db.Uuid
+  shift_id      String             @db.Uuid
+  user_id       String?            @db.Uuid
+  employee_id   String?            @db.Uuid
+  type          NotificationType
+  title         String             @db.VarChar(255)
+  message       String
+  status        NotificationStatus @default(PENDING)
+  scheduled_for DateTime?          @db.Timestamptz(6)
+  sent_at       DateTime?          @db.Timestamptz(6)
+  read_at       DateTime?          @db.Timestamptz(6)
+  metadata      Json?
+  created_at    DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime           @db.Timestamptz(6)
+  employees     employees?         @relation(fields: [employee_id], references: [id])
+  shifts        shifts             @relation(fields: [shift_id], references: [id], onDelete: Cascade)
+  users         users?             @relation(fields: [user_id], references: [id])
+
+  @@index([employee_id])
+  @@index([scheduled_for])
+  @@index([shift_id])
+  @@index([status])
+  @@index([type])
+  @@index([user_id])
+}
+
+model shift_templates {
+  id                 String    @id @db.Uuid
+  company_id         String    @db.Uuid
+  name               String    @db.VarChar(100)
+  description        String?
+  site_id            String?   @db.Uuid
+  start_time         DateTime  @db.Time(6)
+  end_time           DateTime  @db.Time(6)
+  shift_type         ShiftType @default(REGULAR)
+  coverage_required  Int       @default(1)
+  skill_requirements Json?
+  shift_requirements Json?
+  break_schedule     Json?
+  recurrence_pattern Json?
+  is_active          Boolean   @default(true)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @db.Timestamptz(6)
+  companies          companies @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  sites              sites?    @relation(fields: [site_id], references: [id])
+  shifts             shifts[]
+
+  @@index([company_id])
+  @@index([is_active])
+  @@index([site_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model shifts {
+  id                  String                @id @db.Uuid
+  assignment_id       String?               @db.Uuid
+  site_id             String                @db.Uuid
+  shift_date          DateTime              @db.Date
+  start_time          DateTime              @db.Time(6)
+  end_time            DateTime              @db.Time(6)
+  shift_type          ShiftType             @default(REGULAR)
+  status              ShiftStatus           @default(SCHEDULED)
+  notes               Json?
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @db.Timestamptz(6)
+  break_schedule      Json?
+  coverage_assigned   Int                   @default(0)
+  coverage_required   Int                   @default(1)
+  is_recurring        Boolean               @default(false)
+  modification_log    Json?
+  priority            ShiftPriority         @default(NORMAL)
+  recurring_pattern   Json?
+  shift_requirements  Json?
+  skill_requirements  Json?
+  template_id         String?               @db.Uuid
+  attendance          attendance[]
+  shift_notifications shift_notifications[]
+  assignments         assignments?          @relation(fields: [assignment_id], references: [id])
+  sites               sites                 @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  shift_templates     shift_templates?      @relation(fields: [template_id], references: [id])
+
+  @@index([assignment_id], map: "idx_shifts_assignment_id_rls", where: raw("(assignment_id IS NOT NULL)"))
+  @@index([assignment_id])
+  @@index([is_recurring])
+  @@index([priority])
+  @@index([shift_date])
+  @@index([site_id])
+  @@index([status])
+  @@index([template_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sites {
+  id                  String            @id @db.Uuid
+  client_id           String            @db.Uuid
+  name                String            @db.VarChar(100)
+  address             Json
+  access_requirements Json?
+  safety_protocols    Json?
+  operational_status  OperationalStatus @default(ACTIVE)
+  contact_info        Json?
+  created_at          DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime          @db.Timestamptz(6)
+  contract_id         String?           @db.Uuid
+  min_staffing_level  Int?              @default(1)
+  max_staffing_level  Int?
+  assignments         assignments[]
+  shift_templates     shift_templates[]
+  shifts              shifts[]
+  clients             clients           @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  contracts           contracts?        @relation(fields: [contract_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_sites_contract_id")
+
+  @@index([contract_id], map: "idx_sites_contract_id")
+  @@index([contract_id], map: "idx_sites_contract_id_rls", where: raw("(contract_id IS NOT NULL)"))
+  @@index([operational_status])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id                  String                @id @db.Uuid
+  company_id          String                @db.Uuid
+  email               String                @unique @db.VarChar(255)
+  first_name          String                @db.VarChar(50)
+  last_name           String                @db.VarChar(50)
+  password_hash       String                @db.VarChar(255)
+  role                UserRole              @default(EMPLOYEE)
+  is_active           Boolean               @default(true)
+  last_login_at       DateTime?             @db.Timestamptz(6)
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @db.Timestamptz(6)
+  shift_notifications shift_notifications[]
+  companies           companies             @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([company_id])
+}
+
+enum AccountType {
+  SAVINGS
+  CURRENT
+  SALARY
+  JOINT
+}
+
+enum AssignmentStatus {
   ACTIVE
-  PENDING
-  EXPIRED
-  TERMINATED
+  INACTIVE
+  COMPLETED
+  CANCELLED
 }
 
-enum ClientUserRole {
-  SECURITY_MANAGER
-  FACILITY_MANAGER
-  HR_MANAGER
-  FINANCE_MANAGER
-  REGIONAL_MANAGER
+enum AttendanceStatus {
+  PENDING
+  PRESENT
+  ABSENT
+  LATE
+  EARLY_DEPARTURE
+  OVERTIME
 }
 
 enum ClientOrganizationType {
@@ -117,134 +470,19 @@ enum ClientOrganizationType {
   HOTEL
 }
 
-// Contract entity between Client and Sites
-model Contract {
-  id                      String         @id @default(uuid()) @db.Uuid
-  clientId                String         @map("client_id") @db.Uuid
-  contractNumber          String         @map("contract_number") @db.VarChar(50)
-  title                   String         @db.VarChar(200)
-  description             String?        @db.Text
-  status                  ContractStatus @default(ACTIVE)
-  startDate               DateTime       @map("start_date") @db.Date
-  endDate                 DateTime?      @map("end_date") @db.Date
-  serviceDefinitions      Json?          @map("service_definitions") @db.JsonB
-  serviceLevelAgreement   Json?          @map("service_level_agreement") @db.JsonB
-  billingPreferences      Json?          @map("billing_preferences") @db.JsonB
-  defaultBillingRates     Json?          @map("default_billing_rates") @db.JsonB
-  contractValue           Decimal?       @map("contract_value") @db.Decimal(15, 2)
-  paymentTerms            Json?          @map("payment_terms") @db.JsonB
-  contractHistory         Json?          @map("contract_history") @db.JsonB
-  renewalNotificationDays Int?           @default(90) @map("renewal_notification_days")
-  autoRenewalEnabled      Boolean        @default(false) @map("auto_renewal_enabled")
-  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt               DateTime       @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  client   Client    @relation("ClientContracts", fields: [clientId], references: [id], onDelete: Cascade)
-  sites    Site[]    @relation("ContractSites")
-  invoices Invoice[] @relation("ContractInvoices")
-
-  @@unique([clientId, contractNumber])
-  @@index([clientId])
-  @@index([status])
-  @@index([startDate])
-  @@index([endDate])
-  @@map("contracts")
+enum ClientUserRole {
+  SECURITY_MANAGER
+  FACILITY_MANAGER
+  HR_MANAGER
+  FINANCE_MANAGER
+  REGIONAL_MANAGER
 }
 
-// Client Users with role-based permissions - COMMENTED OUT until database migration
-// model ClientUser {
-//   ... ClientUser model will be enabled after database migration  
-// }
-
-// Client interactions for complaints, service requests, etc. - COMMENTED OUT until database migration
-// model ClientInteraction {
-//   ... ClientInteraction model will be enabled after database migration
-// }
-
-// Additional enums for client interactions - to be added with later migrations
-// enum ClientInteractionType, ClientInteractionStatus
-
-model Site {
-  id                 String            @id @default(uuid()) @db.Uuid
-  contractId         String            @map("contract_id") @db.Uuid
-  name               String            @db.VarChar(100)
-  address            Json              @db.JsonB
-  accessRequirements Json?             @map("access_requirements") @db.JsonB
-  safetyProtocols    Json?             @map("safety_protocols") @db.JsonB
-  operationalStatus  OperationalStatus @default(ACTIVE) @map("operational_status")
-  contactInfo        Json?             @map("contact_info") @db.JsonB
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships (adjusted for contract model)
-  contract    Contract     @relation("ContractSites", fields: [contractId], references: [id], onDelete: Cascade)
-  assignments Assignment[]
-  shifts      Shift[]
-  // shiftTemplates ShiftTemplate[] // Commented out until migration
-
-  @@index([contractId])
-  @@index([operationalStatus])
-  @@map("sites")
-}
-
-enum OperationalStatus {
+enum ContractStatus {
   ACTIVE
-  INACTIVE
-  MAINTENANCE
-  SUSPENDED
-}
-
-// ============================================================================
-// EMPLOYEE AND WORKFORCE MANAGEMENT
-// ============================================================================
-
-model Employee {
-  id             String @id @default(uuid()) @db.Uuid
-  companyId      String @map("company_id") @db.Uuid
-  employeeNumber String @map("employee_number") @db.VarChar(20)
-  firstName      String @map("first_name") @db.VarChar(50)
-  lastName       String @map("last_name") @db.VarChar(50)
-
-  // Contact information with encryption support
-  email         String? @db.VarChar(255)
-  emailIv       String? @map("email_iv") @db.VarChar(255)
-  emailTag      String? @map("email_tag") @db.VarChar(255)
-  phone         String? @db.VarChar(20)
-  phoneIv       String? @map("phone_iv") @db.VarChar(255)
-  phoneTag      String? @map("phone_tag") @db.VarChar(255)
-  address       Json?   @db.JsonB
-
-  // Salary information with encryption support
-  basicSalary     String? @map("basic_salary") @db.VarChar(255)
-  basicSalaryIv   String? @map("basic_salary_iv") @db.VarChar(255)
-  basicSalaryTag  String? @map("basic_salary_tag") @db.VarChar(255)
-  hraAmount       String? @map("hra_amount") @db.VarChar(255)
-  hraAmountIv     String? @map("hra_amount_iv") @db.VarChar(255)
-  hraAmountTag    String? @map("hra_amount_tag") @db.VarChar(255)
-
-  // Metadata and other fields
-  metadata         Json?            @db.JsonB
-  certifications   Json?            @db.JsonB
-  skills           String[]         @db.VarChar(50)
-  employmentStatus EmploymentStatus @default(ACTIVE) @map("employment_status")
-  hireDate         DateTime         @map("hire_date") @db.Date
-  terminationDate  DateTime?        @map("termination_date") @db.Date
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  assignments       Assignment[]
-  attendanceRecords Attendance[]
-  payrollItems      PayrollItem[]
-
-  @@unique([companyId, employeeNumber])
-  @@index([companyId])
-  @@index([companyId, employmentStatus])
-  @@index([skills])
-  @@map("employees")
+  PENDING
+  EXPIRED
+  TERMINATED
 }
 
 enum EmploymentStatus {
@@ -261,186 +499,36 @@ enum EmploymentType {
   TEMPORARY
 }
 
-// Additional enums to be added with later migrations
-// enum SalaryType, AccountType, etc.
-
-model Assignment {
-  id               String @id @default(uuid()) @db.Uuid
-  employeeId       String @map("employee_id") @db.Uuid
-  siteId           String @map("site_id") @db.Uuid
-  role             String @db.VarChar(50)
-  responsibilities Json?  @db.JsonB
-
-  // Basic hourly rate (matching current database)
-  hourlyRate    Decimal @map("hourly_rate") @db.Decimal(10, 2)
-  hourlyRateIv  String? @map("hourly_rate_iv") @db.VarChar(255)
-  hourlyRateTag String? @map("hourly_rate_tag") @db.VarChar(255)
-
-  status    AssignmentStatus @default(ACTIVE)
-  startDate DateTime         @map("start_date") @db.Date
-  endDate   DateTime?        @map("end_date") @db.Date
-  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  site     Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  shifts   Shift[]
-
-  @@index([employeeId])
-  @@index([siteId])
-  @@index([status])
-  @@map("assignments")
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
 }
 
-enum AssignmentStatus {
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum NotificationType {
+  SHIFT_ASSIGNED
+  SHIFT_CHANGED
+  SHIFT_CANCELLED
+  COVERAGE_REQUEST
+  SHIFT_REMINDER
+  OVERTIME_ALERT
+}
+
+enum OperationalStatus {
   ACTIVE
   INACTIVE
-  COMPLETED
-  CANCELLED
-}
-
-// ============================================================================
-// SHIFT SCHEDULING AND ATTENDANCE
-// ============================================================================
-
-model Shift {
-  id           String      @id @default(uuid()) @db.Uuid
-  assignmentId String      @map("assignment_id") @db.Uuid
-  siteId       String      @map("site_id") @db.Uuid
-  shiftDate    DateTime    @map("shift_date") @db.Date
-  startTime    DateTime    @map("start_time") @db.Time
-  endTime      DateTime    @map("end_time") @db.Time
-  shiftType    ShiftType   @default(REGULAR) @map("shift_type")
-  status       ShiftStatus @default(SCHEDULED)
-  notes        Json?       @db.JsonB
-  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  assignment        Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  site              Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  attendanceRecords Attendance[]
-  notifications     ShiftNotification[]
-
-  @@index([assignmentId])
-  @@index([siteId])
-  @@index([shiftDate])
-  @@index([status])
-  @@map("shifts")
-}
-
-enum ShiftType {
-  REGULAR
-  OVERTIME
-  HOLIDAY
-  EMERGENCY
-  TRAINING
   MAINTENANCE
-}
-
-enum ShiftStatus {
-  DRAFT
-  SCHEDULED
-  CONFIRMED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  NO_SHOW
-  NEEDS_COVERAGE
-}
-
-// Additional enums to be added with later migrations
-// enum ShiftPriority, RecurrenceType, NotificationType, NotificationStatus
-
-model Attendance {
-  id               String           @id @default(uuid()) @db.Uuid
-  employeeId       String           @map("employee_id") @db.Uuid
-  shiftId          String           @map("shift_id") @db.Uuid
-  clockIn          DateTime?        @map("clock_in") @db.Timestamptz
-  clockOut         DateTime?        @map("clock_out") @db.Timestamptz
-  locationData     Json?            @map("location_data") @db.JsonB
-  status           AttendanceStatus @default(PENDING)
-  verificationData Json?            @map("verification_data") @db.JsonB
-  notes            String?          @db.Text
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-
-  @@index([employeeId])
-  @@index([shiftId])
-  @@index([clockIn])
-  @@index([status])
-  @@map("attendance")
-}
-
-enum AttendanceStatus {
-  PENDING
-  PRESENT
-  ABSENT
-  LATE
-  EARLY_DEPARTURE
-  OVERTIME
-}
-
-// ============================================================================
-// PAYROLL AND BILLING
-// ============================================================================
-
-model PayrollRun {
-  id             String        @id @default(uuid()) @db.Uuid
-  companyId      String        @map("company_id") @db.Uuid
-  runNumber      String        @map("run_number") @db.VarChar(50)
-  payPeriodStart DateTime      @map("pay_period_start") @db.Date
-  payPeriodEnd   DateTime      @map("pay_period_end") @db.Date
-  status         PayrollStatus @default(DRAFT)
-  totalAmount    Decimal       @default(0) @map("total_amount") @db.Decimal(12, 2)
-  processedAt    DateTime?     @map("processed_at") @db.Timestamptz
-  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  payrollItems PayrollItem[]
-
-  @@unique([companyId, runNumber])
-  @@index([companyId])
-  @@index([status])
-  @@map("payroll_runs")
-}
-
-enum PayrollStatus {
-  DRAFT
-  PROCESSING
-  COMPLETED
-  CANCELLED
-}
-
-model PayrollItem {
-  id           String          @id @default(uuid()) @db.Uuid
-  payrollRunId String          @map("payroll_run_id") @db.Uuid
-  employeeId   String          @map("employee_id") @db.Uuid
-  itemType     PayrollItemType @map("item_type")
-  description  String          @db.VarChar(255)
-
-  // Basic amount (matching current database)
-  amount Decimal @db.Decimal(10, 2)
-
-  calculationData Json?    @map("calculation_data") @db.JsonB
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
-  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@index([payrollRunId])
-  @@index([employeeId])
-  @@index([itemType])
-  @@map("payroll_items")
+  SUSPENDED
 }
 
 enum PayrollItemType {
@@ -454,131 +542,58 @@ enum PayrollItemType {
   OTHER_DEDUCTION
 }
 
-model Invoice {
-  id                 String        @id @default(uuid()) @db.Uuid
-  contractId         String        @map("contract_id") @db.Uuid
-  invoiceNumber      String        @map("invoice_number") @db.VarChar(50)
-  billingPeriodStart DateTime      @map("billing_period_start") @db.Date
-  billingPeriodEnd   DateTime      @map("billing_period_end") @db.Date
-  subtotal           Decimal       @db.Decimal(12, 2)
-  taxAmount          Decimal       @default(0) @map("tax_amount") @db.Decimal(12, 2)
-  totalAmount        Decimal       @map("total_amount") @db.Decimal(12, 2)
-  status             InvoiceStatus @default(DRAFT)
-  dueDate            DateTime      @map("due_date") @db.Date
-  paidAt             DateTime?     @map("paid_at") @db.Timestamptz
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships (adjusted for contract model)
-  contract Contract @relation("ContractInvoices", fields: [contractId], references: [id], onDelete: Cascade)
-
-  @@unique([invoiceNumber])
-  @@index([contractId])
-  @@index([status])
-  @@index([dueDate])
-  @@map("invoices")
-}
-
-enum InvoiceStatus {
+enum PayrollStatus {
   DRAFT
-  SENT
-  PAID
-  OVERDUE
+  PROCESSING
+  COMPLETED
   CANCELLED
 }
 
-// ============================================================================
-// SHIFT SCHEDULING SYSTEM EXTENSIONS
-// ============================================================================
-
-model ShiftTemplate {
-  id                  String            @id @default(uuid()) @db.Uuid
-  companyId           String            @map("company_id") @db.Uuid
-  name                String            @db.VarChar(100)
-  description         String?           @db.Text
-  shiftType           ShiftType         @default(REGULAR) @map("shift_type")
-  startTime           DateTime          @map("start_time") @db.Time
-  endTime             DateTime          @map("end_time") @db.Time
-  daysOfWeek          Int[]             @map("days_of_week") // Array of integers 0-6 (Sunday-Saturday)
-  isActive            Boolean           @default(true) @map("is_active")
-  skillRequirements   String[]          @map("skill_requirements") @db.VarChar(50)
-  minStaffRequired    Int               @default(1) @map("min_staff_required")
-  maxStaffAllowed     Int?              @map("max_staff_allowed")
-  autoAssign          Boolean           @default(false) @map("auto_assign")
-  priority            Int               @default(1) // 1 = highest, 5 = lowest
-  recurrence          Json?             @db.JsonB // For complex recurrence patterns
-  effectiveFrom       DateTime          @map("effective_from") @db.Date
-  effectiveTo         DateTime?         @map("effective_to") @db.Date
-  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  // sites   Site[]  @relation("SiteShiftTemplates") // Many-to-many relationship
-
-  @@index([companyId])
-  @@index([isActive])
-  @@index([shiftType])
-  @@map("shift_templates")
+enum RecurrenceType {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  CUSTOM
 }
 
-model ShiftNotification {
-  id               String               @id @default(uuid()) @db.Uuid
-  companyId        String               @map("company_id") @db.Uuid
-  userId           String               @map("user_id") @db.Uuid
-  shiftId          String?              @map("shift_id") @db.Uuid
-  notificationType NotificationType     @map("notification_type")
-  title            String               @db.VarChar(200)
-  message          String               @db.Text
-  status           NotificationStatus   @default(PENDING)
-  scheduledFor     DateTime?            @map("scheduled_for") @db.Timestamptz
-  sentAt           DateTime?            @map("sent_at") @db.Timestamptz
-  readAt           DateTime?            @map("read_at") @db.Timestamptz
-  metadata         Json?                @db.JsonB
-  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime             @updatedAt @map("updated_at") @db.Timestamptz
-
-  // Relationships
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shift   Shift?  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@index([userId])
-  @@index([shiftId])
-  @@index([status])
-  @@index([scheduledFor])
-  @@map("shift_notifications")
+enum SalaryType {
+  MONTHLY
+  DAILY
+  HOURLY
 }
 
-enum NotificationType {
-  SHIFT_ASSIGNED
-  SHIFT_CANCELLED
-  SHIFT_REMINDER
-  SCHEDULE_UPDATED
-  OVERTIME_AVAILABLE
-  COVERAGE_NEEDED
-  ATTENDANCE_REQUIRED
-  EMERGENCY_ALERT
+enum ShiftPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
 }
 
-enum NotificationStatus {
-  PENDING
-  SENT
-  DELIVERED
-  READ
-  FAILED
+enum ShiftStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  DRAFT
+  CONFIRMED
+  NEEDS_COVERAGE
 }
 
-// ============================================================================
-// CLIENT DOCUMENT AND INTERACTION MANAGEMENT
-// ============================================================================
+enum ShiftType {
+  REGULAR
+  OVERTIME
+  HOLIDAY
+  EMERGENCY
+  TRAINING
+  MAINTENANCE
+}
 
-// Client document and interaction management - COMMENTED OUT until database migration  
-// model ClientDocument {
-//   ... ClientDocument model will be enabled after database migration
-// }
-
-// Additional enums to be added with later migrations  
-// enum DocumentStatus, InteractionStatus, etc.
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  MANAGER
+  SUPERVISOR
+  EMPLOYEE
+}

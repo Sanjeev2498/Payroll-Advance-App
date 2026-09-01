@@ -40,10 +40,10 @@ export class InvoiceCalculationService {
     }
 
     // Get contract and client information
-    const contract = await this.prisma.contract.findFirst({
-      where: { id: dto.contractId, client: { companyId } },
+    const contract = await this.prisma.contracts.findFirst({
+      where: { id: dto.contractId, clients: { company_id: companyId } },
       include: {
-        client: true,
+        clients: true,
         sites: {
           where: dto.siteIds ? { id: { in: dto.siteIds } } : undefined,
         },
@@ -54,7 +54,7 @@ export class InvoiceCalculationService {
       throw new BadRequestException('Contract not found');
     }
 
-    const client = contract.client;
+    const client = contract.clients;
 
     // Get deployment data (attendance records with site and assignment information)
     const deploymentData = await this.getDeploymentData(
@@ -96,15 +96,20 @@ export class InvoiceCalculationService {
       summary.totalAmount = gstResult.totalAmount;
       
       gstBreakdown = {
+        taxableAmount: gstResult.taxableAmount,
+        gstRate: gstResult.gstRate,
         cgst: gstResult.cgst,
         sgst: gstResult.sgst,
         igst: gstResult.igst,
         utgst: gstResult.utgst,
+        totalGst: gstResult.totalGst,
+        totalAmount: gstResult.totalAmount,
+        isInterState: gstResult.isInterState,
+        hsnCode: gstResult.hsnCode,
       };
     }
 
     return {
-      contractId: contract.id,
       clientId: client.id,
       clientName: client.name,
       billingPeriod: {
@@ -130,8 +135,8 @@ export class InvoiceCalculationService {
   ) {
     // Build shift filter
     const shiftFilter: any = {
-      site: { contractId },
-      shiftDate: {
+      sites: { contract_id: contractId },
+      shift_date: {
         gte: startDate,
         lte: endDate,
       },
@@ -139,59 +144,59 @@ export class InvoiceCalculationService {
 
     // Filter by sites if specified
     if (siteIds?.length) {
-      shiftFilter.siteId = { in: siteIds };
+      shiftFilter.site_id = { in: siteIds };
     }
 
     // Filter by assignments if specified
     if (assignmentIds?.length) {
-      shiftFilter.assignmentId = { in: assignmentIds };
+      shiftFilter.assignment_id = { in: assignmentIds };
     }
 
-    const whereClause: Prisma.AttendanceWhereInput = {
-      employee: { companyId },
-      shift: shiftFilter,
+    const whereClause: Prisma.attendanceWhereInput = {
+      employees: { company_id: companyId },
+      shifts: shiftFilter,
       status: AttendanceStatus.PRESENT,
-      clockIn: { not: null },
-      clockOut: { not: null },
+      clock_in: { not: null },
+      clock_out: { not: null },
     };
 
     return this.prisma.attendance.findMany({
       where: whereClause,
       include: {
-        employee: {
+        employees: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
-            employeeNumber: true,
+            first_name: true,
+            last_name: true,
+            employee_number: true,
           },
         },
-        shift: {
+        shifts: {
           select: {
             id: true,
-            shiftDate: true,
-            startTime: true,
-            endTime: true,
-            shiftType: true,
-            site: {
+            shift_date: true,
+            start_time: true,
+            end_time: true,
+            shift_type: true,
+            sites: {
               select: {
                 id: true,
                 name: true,
               },
             },
-            assignment: {
+            assignments: {
               select: {
                 id: true,
-                hourlyRate: true,
+                hourly_rate: true,
               },
             },
           },
         },
       },
       orderBy: [
-        { shift: { site: { name: 'asc' } } },
-        { employee: { employeeNumber: 'asc' } },
-        { clockIn: 'asc' },
+        { shifts: { sites: { name: 'asc' } } },
+        { employees: { employee_number: 'asc' } },
+        { clock_in: 'asc' },
       ],
     });
   }
@@ -208,7 +213,7 @@ export class InvoiceCalculationService {
     const siteGroups = new Map<string, any[]>();
     
     for (const record of deploymentData) {
-      const siteId = record.shift.site.id;
+      const siteId = record.shifts.sites.id;
       if (!siteGroups.has(siteId)) {
         siteGroups.set(siteId, []);
       }
@@ -218,13 +223,13 @@ export class InvoiceCalculationService {
     const siteDeployments: SiteDeploymentSummary[] = [];
 
     for (const [siteId, siteRecords] of siteGroups.entries()) {
-      const siteName = siteRecords[0].shift.site.name;
+      const siteName = siteRecords[0].shifts.sites.name;
       
       // Group by employee within site
       const employeeGroups = new Map<string, any[]>();
       
       for (const record of siteRecords) {
-        const employeeId = record.employee.id;
+        const employeeId = record.employees.id;
         if (!employeeGroups.has(employeeId)) {
           employeeGroups.set(employeeId, []);
         }
@@ -238,8 +243,8 @@ export class InvoiceCalculationService {
       let totalSiteAmount = new Decimal(0);
 
       for (const [employeeId, employeeRecords] of employeeGroups.entries()) {
-        const employee = employeeRecords[0].employee;
-        const assignment = employeeRecords[0].shift.assignment;
+        const employee = employeeRecords[0].employees;
+        const assignment = employeeRecords[0].shifts.assignments;
         
         // Calculate hours for this employee at this site
         const hoursCalculation = this.calculateEmployeeHours(employeeRecords);
@@ -263,8 +268,8 @@ export class InvoiceCalculationService {
           siteName,
           assignmentId: assignment.id,
           employeeId: employee.id,
-          employeeName: `${employee.firstName} ${employee.lastName}`,
-          employeeNumber: employee.employeeNumber,
+          employeeName: `${employee.first_name} ${employee.last_name}`,
+          employeeNumber: employee.employee_number,
           regularHours: hoursCalculation.regularHours,
           overtimeHours: hoursCalculation.overtimeHours,
           holidayHours: hoursCalculation.holidayHours,
@@ -310,11 +315,11 @@ export class InvoiceCalculationService {
     let holidayHours = 0;
 
     for (const record of attendanceRecords) {
-      const clockIn = new Date(record.clockIn);
-      const clockOut = new Date(record.clockOut);
+      const clockIn = new Date(record.clock_in);
+      const clockOut = new Date(record.clock_out);
       const workedHours = (clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60);
 
-      const shiftType = record.shift.shiftType;
+      const shiftType = record.shifts.shift_type;
       
       if (shiftType === ShiftType.HOLIDAY) {
         holidayHours += workedHours;
@@ -349,9 +354,9 @@ export class InvoiceCalculationService {
     customRates?: { [siteId: string]: any },
     billingModel: BillingModel = BillingModel.HOURLY,
   ) {
-    let hourlyRate = assignment.hourlyRate;
-    let overtimeRate = assignment.hourlyRate.mul(1.5); // Default 1.5x for overtime
-    let holidayRate = assignment.hourlyRate.mul(2.0); // Default 2x for holidays
+    let hourlyRate = new Decimal(assignment.hourly_rate);
+    let overtimeRate = new Decimal(assignment.hourly_rate).mul(1.5); // Default 1.5x for overtime
+    let holidayRate = new Decimal(assignment.hourly_rate).mul(2.0); // Default 2x for holidays
 
     // Apply custom rates if provided
     if (customRates?.[siteId]) {
@@ -430,26 +435,28 @@ export class InvoiceCalculationService {
     const month = String(now.getMonth() + 1).padStart(2, '0');
 
     // Get contract and client information through contract relationship
-    const contract = await this.prisma.contract.findFirst({
-      where: { id: contractId },
+    const contract = await this.prisma.contracts.findFirst({
+      where: { 
+        id: contractId,
+        clients: { company_id: companyId } // Filter by tenant in the main where clause
+      },
       include: { 
-        client: {
-          where: { companyId },
+        clients: {
           select: { name: true }
         }
       },
     });
 
-    const clientCode = contract?.client?.name
+    const clientCode = contract?.clients?.name
       .replace(/[^A-Z0-9]/gi, '')
       .substring(0, 3)
       .toUpperCase() || 'CLI';
 
-    // Count invoices for this contract in current month - FIXED: Use contractId
-    const count = await this.prisma.invoice.count({
+    // Count invoices for this client in current month
+    const count = await this.prisma.invoices.count({
       where: {
-        contractId, // FIXED: Changed from clientId to contractId
-        createdAt: {
+        client_id: contract!.client_id, // Use the client_id from the contract
+        created_at: {
           gte: new Date(year, now.getMonth(), 1),
           lt: new Date(year, now.getMonth() + 1, 1),
         },

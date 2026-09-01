@@ -62,8 +62,12 @@ export class PropertyTestSetup {
       return module.get<T>(serviceToken);
     } catch (error) {
       // Enhanced error handling with service context
-      const errorMessage = `Failed to resolve service ${serviceName}: ${error.message}`;
+      const errorMessage = `Failed to resolve service ${serviceName}: ${(error as Error).message}`;
       console.warn(errorMessage);
+      
+      // For scoped services (like TenantContextService), use module.resolve()
+      const scopedServices = ['TenantContextService', 'REQUEST', 'INQUIRER'];
+      const isScoped = scopedServices.some(name => serviceName.includes(name));
       
       // Attempt alternative resolution method
       try {
@@ -71,7 +75,7 @@ export class PropertyTestSetup {
         console.log(`Successfully resolved ${serviceName} using alternative method`);
         return alternative;
       } catch (fallbackError) {
-        throw new Error(`${errorMessage}. Alternative resolution also failed: ${fallbackError.message}`);
+        throw new Error(`${errorMessage}. Alternative resolution also failed: ${(fallbackError as Error).message}`);
       }
     }
   }
@@ -108,7 +112,7 @@ export class PropertyTestSetup {
         await PropertyTestSetup.cleanupTenantData(prisma, tenantId);
       }
     } catch (error) {
-      errors.push(`Data cleanup failed: ${error.message}`);
+      errors.push(`Data cleanup failed: ${(error as Error).message}`);
     }
 
     try {
@@ -117,7 +121,7 @@ export class PropertyTestSetup {
         await module.close();
       }
     } catch (error) {
-      errors.push(`Module cleanup failed: ${error.message}`);
+      errors.push(`Module cleanup failed: ${(error as Error).message}`);
     }
 
     // Clear any Jest mocks to prevent leakage between tests
@@ -125,12 +129,151 @@ export class PropertyTestSetup {
       jest.clearAllMocks();
       jest.restoreAllMocks();
     } catch (error) {
-      errors.push(`Mock cleanup failed: ${error.message}`);
+      errors.push(`Mock cleanup failed: ${(error as Error).message}`);
     }
 
     if (errors.length > 0) {
       console.warn('Cleanup completed with warnings:', errors);
     }
+  }
+
+  /**
+   * Performance optimization: Pre-calculate and cache heavy operations
+   * to reduce test execution time
+   */
+  static optimizeTestExecution() {
+    // Cache frequently generated data patterns to reduce computation
+    const dataCache = new Map<string, any>();
+    
+    return {
+      getCachedData: (key: string, generator: () => any) => {
+        if (!dataCache.has(key)) {
+          dataCache.set(key, generator());
+        }
+        return dataCache.get(key);
+      },
+      clearCache: () => dataCache.clear(),
+    };
+  }
+
+  /**
+   * Create repository mocks that return created entities
+   * CRITICAL FIX: Store created entities and return them when queried
+   */
+  static createRepositoryMocks() {
+    // Store created entities to return them in queries
+    const createdEntities = {
+      clients: new Map<string, any>(),
+      sites: new Map<string, any>(),
+      employees: new Map<string, any>(),
+      attendance: new Map<string, any>()
+    };
+
+    const mockClientRepository = {
+      findById: jest.fn().mockImplementation((id) => {
+        return Promise.resolve(createdEntities.clients.get(id) || null);
+      }),
+      findMany: jest.fn().mockImplementation(() => ({
+        clients: Array.from(createdEntities.clients.values()),
+        total: createdEntities.clients.size,
+        page: 1,
+        limit: 20,
+        totalPages: Math.ceil(createdEntities.clients.size / 20),
+      })),
+      findAll: jest.fn().mockImplementation(() => Promise.resolve(Array.from(createdEntities.clients.values()))),
+      create: jest.fn().mockImplementation((data) => {
+        const client = { id: randomUUID(), ...data };
+        createdEntities.clients.set(client.id, client);
+        return Promise.resolve(client);
+      }),
+      update: jest.fn().mockImplementation((id, data) => {
+        const existing = createdEntities.clients.get(id);
+        if (existing) {
+          const updated = { ...existing, ...data };
+          createdEntities.clients.set(id, updated);
+          return Promise.resolve(updated);
+        }
+        return Promise.resolve(null);
+      }),
+      delete: jest.fn().mockImplementation((id) => {
+        const deleted = createdEntities.clients.get(id);
+        createdEntities.clients.delete(id);
+        return Promise.resolve(deleted || { id });
+      }),
+    };
+
+    const mockSiteRepository = {
+      findById: jest.fn().mockImplementation((id) => {
+        return Promise.resolve(createdEntities.sites.get(id) || null);
+      }),
+      findMany: jest.fn().mockImplementation(() => ({
+        sites: Array.from(createdEntities.sites.values()),
+        total: createdEntities.sites.size,
+        page: 1,
+        limit: 20,
+        totalPages: Math.ceil(createdEntities.sites.size / 20),
+      })),
+      findAll: jest.fn().mockImplementation(() => Promise.resolve(Array.from(createdEntities.sites.values()))),
+      create: jest.fn().mockImplementation((data) => {
+        const site = { id: randomUUID(), ...data };
+        createdEntities.sites.set(site.id, site);
+        return Promise.resolve(site);
+      }),
+      update: jest.fn().mockImplementation((id, data) => {
+        const existing = createdEntities.sites.get(id);
+        if (existing) {
+          const updated = { ...existing, ...data };
+          createdEntities.sites.set(id, updated);
+          return Promise.resolve(updated);
+        }
+        return Promise.resolve(null);
+      }),
+      delete: jest.fn().mockImplementation((id) => {
+        const deleted = createdEntities.sites.get(id);
+        createdEntities.sites.delete(id);
+        return Promise.resolve(deleted || { id });
+      }),
+    };
+
+    const mockEmployeeRepository = {
+      findById: jest.fn().mockImplementation((id) => {
+        return Promise.resolve(createdEntities.employees.get(id) || null);
+      }),
+      findMany: jest.fn().mockImplementation(() => ({
+        employees: Array.from(createdEntities.employees.values()),
+        total: createdEntities.employees.size,
+        page: 1,
+        limit: 20,
+        totalPages: Math.ceil(createdEntities.employees.size / 20),
+      })),
+      findAll: jest.fn().mockImplementation(() => Promise.resolve(Array.from(createdEntities.employees.values()))),
+      create: jest.fn().mockImplementation((data) => {
+        const employee = { id: randomUUID(), ...data };
+        createdEntities.employees.set(employee.id, employee);
+        return Promise.resolve(employee);
+      }),
+      update: jest.fn().mockImplementation((id, data) => {
+        const existing = createdEntities.employees.get(id);
+        if (existing) {
+          const updated = { ...existing, ...data };
+          createdEntities.employees.set(id, updated);
+          return Promise.resolve(updated);
+        }
+        return Promise.resolve(null);
+      }),
+      delete: jest.fn().mockImplementation((id) => {
+        const deleted = createdEntities.employees.get(id);
+        createdEntities.employees.delete(id);
+        return Promise.resolve(deleted || { id });
+      }),
+    };
+
+    return {
+      mockClientRepository,
+      mockSiteRepository,
+      mockEmployeeRepository,
+      createdEntities
+    };
   }
 
   /**
@@ -143,6 +286,9 @@ export class PropertyTestSetup {
     userRole?: UserRole | string;
   } = {}) {
     const { tenantId = 'test-tenant-' + randomUUID(), userId = 'user-' + randomUUID(), userRole = UserRole.COMPANY_ADMIN } = options;
+
+    // Create stateful repository mocks that can store and return entities
+    const repositoryMocks = PropertyTestSetup.createRepositoryMocks();
 
     // Mock TenantContextService with all required methods
     const mockTenantContextService = {
@@ -196,6 +342,142 @@ export class PropertyTestSetup {
       }),
     };
 
+    // CRITICAL FIX: Create comprehensive Prisma mock that synchronizes with repository storage
+    // This fixes the "Cannot read properties of undefined (reading 'create')" error in property tests
+    const createModelMock = (entityType?: string) => ({
+      findFirst: jest.fn().mockImplementation((args) => {
+        if (!entityType || !repositoryMocks.createdEntities[entityType]) {
+          return Promise.resolve(null);
+        }
+        const entities = Array.from(repositoryMocks.createdEntities[entityType].values());
+        const found = entities.find(entity => {
+          if (args?.where) {
+            return Object.keys(args.where).every(key => entity[key] === args.where[key]);
+          }
+          return false;
+        });
+        return Promise.resolve(found || null);
+      }),
+      findMany: jest.fn().mockImplementation((args) => {
+        if (!entityType || !repositoryMocks.createdEntities[entityType]) {
+          return Promise.resolve([]);
+        }
+        let entities = Array.from(repositoryMocks.createdEntities[entityType].values());
+        if (args?.where) {
+          entities = entities.filter(entity => 
+            Object.keys(args.where).every(key => entity[key] === args.where[key])
+          );
+        }
+        return Promise.resolve(entities);
+      }),
+      findUnique: jest.fn().mockImplementation((args) => {
+        if (!entityType || !repositoryMocks.createdEntities[entityType] || !args?.where?.id) {
+          return Promise.resolve(null);
+        }
+        return Promise.resolve(repositoryMocks.createdEntities[entityType].get(args.where.id) || null);
+      }),
+      create: jest.fn().mockImplementation((args) => {
+        const entity = { id: uuidv4(), ...args.data };
+        
+        // CRITICAL FIX: Store created entity in repository storage so services can find it
+        if (entityType && repositoryMocks.createdEntities[entityType]) {
+          repositoryMocks.createdEntities[entityType].set(entity.id, entity);
+        }
+        
+        return Promise.resolve(entity);
+      }),
+      createMany: jest.fn().mockImplementation((args) => ({ count: args.data.length })),
+      update: jest.fn().mockImplementation((args) => {
+        const updated = { id: args.where.id, ...args.data };
+        
+        // CRITICAL FIX: Update entity in repository storage
+        if (entityType && repositoryMocks.createdEntities[entityType]) {
+          const existing = repositoryMocks.createdEntities[entityType].get(args.where.id);
+          if (existing) {
+            const updatedEntity = { ...existing, ...args.data };
+            repositoryMocks.createdEntities[entityType].set(args.where.id, updatedEntity);
+            return Promise.resolve(updatedEntity);
+          }
+        }
+        
+        return Promise.resolve(updated);
+      }),
+      updateMany: jest.fn().mockImplementation(() => ({ count: 0 })),
+      upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
+      delete: jest.fn().mockImplementation((args) => {
+        // CRITICAL FIX: Remove entity from repository storage
+        if (entityType && repositoryMocks.createdEntities[entityType]) {
+          const deleted = repositoryMocks.createdEntities[entityType].get(args.where.id);
+          repositoryMocks.createdEntities[entityType].delete(args.where.id);
+          return Promise.resolve(deleted || { id: args.where.id });
+        }
+        return Promise.resolve({ id: 'deleted' });
+      }),
+      deleteMany: jest.fn().mockImplementation(() => {
+        // CRITICAL FIX: Clear entities from repository storage
+        if (entityType && repositoryMocks.createdEntities[entityType]) {
+          const count = repositoryMocks.createdEntities[entityType].size;
+          repositoryMocks.createdEntities[entityType].clear();
+          return Promise.resolve({ count });
+        }
+        return Promise.resolve({ count: 0 });
+      }),
+      count: jest.fn().mockImplementation(() => {
+        if (entityType && repositoryMocks.createdEntities[entityType]) {
+          return Promise.resolve(repositoryMocks.createdEntities[entityType].size);
+        }
+        return Promise.resolve(0);
+      }),
+      aggregate: jest.fn().mockResolvedValue({
+        _count: { id: 0 },
+        _sum: { amount: new Decimal(0) },
+        _avg: { amount: new Decimal(0) },
+        _min: { createdAt: new Date() },
+        _max: { updatedAt: new Date() }
+      }),
+      groupBy: jest.fn().mockResolvedValue([]),
+    });
+
+    // CRITICAL FIX: Create a comprehensive mock that includes both singular and plural model names
+    // This resolves property test Prisma service injection failures
+    const createSystemPrismaProxy = () => {
+      const modelMock = createModelMock();
+      return new Proxy({}, {
+        get(target, prop: string | symbol) {
+          // Convert symbol to string for consistency
+          const propName = typeof prop === 'symbol' ? prop.toString() : prop;
+          
+          // Return the same model mock for both singular and plural names
+          const modelNames = [
+            'company', 'companies',
+            'client', 'clients', 
+            'contract', 'contracts',
+            'site', 'sites',
+            'employee', 'employees',
+            'user', 'users',
+            'assignment', 'assignments',
+            'shift', 'shifts',
+            'shift_template', 'shift_templates', 'shiftTemplate', 'shiftTemplates',
+            'shift_notification', 'shift_notifications', 'shiftNotification', 'shiftNotifications',
+            'attendance', 'attendances',
+            'payroll_run', 'payroll_runs', 'payrollRun', 'payrollRuns',
+            'payroll_item', 'payroll_items', 'payrollItem', 'payrollItems',
+            'invoice', 'invoices',
+            'clientUser', 'client_user', 'client_users',
+            'clientDocument', 'client_document', 'client_documents',
+            'clientInteraction', 'client_interaction', 'client_interactions',
+          ];
+          
+          if (modelNames.includes(propName)) {
+            return modelMock;
+          }
+          
+          // Return undefined for unknown properties
+          return undefined;
+        }
+      });
+    };
+
     // Mock PrismaService with all required methods and model delegates
     const mockPrismaService = {
       $connect: jest.fn().mockResolvedValue(undefined),
@@ -210,8 +492,93 @@ export class PropertyTestSetup {
       // Tenant context methods
       setTenantContext: jest.fn(),
       clearTenantContext: jest.fn(),
-      withTenant: jest.fn().mockImplementation((tenantId, fn) => fn(mockPrismaService)),
-      withSystemContext: jest.fn().mockImplementation((fn) => fn(mockPrismaService)),
+      withTenant: jest.fn().mockImplementation((tenantId, fn) => {
+        // Create a complete mock that matches the full Prisma client interface
+        const tenantPrismaProxy = new Proxy(mockPrismaService, {
+          get(target, prop: string | symbol) {
+            // Convert symbol to string for consistency
+            const propName = typeof prop === 'symbol' ? prop.toString() : prop;
+            
+            // First check if it's a built-in Prisma method
+            if (['$connect', '$disconnect', '$executeRaw', '$executeRawUnsafe', '$queryRaw', '$transaction'].includes(propName)) {
+              return target[propName];
+            }
+            
+            // For model delegates, return a comprehensive mock
+            const modelNames = [
+              'company', 'companies',
+              'client', 'clients', 
+              'contract', 'contracts',
+              'site', 'sites',
+              'employee', 'employees',
+              'user', 'users',
+              'assignment', 'assignments',
+              'shift', 'shifts',
+              'shift_template', 'shift_templates', 'shiftTemplate', 'shiftTemplates',
+              'shift_notification', 'shift_notifications', 'shiftNotification', 'shiftNotifications',
+              'attendance', 'attendances',
+              'payroll_run', 'payroll_runs', 'payrollRun', 'payrollRuns',
+              'payroll_item', 'payroll_items', 'payrollItem', 'payrollItems',
+              'invoice', 'invoices',
+              'clientUser', 'client_user', 'client_users',
+              'clientDocument', 'client_document', 'client_documents',
+              'clientInteraction', 'client_interaction', 'client_interactions',
+            ];
+            
+            if (modelNames.includes(propName)) {
+              return createModelMock();
+            }
+            
+            // Return the property from target if it exists
+            return target[propName];
+          }
+        });
+        return fn(tenantPrismaProxy);
+      }),
+      // CRITICAL FIX: Proper withSystemContext implementation that provides full Prisma client interface
+      withSystemContext: jest.fn().mockImplementation((fn) => {
+        // Create a complete mock that matches the full Prisma client interface
+        const systemPrismaProxy = new Proxy(mockPrismaService, {
+          get(target, prop: string | symbol) {
+            // Convert symbol to string for consistency
+            const propName = typeof prop === 'symbol' ? prop.toString() : prop;
+            
+            // First check if it's a built-in Prisma method
+            if (['$connect', '$disconnect', '$executeRaw', '$executeRawUnsafe', '$queryRaw', '$transaction'].includes(propName)) {
+              return target[propName];
+            }
+            
+            // For model delegates, return a comprehensive mock
+            const modelNames = [
+              'company', 'companies',
+              'client', 'clients', 
+              'contract', 'contracts',
+              'site', 'sites',
+              'employee', 'employees',
+              'user', 'users',
+              'assignment', 'assignments',
+              'shift', 'shifts',
+              'shift_template', 'shift_templates', 'shiftTemplate', 'shiftTemplates',
+              'shift_notification', 'shift_notifications', 'shiftNotification', 'shiftNotifications',
+              'attendance', 'attendances',
+              'payroll_run', 'payroll_runs', 'payrollRun', 'payrollRuns',
+              'payroll_item', 'payroll_items', 'payrollItem', 'payrollItems',
+              'invoice', 'invoices',
+              'clientUser', 'client_user', 'client_users',
+              'clientDocument', 'client_document', 'client_documents',
+              'clientInteraction', 'client_interaction', 'client_interactions',
+            ];
+            
+            if (modelNames.includes(propName)) {
+              return createModelMock();
+            }
+            
+            // Return the property from target if it exists
+            return target[propName];
+          }
+        });
+        return fn(systemPrismaProxy);
+      }),
       getTenantContext: jest.fn().mockResolvedValue({
         tenantId,
         userRole,
@@ -221,254 +588,42 @@ export class PropertyTestSetup {
       createTenantPolicy: jest.fn().mockResolvedValue(undefined),
       testRLSIsolation: jest.fn().mockResolvedValue(true),
 
-      // Model delegates with findFirst, findMany, create, update, delete methods
-      company: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        createMany: jest.fn().mockImplementation((args) => ({ count: args.data.length })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        updateMany: jest.fn().mockImplementation(() => ({ count: 0 })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-        aggregate: jest.fn().mockResolvedValue({
-          _count: { id: 0 },
-          _sum: { amount: new Decimal(0) },
-          _avg: { amount: new Decimal(0) },
-          _min: { createdAt: new Date() },
-          _max: { updatedAt: new Date() }
-        }),
-        groupBy: jest.fn().mockResolvedValue([]),
-      },
-      client: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        createMany: jest.fn().mockImplementation((args) => ({ count: args.data.length })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        updateMany: jest.fn().mockImplementation(() => ({ count: 0 })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-        aggregate: jest.fn().mockResolvedValue({
-          _count: { id: 0 },
-          _sum: { amount: new Decimal(0) },
-          _avg: { amount: new Decimal(0) },
-          _min: { createdAt: new Date() },
-          _max: { updatedAt: new Date() }
-        }),
-        groupBy: jest.fn().mockResolvedValue([]),
-      },
-      contract: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        createMany: jest.fn().mockImplementation((args) => ({ count: args.data.length })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        updateMany: jest.fn().mockImplementation(() => ({ count: 0 })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-        aggregate: jest.fn().mockResolvedValue({
-          _count: { id: 0 },
-          _sum: { amount: new Decimal(0) },
-          _avg: { amount: new Decimal(0) },
-          _min: { createdAt: new Date() },
-          _max: { updatedAt: new Date() }
-        }),
-        groupBy: jest.fn().mockResolvedValue([]),
-      },
-      site: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      employee: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        createMany: jest.fn().mockImplementation((args) => ({ count: args.data.length })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        updateMany: jest.fn().mockImplementation(() => ({ count: 0 })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-        aggregate: jest.fn().mockResolvedValue({
-          _count: { id: 0 },
-          _sum: { amount: new Decimal(0) },
-          _avg: { amount: new Decimal(0) },
-          _min: { createdAt: new Date() },
-          _max: { updatedAt: new Date() }
-        }),
-        groupBy: jest.fn().mockResolvedValue([]),
-      },
-      user: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      assignment: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      shift: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      shiftTemplate: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      shiftNotification: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      attendance: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      payrollRun: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      payrollItem: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        createMany: jest.fn().mockImplementation((args) => ({ count: args.data.length })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        updateMany: jest.fn().mockImplementation(() => ({ count: 0 })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-        aggregate: jest.fn().mockResolvedValue({
-          _count: { id: 0 },
-          _sum: { amount: new Decimal(0) },
-          _avg: { amount: new Decimal(0) },
-          _min: { createdAt: new Date() },
-          _max: { updatedAt: new Date() }
-        }),
-        groupBy: jest.fn().mockResolvedValue([]),
-      },
-      invoice: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        createMany: jest.fn().mockImplementation((args) => ({ count: args.data.length })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        updateMany: jest.fn().mockImplementation(() => ({ count: 0 })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-        aggregate: jest.fn().mockResolvedValue({
-          _count: { id: 0 },
-          _sum: { amount: new Decimal(0) },
-          _avg: { amount: new Decimal(0) },
-          _min: { createdAt: new Date() },
-          _max: { updatedAt: new Date() }
-        }),
-        groupBy: jest.fn().mockResolvedValue([]),
-      },
-      clientUser: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      clientDocument: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      clientInteraction: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.data })),
-        update: jest.fn().mockImplementation((args) => ({ id: args.where.id, ...args.data })),
-        upsert: jest.fn().mockImplementation((args) => ({ id: uuidv4(), ...args.create, ...args.update })),
-        delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        count: jest.fn().mockResolvedValue(0),
-      },
+      // CRITICAL FIX: Add both singular and plural model delegates to support all property test patterns
+      // Model delegates with correct plural names to match Prisma schema
+      companies: createModelMock('clients'), // Note: companies share client storage for simplicity
+      company: createModelMock('clients'), // ADDED: Support singular name for property tests  
+      clients: createModelMock('clients'),
+      client: createModelMock('clients'), // ADDED: Support singular name for property tests
+      contracts: createModelMock(),
+      contract: createModelMock(), // ADDED: Support singular name for property tests
+      sites: createModelMock('sites'),
+      site: createModelMock('sites'), // ADDED: Support singular name for property tests
+      employees: createModelMock('employees'),
+      employee: createModelMock('employees'), // ADDED: Support singular name for property tests
+      users: createModelMock(),
+      user: createModelMock(), // ADDED: Support singular name for property tests
+      assignments: createModelMock(),
+      assignment: createModelMock(), // ADDED: Support singular name for property tests
+      shifts: createModelMock(),
+      shift: createModelMock(), // ADDED: Support singular name for property tests
+      shift_templates: createModelMock(),
+      shiftTemplates: createModelMock(), // ADDED: Support camelCase name for property tests
+      shift_notifications: createModelMock(),
+      shiftNotifications: createModelMock(), // ADDED: Support camelCase name for property tests
+      attendance: createModelMock('attendance'),
+      attendances: createModelMock('attendance'), // ADDED: Support plural name for property tests
+      payroll_runs: createModelMock(),
+      payrollRuns: createModelMock(), // ADDED: Support camelCase name for property tests
+      payroll_items: createModelMock(),
+      payrollItems: createModelMock(), // ADDED: Support camelCase name for property tests
+      invoices: createModelMock(),
+      invoice: createModelMock(), // ADDED: Support singular name for property tests
+      clientUser: createModelMock(),
+      client_user: createModelMock(), // ADDED: Support snake_case name for property tests
+      clientDocument: createModelMock(),
+      client_document: createModelMock(), // ADDED: Support snake_case name for property tests
+      clientInteraction: createModelMock(),
+      client_interaction: createModelMock(), // ADDED: Support snake_case name for property tests
 
       // Add global methods that some services might expect
       findFirst: jest.fn().mockResolvedValue(null),
@@ -527,24 +682,48 @@ export class PropertyTestSetup {
 
     // Mock repository services
     const mockSiteRepository = {
+      findMany: jest.fn().mockResolvedValue({
+        sites: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0,
+      }),
       findAll: jest.fn().mockResolvedValue([]),
       findById: jest.fn().mockResolvedValue(null),
+      findOne: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockImplementation((data) => ({ id: uuidv4(), ...data })),
       update: jest.fn().mockImplementation((id, data) => ({ id, ...data })),
       delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
     };
 
     const mockClientRepository = {
+      findMany: jest.fn().mockResolvedValue({
+        clients: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0,
+      }),
       findAll: jest.fn().mockResolvedValue([]),
       findById: jest.fn().mockResolvedValue(null),
+      findOne: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockImplementation((data) => ({ id: uuidv4(), ...data })),
       update: jest.fn().mockImplementation((id, data) => ({ id, ...data })),
       delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
     };
 
     const mockEmployeeRepository = {
+      findMany: jest.fn().mockResolvedValue({
+        employees: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0,
+      }),
       findAll: jest.fn().mockResolvedValue([]),
       findById: jest.fn().mockResolvedValue(null),
+      findOne: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockImplementation((data) => ({ id: uuidv4(), ...data })),
       update: jest.fn().mockImplementation((id, data) => ({ id, ...data })),
       delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
@@ -592,9 +771,9 @@ export class PropertyTestSetup {
       mockJwtService,
       mockAuthService,
       mockDataTransformService,
-      mockSiteRepository,
-      mockClientRepository,
-      mockEmployeeRepository,
+      mockSiteRepository: repositoryMocks.mockSiteRepository,
+      mockClientRepository: repositoryMocks.mockClientRepository,
+      mockEmployeeRepository: repositoryMocks.mockEmployeeRepository,
       mockInvoiceService,
       mockGstCalculationService,
       mockInvoicePdfService,
@@ -707,7 +886,15 @@ export class PropertyTestSetup {
         },
         {
           provide: InvoiceCalculationService,
-          useValue: mocks.mockGstCalculationService, // Reuse for simplicity
+          useValue: {
+            calculateAmount: jest.fn().mockReturnValue(1000),
+            generateInvoiceNumber: jest.fn().mockImplementation(
+              (companyId: string, contractId: string) => 
+                Promise.resolve(`INV-CLI-${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-001`)
+            ),
+            calculateGst: jest.fn().mockReturnValue({ gstAmount: 180, totalAmount: 1180 }),
+            findAll: jest.fn().mockResolvedValue([]),
+          },
         },
         {
           provide: InvoicePdfService,
@@ -769,7 +956,7 @@ export class PropertyTestSetup {
         await prismaService.onModuleInit();
       }
     } catch (error) {
-      console.warn('Failed to initialize PrismaService:', error.message);
+      console.warn('Failed to initialize PrismaService:', (error as Error).message);
     }
 
     // CRITICAL FIX: Try to resolve TenantContextService properly
@@ -784,7 +971,7 @@ export class PropertyTestSetup {
         );
       }
     } catch (error) {
-      console.warn('Failed to resolve TenantContextService:', error.message);
+      console.warn('Failed to resolve TenantContextService:', (error as Error).message);
     }
 
     // Set up test isolation if enabled
@@ -883,7 +1070,7 @@ export class PropertyTestSetup {
     // Use system context for ALL test data creation to avoid tenant filtering interference
     return await prisma.withSystemContext(async (systemPrisma) => {
       // 1. Create company (tenant) first - ROOT entity
-      const company = await systemPrisma.company.upsert({
+      const company = await systemPrisma.companies.upsert({
         where: { id: tenantId },
         update: {},
         create: {
@@ -900,7 +1087,7 @@ export class PropertyTestSetup {
       }
 
       // 2. Create client - DEPENDS ON: Company (FIXED: removed contract fields)
-      const client = await systemPrisma.client.create({
+      const client = await systemPrisma.clients.create({
         data: {
           id: uuidv4(),
           companyId: company.id,  // Foreign key to company
@@ -914,7 +1101,7 @@ export class PropertyTestSetup {
       });
 
       // 3. Create contract - DEPENDS ON: Client (FIXED: proper structure)
-      const contract = await systemPrisma.contract.create({
+      const contract = await systemPrisma.contracts.create({
         data: {
           contractNumber: `CONTRACT-${Date.now()}`,
           title: 'Test Security Contract',
@@ -929,7 +1116,7 @@ export class PropertyTestSetup {
       });
 
       // 4. Create site - DEPENDS ON: Contract (FIXED: uses contractId not clientId)
-      const site = await systemPrisma.site.create({
+      const site = await systemPrisma.sites.create({
         data: {
           id: uuidv4(),
           contractId: contract.id,  // FIXED: Foreign key to contract (not clientId)
@@ -945,7 +1132,7 @@ export class PropertyTestSetup {
       });
 
       // 5. Create employee - DEPENDS ON: Company
-      const employee = await systemPrisma.employee.create({
+      const employee = await systemPrisma.employees.create({
         data: {
           id: uuidv4(),
           companyId: company.id,  // Foreign key to company
@@ -1025,7 +1212,7 @@ export class PropertyTestSetup {
 
     return await prisma.withSystemContext(async (systemPrisma) => {
       // 1. Create company first
-      const company = await systemPrisma.company.upsert({
+      const company = await systemPrisma.companies.upsert({
         where: { id: tenantId },
         update: {},
         create: {
@@ -1040,7 +1227,7 @@ export class PropertyTestSetup {
       // 2. Create clients (FIXED: removed contract fields)
       const clients = [];
       for (let i = 0; i < clientCount; i++) {
-        const client = await systemPrisma.client.create({
+        const client = await systemPrisma.clients.create({
           data: {
             id: uuidv4(),
             companyId: company.id,
@@ -1059,7 +1246,7 @@ export class PropertyTestSetup {
       const contracts = [];
       for (let i = 0; i < clients.length; i++) {
         const client = clients[i];
-        const contract = await systemPrisma.contract.create({
+        const contract = await systemPrisma.contracts.create({
           data: {
             contractNumber: `CONTRACT-${Date.now()}-${i}`,
             title: `Security Contract ${i + 1}`,
@@ -1079,7 +1266,7 @@ export class PropertyTestSetup {
       const sites = [];
       for (let i = 0; i < siteCount; i++) {
         const contract = contracts[i % contracts.length]; // Distribute sites across contracts
-        const site = await systemPrisma.site.create({
+        const site = await systemPrisma.sites.create({
           data: {
             id: uuidv4(),
             contractId: contract.id, // FIXED: Link to contract, not client
@@ -1103,7 +1290,7 @@ export class PropertyTestSetup {
       // 5. Create employees
       const employees = [];
       for (let i = 0; i < employeeCount; i++) {
-        const employee = await systemPrisma.employee.create({
+        const employee = await systemPrisma.employees.create({
           data: {
             id: uuidv4(),
             companyId: company.id,
@@ -1158,7 +1345,7 @@ export class PropertyTestSetup {
       const assignments = [];
       if (createAssignments && employees.length > 0 && sites.length > 0) {
         for (let i = 0; i < Math.min(employees.length, sites.length); i++) {
-          const assignment = await systemPrisma.assignment.create({
+          const assignment = await systemPrisma.assignments.create({
             data: {
               id: uuidv4(),
               employeeId: employees[i].id,
@@ -1180,7 +1367,7 @@ export class PropertyTestSetup {
       const shifts = [];
       if (createShifts && assignments.length > 0) {
         for (const assignment of assignments) {
-          const shift = await systemPrisma.shift.create({
+          const shift = await systemPrisma.shifts.create({
             data: {
               id: uuidv4(),
               assignmentId: assignment.id,
@@ -1249,114 +1436,273 @@ export class PropertyTestSetup {
   }
 
   /**
-   * Clean up all test data for a tenant
-   * CRITICAL: Uses system context and deletes in reverse dependency order
+   * Create a TestDataFactory instance with proper service injection for property tests
+   * CRITICAL FIX: Ensures TestDataFactory receives properly mocked PrismaService 
+   * to avoid "Cannot read properties of undefined" errors
    */
+  static createTestDataFactory(module: TestingModule): any {
+    try {
+      // Try to resolve PrismaService from the module (which should be mocked)
+      const prismaService = module.get<PrismaService>(PrismaService);
+      
+      // Validate that the service has the required methods
+      if (!prismaService || typeof prismaService.companies?.create !== 'function') {
+        throw new Error('PrismaService not properly mocked in test module');
+      }
+
+      // Create TestDataFactory class that works with mocked services
+      return {
+        createCompany: async (overrides: any = {}) => {
+          const companyData = {
+            id: overrides.id || uuidv4(),
+            name: overrides.name || 'Test Security Company',
+            slug: overrides.slug || `test-company-${Date.now()}`,
+            created_at: new Date(),
+            updated_at: new Date(),
+            settings: {},
+            branding: {},
+            ...overrides,
+          };
+          return prismaService.companies.create({ data: companyData }); // CRITICAL FIX: Use correct model name
+        },
+        
+        createClient: async (companyId: string, overrides: any = {}) => {
+          const clientData = {
+            id: overrides.id || uuidv4(),
+            company_id: companyId, // CRITICAL FIX: Use correct field name from schema
+            name: overrides.name || 'Test Client Organization',
+            contact_email: overrides.contact_email || `client-${Date.now()}@example.com`, // CRITICAL FIX: Use correct field name
+            contact_info: overrides.contact_info || { phone: '+91-9876543210' }, // CRITICAL FIX: Use correct field name
+            organization_type: overrides.organization_type || 'CORPORATE_OFFICE', // CRITICAL FIX: Use correct field name
+            contract_status: overrides.contract_status || 'ACTIVE', // CRITICAL FIX: Use correct field name
+            contract_start: overrides.contract_start || new Date(), // CRITICAL FIX: Use correct field name  
+            contract_end: overrides.contract_end || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // CRITICAL FIX: Use correct field name
+            billing_preferences: overrides.billing_preferences || { cycle: 'monthly' }, // CRITICAL FIX: Use correct field name
+            tags: overrides.tags || [],
+            created_at: new Date(),
+            updated_at: new Date(),
+            ...overrides,
+          };
+          return prismaService.clients.create({ data: clientData }); // CRITICAL FIX: Use correct model name
+        },
+
+        createContract: async (clientId: string, overrides: any = {}) => {
+          const contractData = {
+            id: overrides.id || uuidv4(),
+            client_id: clientId, // CRITICAL FIX: Use correct field name from schema
+            contract_number: overrides.contract_number || `CT-${Date.now()}`, // CRITICAL FIX: Use correct field name
+            title: overrides.title || 'Security Services Agreement',
+            status: overrides.status || 'ACTIVE',
+            start_date: overrides.start_date || new Date(), // CRITICAL FIX: Use correct field name
+            end_date: overrides.end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // CRITICAL FIX: Use correct field name
+            service_definitions: overrides.service_definitions || { services: ['Physical Security'] }, // CRITICAL FIX: Use correct field name
+            billing_preferences: overrides.billing_preferences || { cycle: 'monthly' }, // CRITICAL FIX: Use correct field name
+            contract_value: overrides.contract_value || 2400000.00, // CRITICAL FIX: Use correct field name
+            created_at: new Date(),
+            updated_at: new Date(),
+            ...overrides,
+          };
+          return prismaService.contracts.create({ data: contractData }); // CRITICAL FIX: Use correct model name
+        },
+
+        createSite: async (contractId: string, overrides: any = {}) => {
+          const siteData = {
+            id: overrides.id || uuidv4(),
+            contract_id: contractId, // CRITICAL FIX: Use correct field name from schema
+            name: overrides.name || 'Main Office Building',
+            address: overrides.address || { city: 'Mumbai', state: 'Maharashtra' },
+            operational_status: overrides.operational_status || 'ACTIVE', // CRITICAL FIX: Use correct field name
+            access_requirements: overrides.access_requirements || {}, // CRITICAL FIX: Use correct field name
+            safety_protocols: overrides.safety_protocols || {}, // CRITICAL FIX: Use correct field name
+            contact_info: overrides.contact_info || {}, // CRITICAL FIX: Use correct field name
+            min_staffing_level: overrides.min_staffing_level || 1, // CRITICAL FIX: Use correct field name
+            max_staffing_level: overrides.max_staffing_level || 5, // CRITICAL FIX: Use correct field name
+            created_at: new Date(),
+            updated_at: new Date(),
+            ...overrides,
+          };
+          return prismaService.sites.create({ data: siteData }); // CRITICAL FIX: Use correct model name
+        },
+
+        createEmployee: async (companyId: string, overrides: any = {}) => {
+          const employeeNumber = `EMP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const employeeData = {
+            id: overrides.id || uuidv4(),
+            company_id: companyId, // CRITICAL FIX: Use correct field name from schema
+            employee_number: overrides.employee_number || employeeNumber, // CRITICAL FIX: Use correct field name
+            first_name: overrides.first_name || 'Rajesh', // CRITICAL FIX: Use correct field name
+            last_name: overrides.last_name || 'Kumar', // CRITICAL FIX: Use correct field name
+            email: overrides.email || `${employeeNumber.toLowerCase()}@company.com`,
+            phone: overrides.phone || '+91-9876543212',
+            employment_status: overrides.employment_status || 'ACTIVE', // CRITICAL FIX: Use correct field name
+            hire_date: overrides.hire_date || new Date('2023-01-01'), // CRITICAL FIX: Use correct field name
+            skills: overrides.skills || ['Security'],
+            address: overrides.address || {},
+            certifications: overrides.certifications || {},
+            created_at: new Date(),
+            updated_at: new Date(),
+            ...overrides,
+          };
+          return prismaService.employees.create({ data: employeeData }); // CRITICAL FIX: Use correct model name
+        },
+
+        createAssignment: async (employeeId: string, siteId: string, overrides: any = {}) => {
+          const assignmentData = {
+            id: overrides.id || uuidv4(),
+            employee_id: employeeId, // CRITICAL FIX: Use correct field name from schema
+            site_id: siteId, // CRITICAL FIX: Use correct field name from schema
+            role: overrides.role || 'Security Guard',
+            responsibilities: overrides.responsibilities || { primary: ['Security'] },
+            hourly_rate: overrides.hourly_rate || '800.00', // CRITICAL FIX: Use correct field name (encrypted string)
+            hourly_rate_iv: overrides.hourly_rate_iv || 'mock_iv_string_32_characters', // CRITICAL FIX: Add required encryption fields
+            hourly_rate_tag: overrides.hourly_rate_tag || 'mock_tag_string_32_characters', // CRITICAL FIX: Add required encryption fields
+            status: overrides.status || 'ACTIVE',
+            start_date: overrides.start_date || new Date(), // CRITICAL FIX: Use correct field name
+            end_date: overrides.end_date || null, // CRITICAL FIX: Use correct field name
+            created_at: new Date(),
+            updated_at: new Date(),
+            ...overrides,
+          };
+          return prismaService.assignments.create({ data: assignmentData }); // CRITICAL FIX: Use correct model name
+        },
+
+        // Cleanup method that works with mocked services
+        cleanupCompanyData: async (companyId: string) => {
+          // Since this is mocked, just return success
+          return Promise.resolve();
+        },
+
+        // Helper method to create complete hierarchy
+        createFullHierarchy: async function() {
+          const company = await this.createCompany();
+          const client = await this.createClient(company.id);
+          const contract = await this.createContract(client.id);
+          const site = await this.createSite(contract.id);
+          const employee = await this.createEmployee(company.id);
+          const assignment = await this.createAssignment(employee.id, site.id);
+          
+          return {
+            company,
+            client,
+            contract,
+            site,
+            employee,
+            assignment,
+          };
+        },
+      };
+      
+    } catch (error) {
+      console.warn(`Failed to create TestDataFactory with proper service injection: ${(error as Error).message}`);
+      throw new Error(`TestDataFactory creation failed: ${(error as Error).message}`);
+    }
+  }
   static async cleanupTenantData(prisma: PrismaService, tenantId: string) {
     return await prisma.withSystemContext(async (systemPrisma) => {
       // Delete in reverse dependency order to avoid FK constraint violations
       await systemPrisma.attendance.deleteMany({
         where: {
-          employee: { companyId: tenantId },
+          employee: { company_id: tenantId },
         },
       });
 
-      await systemPrisma.shiftNotification.deleteMany({
+      await systemPrisma.shift_notifications.deleteMany({
         where: {
           shift: {
             site: {
               contract: {
-                client: { companyId: tenantId },
+                client: { company_id: tenantId },
               },
             },
           },
         },
       });
 
-      await systemPrisma.shift.deleteMany({
+      await systemPrisma.shifts.deleteMany({
         where: {
           site: {
             contract: {
-              client: { companyId: tenantId },
+              client: { company_id: tenantId },
             },
           },
         },
       });
 
-      await systemPrisma.assignment.deleteMany({
+      await systemPrisma.assignments.deleteMany({
         where: {
-          employee: { companyId: tenantId },
+          employee: { company_id: tenantId },
         },
       });
 
-      await systemPrisma.payrollItem.deleteMany({
+      await systemPrisma.payroll_items.deleteMany({
         where: {
-          employee: { companyId: tenantId },
+          employee: { company_id: tenantId },
         },
       });
 
-      await systemPrisma.payrollRun.deleteMany({
-        where: { companyId: tenantId },
+      await systemPrisma.payroll_runs.deleteMany({
+        where: { company_id: tenantId },
       });
 
-      await systemPrisma.invoice.deleteMany({
+      await systemPrisma.invoices.deleteMany({
         where: {
           contract: {
-            client: { companyId: tenantId },
+            client: { company_id: tenantId },
           },
         },
       });
 
-      await systemPrisma.site.deleteMany({
+      await systemPrisma.sites.deleteMany({
         where: {
           contract: {
-            client: { companyId: tenantId },
+            client: { company_id: tenantId },
           },
         },
       });
 
-      await systemPrisma.contract.deleteMany({
+      await systemPrisma.contracts.deleteMany({
         where: {
-          client: { companyId: tenantId },
+          client: { company_id: tenantId },
         },
       });
 
-      await systemPrisma.employee.deleteMany({
-        where: { companyId: tenantId },
+      await systemPrisma.employees.deleteMany({
+        where: { company_id: tenantId },
       });
 
-      await systemPrisma.clientInteraction.deleteMany({
-        where: {
-          client: { companyId: tenantId },
-        },
+      // Note: clientInteraction, clientDocument, clientUser models don't exist in current schema
+      // await systemPrisma.clientInteraction.deleteMany({
+      //   where: {
+      //     client: { company_id: tenantId },
+      //   },
+      // });
+
+      // await systemPrisma.clientDocument.deleteMany({
+      //   where: {
+      //     client: { company_id: tenantId },
+      //   },
+      // });
+
+      // await systemPrisma.clientUser.deleteMany({
+      //   where: {
+      //     client: { company_id: tenantId },
+      //   },
+      // });
+
+      await systemPrisma.clients.deleteMany({
+        where: { company_id: tenantId },
       });
 
-      await systemPrisma.clientDocument.deleteMany({
-        where: {
-          client: { companyId: tenantId },
-        },
+      await systemPrisma.users.deleteMany({
+        where: { company_id: tenantId },
       });
 
-      await systemPrisma.clientUser.deleteMany({
-        where: {
-          client: { companyId: tenantId },
-        },
-      });
-
-      await systemPrisma.client.deleteMany({
-        where: { companyId: tenantId },
-      });
-
-      await systemPrisma.user.deleteMany({
-        where: { companyId: tenantId },
-      });
-
-      await systemPrisma.shiftTemplate.deleteMany({
-        where: { companyId: tenantId },
+      await systemPrisma.shift_templates.deleteMany({
+        where: { company_id: tenantId },
       });
 
       // Finally delete the company (root entity)
-      await systemPrisma.company.deleteMany({
+      await systemPrisma.companies.deleteMany({
         where: { id: tenantId },
       });
     });
@@ -1572,7 +1918,7 @@ export class TestDataFactory {
           success.push(tenantId);
           break;
         } catch (error) {
-          lastError = error;
+          lastError = error as Error;
           retries++;
           
           if (retries <= maxRetries) {
@@ -1617,7 +1963,7 @@ export class TestDataFactory {
       try {
         await PropertyTestSetup.cleanupTenantData(prisma, tenantId);
       } catch (cleanupError) {
-        console.warn(`Cleanup after creation failure failed for tenant ${tenantId}:`, cleanupError.message);
+        console.warn(`Cleanup after creation failure failed for tenant ${tenantId}:`, (cleanupError as any).message);
       }
       throw error;
     }
@@ -1666,7 +2012,7 @@ export class TestIsolationManager {
           errors.push(`Failed to clean up tenants: ${result.failed.map(f => f.tenantId).join(', ')}`);
         }
       } catch (error) {
-        errors.push(`Tenant cleanup failed: ${error.message}`);
+        errors.push(`Tenant cleanup failed: ${(error as Error).message}`);
       }
     }
 
@@ -1675,7 +2021,7 @@ export class TestIsolationManager {
       try {
         await module.close();
       } catch (error) {
-        errors.push(`Module cleanup failed: ${error.message}`);
+        errors.push(`Module cleanup failed: ${(error as Error).message}`);
       }
     }
 
@@ -1688,7 +2034,7 @@ export class TestIsolationManager {
       jest.clearAllMocks();
       jest.restoreAllMocks();
     } catch (error) {
-      errors.push(`Mock cleanup failed: ${error.message}`);
+      errors.push(`Mock cleanup failed: ${(error as Error).message}`);
     }
 
     if (errors.length > 0) {
@@ -1726,7 +2072,7 @@ export class TestIsolationManager {
         try {
           await cleanupFn(module, prisma, tenantId);
         } catch (cleanupError) {
-          console.warn('Cleanup after setup failure failed:', cleanupError.message);
+          console.warn('Cleanup after setup failure failed:', (cleanupError as any).message);
         }
       }
       throw error;

@@ -41,16 +41,17 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get $queryRaw() {
     return this.prismaClient.$queryRaw.bind(this.prismaClient);
   }
+  
   get $transaction() {
     return this.prismaClient.$transaction.bind(this.prismaClient);
   }
 
-  // Model delegates
+  // Model delegates - SINGULAR forms (standard Prisma pattern)
   get company() {
-    return this.prismaClient.company;
+    return this.prismaClient.companies;
   }
   get client() {
-    return this.prismaClient.client;
+    return this.prismaClient.clients;
   }
   get clientUser() {
     return this.prismaClient.clientUser;
@@ -62,40 +63,94 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.prismaClient.clientInteraction;
   }
   get contract() {
-    return this.prismaClient.contract;
+    return this.prismaClient.contracts;
   }
   get employee() {
-    return this.prismaClient.employee;
+    return this.prismaClient.employees;
   }
   get site() {
-    return this.prismaClient.site;
+    return this.prismaClient.sites;
   }
   get assignment() {
-    return this.prismaClient.assignment;
+    return this.prismaClient.assignments;
   }
   get shift() {
-    return this.prismaClient.shift;
+    return this.prismaClient.shifts;
   }
   get shiftTemplate() {
-    return this.prismaClient.shiftTemplate;
+    return this.prismaClient.shift_templates;
   }
   get shiftNotification() {
-    return this.prismaClient.shiftNotification;
+    return this.prismaClient.shift_notifications;
   }
   get attendance() {
     return this.prismaClient.attendance;
   }
   get payrollRun() {
-    return this.prismaClient.payrollRun;
+    return this.prismaClient.payroll_runs;
   }
   get payrollItem() {
-    return this.prismaClient.payrollItem;
+    return this.prismaClient.payroll_items;
   }
   get invoice() {
-    return this.prismaClient.invoice;
+    return this.prismaClient.invoices;
   }
   get user() {
-    return this.prismaClient.user;
+    return this.prismaClient.users;
+  }
+
+  // Model delegates - PLURAL forms (for business service compatibility)
+  // These delegate to the schema names which are already plural
+  get companies() {
+    return this.prismaClient.companies;
+  }
+  get clients() {
+    return this.prismaClient.clients;
+  }
+  get clientUsers() {
+    return this.prismaClient.clientUser;
+  }
+  get clientDocuments() {
+    return this.prismaClient.clientDocument;
+  }
+  get clientInteractions() {
+    return this.prismaClient.clientInteraction;
+  }
+  get contracts() {
+    return this.prismaClient.contracts;
+  }
+  get employees() {
+    return this.prismaClient.employees;
+  }
+  get sites() {
+    return this.prismaClient.sites;
+  }
+  get assignments() {
+    return this.prismaClient.assignments;
+  }
+  get shifts() {
+    return this.prismaClient.shifts;
+  }
+  get shiftTemplates() {
+    return this.prismaClient.shift_templates;
+  }
+  get shiftNotifications() {
+    return this.prismaClient.shift_notifications;
+  }
+  get attendances() {
+    return this.prismaClient.attendance;
+  }
+  get payrollRuns() {
+    return this.prismaClient.payroll_runs;
+  }
+  get payrollItems() {
+    return this.prismaClient.payroll_items;
+  }
+  get invoices() {
+    return this.prismaClient.invoices;
+  }
+  get users() {
+    return this.prismaClient.users;
   }
 
   async onModuleInit() {
@@ -167,16 +222,21 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    */
   private createTenantAwareProxy(prisma: any, tenantId: string): any {
     const tenantTables = {
-      'company': 'id', // companies table uses id as tenant identifier  
-      'user': 'companyId',
-      'client': 'companyId', 
-      'clientUser': 'clientId', // clientUser belongs to client, not directly to company
-      'clientDocument': 'clientId', // clientDocument belongs to client
-      'clientInteraction': 'clientId', // clientInteraction belongs to client
-      'contract': 'clientId', // contract belongs to client
-      'employee': 'companyId',
-      'payrollRun': 'companyId',
-      'site': 'contractId', // site belongs to contract
+      'companies': 'id', // companies table uses id as tenant identifier  
+      'users': 'company_id',
+      'clients': 'company_id', 
+      'clientUser': 'clientId', // clientUser belongs to client, not directly to company (if it exists)
+      'clientDocument': 'clientId', // clientDocument belongs to client (if it exists)
+      'clientInteraction': 'clientId', // clientInteraction belongs to client (if it exists)
+      'contracts': 'client_id', // contract belongs to client
+      'employees': 'company_id',
+      'sites': 'contract_id', // site belongs to contract
+      'assignments': 'site_id', // assignment belongs to site (via employee)
+      'shifts': 'assignment_id', // shift belongs to assignment (via site)
+      'attendance': 'employee_id', // attendance belongs to employee
+      'payroll_runs': 'company_id',
+      'payroll_items': 'payroll_run_id', // payrollItem belongs to payrollRun
+      'invoices': 'client_id', // invoice belongs to client
       // Add other tenant-aware tables as needed
     };
 
@@ -285,7 +345,59 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    // Add plural form aliases for all model delegates to support business service patterns
+    // This ensures both singular and plural forms work in transactions and regular operations
+    this.addPluralAliases(proxy);
+
     return proxy;
+  }
+
+  /**
+   * Adds plural form aliases to a Prisma client proxy for business service compatibility
+   */
+  private addPluralAliases(proxy: any): void {
+    const modelMappings = {
+      // Alias mapping: plural_business_name -> schema_name
+      companies: 'companies',
+      clients: 'clients', 
+      clientUsers: 'clientUser', // This doesn't exist in schema yet
+      clientDocuments: 'clientDocument', // This doesn't exist in schema yet
+      clientInteractions: 'clientInteraction', // This doesn't exist in schema yet
+      contracts: 'contracts',
+      employees: 'employees',
+      sites: 'sites',
+      assignments: 'assignments',
+      shifts: 'shifts',
+      shiftTemplates: 'shift_templates',
+      shiftNotifications: 'shift_notifications', 
+      attendances: 'attendance',
+      payrollRuns: 'payroll_runs',
+      payrollItems: 'payroll_items',
+      invoices: 'invoices',
+      users: 'users',
+      
+      // Singular business names -> schema names
+      company: 'companies',
+      client: 'clients',
+      contract: 'contracts', 
+      employee: 'employees',
+      site: 'sites',
+      assignment: 'assignments',
+      shift: 'shifts',
+      shiftTemplate: 'shift_templates',
+      shiftNotification: 'shift_notifications',
+      attendance: 'attendance',
+      payrollRun: 'payroll_runs',
+      payrollItem: 'payroll_items',
+      invoice: 'invoices',
+      user: 'users',
+    };
+
+    Object.entries(modelMappings).forEach(([businessName, schemaName]) => {
+      if (proxy[schemaName] && !proxy[businessName]) {
+        proxy[businessName] = proxy[schemaName];
+      }
+    });
   }
 
   /**

@@ -168,7 +168,7 @@ export class PropertyTestDataHelper {
    * Create a complete company hierarchy with proper tenant context
    */
   static async createCompanyHierarchy(prisma: any, tenantId: string, companyName: string) {
-    const company = await prisma.company.create({
+    const company = await prisma.companies.create({
       data: {
         id: tenantId, // Use tenantId as company ID for proper foreign key relationships
         name: companyName,
@@ -191,7 +191,7 @@ export class PropertyTestDataHelper {
     entityType: 'client' | 'employee' | 'site' | 'assignment' | 'contract',
   ) {
     // Ensure company exists
-    const company = await prisma.company.upsert({
+    const company = await prisma.companies.upsert({
       where: { id: tenantId },
       update: {},
       create: {

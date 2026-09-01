@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { InvoiceCalculationService } from './invoice-calculation.service';
 import { BillingValidationService } from './billing-validation.service';
-import { Prisma, Invoice, InvoiceStatus } from '@prisma/client';
+import { Prisma, invoices, InvoiceStatus } from '@prisma/client';
 import { Decimal } from 'decimal.js';
 import {
   CreateInvoiceDto,
@@ -31,9 +31,19 @@ export class InvoiceService {
       await this.billingValidationService.validateGstDetails(createInvoiceDto.gstDetails);
     }
 
+    // Get contract to extract client information
+    const contract = await this.prisma.contract.findFirst({
+      where: { id: createInvoiceDto.contractId },
+      include: { client: true }
+    });
+    
+    if (!contract) {
+      throw new NotFoundException('Contract not found');
+    }
+
     // Validate billing period
     await this.billingValidationService.validateBillingPeriod(
-      createInvoiceDto.clientId,
+      contract.client.id,
       new Date(createInvoiceDto.billingPeriodStart),
       new Date(createInvoiceDto.billingPeriodEnd),
     );
@@ -51,35 +61,27 @@ export class InvoiceService {
       ? new Date(createInvoiceDto.dueDate)
       : this.calculateDefaultDueDate(new Date());
 
-    // Find the first active contract for this client to create the invoice
-    const contract = await this.prisma.contract.findFirst({
-      where: {
-        client: {
-          id: createInvoiceDto.clientId,
-          companyId,
-        },
-        status: 'ACTIVE',
-      },
-    });
+    // Use the contract we already retrieved above (no need for duplicate lookup)
 
     if (!contract) {
-      throw new NotFoundException(`No active contract found for client ${createInvoiceDto.clientId}`);
+      throw new NotFoundException(`No active contract found for client ${contract.client.id}`);
     }
 
     // Create invoice
-    const invoiceData: Prisma.InvoiceCreateInput = {
-      contract: {
-        connect: { id: contract.id },
+    const invoiceData: Prisma.invoicesCreateInput = {
+      clients: {
+        connect: { id: contract.client_id },
       },
-      invoiceNumber,
-      billingPeriodStart: new Date(createInvoiceDto.billingPeriodStart),
-      billingPeriodEnd: new Date(createInvoiceDto.billingPeriodEnd),
+      invoice_number: invoiceNumber,
+      billing_period_start: new Date(createInvoiceDto.billingPeriodStart),
+      billing_period_end: new Date(createInvoiceDto.billingPeriodEnd),
       subtotal: billingResult.summary.subtotal,
-      taxAmount: billingResult.summary.gstAmount,
-      totalAmount: billingResult.summary.totalAmount,
+      tax_amount: billingResult.summary.gstAmount,
+      total_amount: billingResult.summary.totalAmount,
       status: InvoiceStatus.DRAFT,
-      dueDate,
-    };
+      due_date: dueDate,
+      updated_at: new Date(),
+    } as Prisma.invoicesCreateInput;
 
     const invoice = await this.prisma.invoice.create({
       data: invoiceData,
@@ -88,7 +90,7 @@ export class InvoiceService {
           select: {
             id: true,
             title: true,
-            client: {
+            clients: {
               select: {
                 id: true,
                 name: true,
@@ -148,21 +150,21 @@ export class InvoiceService {
     }
 
     // Prepare update data
-    const updateData: Prisma.InvoiceUpdateInput = {};
+    const updateData: Prisma.invoicesUpdateInput = {};
     
     if (updateInvoiceDto.status !== undefined) {
       updateData.status = updateInvoiceDto.status;
       
       // Set paidAt timestamp when status changes to PAID
       if (updateInvoiceDto.status === InvoiceStatus.PAID && !updateInvoiceDto.paidAt) {
-        updateData.paidAt = new Date();
+        updateData.paid_at = new Date();
       } else if (updateInvoiceDto.paidAt) {
-        updateData.paidAt = new Date(updateInvoiceDto.paidAt);
+        updateData.paid_at = new Date(updateInvoiceDto.paidAt);
       }
     }
 
     if (updateInvoiceDto.dueDate !== undefined) {
-      updateData.dueDate = new Date(updateInvoiceDto.dueDate);
+      updateData.due_date = new Date(updateInvoiceDto.dueDate);
     }
 
     // Update invoice
@@ -172,7 +174,7 @@ export class InvoiceService {
       include: {
         contract: {
           include: {
-            client: {
+            clients: {
               select: {
                 id: true,
                 name: true,
@@ -216,7 +218,7 @@ export class InvoiceService {
         include: {
           contract: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -287,7 +289,7 @@ export class InvoiceService {
       include: {
         contract: {
           include: {
-            client: {
+            clients: {
               select: {
                 id: true,
                 name: true,
@@ -310,16 +312,14 @@ export class InvoiceService {
   async getInvoiceStatistics(period?: { start: Date; end: Date }) {
     const companyId = this.tenantContext.getTenantId();
     
-    let whereClause: Prisma.InvoiceWhereInput = {
-      contract: { 
-        client: {
-          companyId 
-        }
+    let whereClause: Prisma.invoicesWhereInput = {
+      clients: { 
+        company_id: companyId 
       },
     };
 
     if (period) {
-      whereClause.createdAt = {
+      whereClause.created_at = {
         gte: period.start,
         lte: period.end,
       };
@@ -370,7 +370,7 @@ export class InvoiceService {
       include: {
         contract: {
           include: {
-            client: {
+            clients: {
               select: {
                 id: true,
                 name: true,
@@ -390,22 +390,15 @@ export class InvoiceService {
     return invoice;
   }
 
-  private buildInvoiceWhereClause(companyId: string, filterDto: InvoiceFilterDto): Prisma.InvoiceWhereInput {
-    const whereClause: Prisma.InvoiceWhereInput = {
-      contract: { 
-        client: {
-          companyId 
-        }
+  private buildInvoiceWhereClause(companyId: string, filterDto: InvoiceFilterDto): Prisma.invoicesWhereInput {
+    const whereClause: Prisma.invoicesWhereInput = {
+      clients: { 
+        company_id: companyId 
       },
     };
 
     if (filterDto.clientId) {
-      whereClause.contract = {
-        client: {
-          id: filterDto.clientId,
-          companyId
-        }
-      };
+      whereClause.client_id = filterDto.clientId;
     }
 
     if (filterDto.status) {
@@ -413,36 +406,36 @@ export class InvoiceService {
     }
 
     if (filterDto.invoiceNumber) {
-      whereClause.invoiceNumber = {
+      whereClause.invoice_number = {
         contains: filterDto.invoiceNumber,
         mode: 'insensitive',
       };
     }
 
     if (filterDto.billingPeriodStart || filterDto.billingPeriodEnd) {
-      whereClause.billingPeriodStart = {};
+      whereClause.billing_period_start = {};
       if (filterDto.billingPeriodStart) {
-        whereClause.billingPeriodStart.gte = new Date(filterDto.billingPeriodStart);
+        whereClause.billing_period_start.gte = new Date(filterDto.billingPeriodStart);
       }
       if (filterDto.billingPeriodEnd) {
-        whereClause.billingPeriodStart.lte = new Date(filterDto.billingPeriodEnd);
+        whereClause.billing_period_start.lte = new Date(filterDto.billingPeriodEnd);
       }
     }
 
     if (filterDto.dueDateStart || filterDto.dueDateEnd) {
-      whereClause.dueDate = {};
+      whereClause.due_date = {};
       if (filterDto.dueDateStart) {
-        whereClause.dueDate.gte = new Date(filterDto.dueDateStart);
+        whereClause.due_date.gte = new Date(filterDto.dueDateStart);
       }
       if (filterDto.dueDateEnd) {
-        whereClause.dueDate.lte = new Date(filterDto.dueDateEnd);
+        whereClause.due_date.lte = new Date(filterDto.dueDateEnd);
       }
     }
 
     return whereClause;
   }
 
-  private async calculateInvoiceSummary(whereClause: Prisma.InvoiceWhereInput) {
+  private async calculateInvoiceSummary(whereClause: Prisma.invoicesWhereInput) {
     const statusGroups = await this.prisma.invoice.groupBy({
       by: ['status'],
       where: whereClause,
@@ -482,17 +475,17 @@ export class InvoiceService {
           client: { companyId },
         },
         status: { in: [InvoiceStatus.SENT] },
-        dueDate: { lt: new Date() },
+        due_date: { lt: new Date() },
       },
     });
   }
 
-  private async getOverdueAmount(baseWhereClause: Prisma.InvoiceWhereInput): Promise<number> {
+  private async getOverdueAmount(baseWhereClause: Prisma.invoicesWhereInput): Promise<number> {
     const result = await this.prisma.invoice.aggregate({
       where: {
         ...baseWhereClause,
         status: { in: [InvoiceStatus.SENT] },
-        dueDate: { lt: new Date() },
+        due_date: { lt: new Date() },
       },
       _sum: { totalAmount: true },
     });
@@ -510,20 +503,21 @@ export class InvoiceService {
   private mapToInvoiceResponse(invoice: any, metadata?: any): InvoiceResponse {
     return {
       id: invoice.id,
-      clientId: invoice.contractId,
-      client: invoice.contract?.client,
-      invoiceNumber: invoice.invoiceNumber,
-      billingPeriodStart: invoice.billingPeriodStart.toISOString(),
-      billingPeriodEnd: invoice.billingPeriodEnd.toISOString(),
+      contractId: invoice.contractId,
+      clientId: invoice.contract?.clients?.id,
+      client: invoice.contract?.clients,
+      invoiceNumber: invoice.invoice_number,
+      billingPeriodStart: invoice.billing_period_start.toISOString(),
+      billingPeriodEnd: invoice.billing_period_end.toISOString(),
       subtotal: invoice.subtotal.toNumber(),
-      taxAmount: invoice.taxAmount.toNumber(),
-      totalAmount: invoice.totalAmount.toNumber(),
+      taxAmount: invoice.tax_amount.toNumber(),
+      totalAmount: invoice.total_amount.toNumber(),
       status: invoice.status,
-      dueDate: invoice.dueDate.toISOString(),
-      paidAt: invoice.paidAt?.toISOString(),
-      createdAt: invoice.createdAt.toISOString(),
-      updatedAt: invoice.updatedAt.toISOString(),
-      gstDetails: metadata?.gstBreakdown,
+      dueDate: invoice.due_date.toISOString(),
+      paidAt: invoice.paid_at?.toISOString(),
+      createdAt: invoice.created_at.toISOString(),
+      updatedAt: invoice.updated_at.toISOString(),
+      gstDetails: metadata?.gstBreakdown ? this.convertGstDetailsToNumbers(metadata.gstBreakdown) : undefined,
       deploymentSummary: metadata?.deploymentSummary,
       additionalCharges: metadata?.additionalCharges,
       notes: metadata?.notes,
@@ -544,5 +538,20 @@ export class InvoiceService {
 
   private async updateInvoiceMetadata(invoiceId: string, metadata: any): Promise<void> {
     // Update stored metadata
+  }
+
+  private convertGstDetailsToNumbers(gstDetails: any): any {
+    if (!gstDetails) return undefined;
+    
+    return {
+      ...gstDetails,
+      taxableAmount: gstDetails.taxableAmount?.toNumber?.() ?? gstDetails.taxableAmount,
+      cgst: gstDetails.cgst?.toNumber?.() ?? gstDetails.cgst,
+      sgst: gstDetails.sgst?.toNumber?.() ?? gstDetails.sgst,
+      igst: gstDetails.igst?.toNumber?.() ?? gstDetails.igst,
+      utgst: gstDetails.utgst?.toNumber?.() ?? gstDetails.utgst,
+      totalGst: gstDetails.totalGst?.toNumber?.() ?? gstDetails.totalGst,
+      totalAmount: gstDetails.totalAmount?.toNumber?.() ?? gstDetails.totalAmount,
+    };
   }
 }

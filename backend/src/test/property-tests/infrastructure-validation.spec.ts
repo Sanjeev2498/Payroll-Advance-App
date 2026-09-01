@@ -96,7 +96,7 @@ describe('Property Test Infrastructure Validation', () => {
       prisma,
       async (systemPrisma) => {
         expect(systemPrisma).toBeDefined();
-        expect(systemPrisma.company).toBeDefined();
+        expect(systemPrisma.companies).toBeDefined();
         return { success: true, systemPrisma };
       }
     );
@@ -154,7 +154,7 @@ describe('Property Test Infrastructure Validation', () => {
 
     // Verify data is cleaned up (should not find the company anymore)
     const cleanupResult = await prisma.withSystemContext(async (systemPrisma) => {
-      const company = await systemPrisma.company.findUnique({ where: { id: testTenantId } });
+      const company = await systemPrisma.companies.findUnique({ where: { id: testTenantId } });
       return company;
     });
 
@@ -225,11 +225,11 @@ describe('Property Test Infrastructure Validation', () => {
     expect(services.employeesService).toBeDefined();
 
     // Test that all services are properly functional
-    expect(typeof services.tenantContext.hasContext).toBe('function');
-    expect(services.tenantContext.hasContext()).toBe(true);
+    expect(typeof (services.tenantContext as any).hasContext).toBe('function');
+    expect((services.tenantContext as any).hasContext()).toBe(true);
   });
 
-  /**
+  /**`
    * Validates: Requirements 1.10, 2.10
    * Test comprehensive cleanup with error recovery
    */

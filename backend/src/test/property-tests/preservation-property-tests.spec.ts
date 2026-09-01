@@ -250,7 +250,7 @@ describe('Preservation Property Tests - Production System Integrity', () => {
               // Test that data retrieval works correctly
               await PropertyTestSetup.createTenantData(prisma, scenarioTenantId, 'minimal');
               const company = await prisma.withSystemContext(async (systemPrisma) => {
-                return systemPrisma.company.findUnique({ where: { id: scenarioTenantId } });
+                return systemPrisma.companies.findUnique({ where: { id: scenarioTenantId } });
               });
               operationSuccessful = !!company;
               break;

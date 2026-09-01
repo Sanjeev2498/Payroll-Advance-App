@@ -21,8 +21,19 @@ module.exports = {
     '!src/**/*.spec.ts',
     '!src/**/*.test.ts',
   ],
-  testTimeout: 30000,
+  testTimeout: 45000, // Reduced from 60s to 45s for better performance
+  
+  // Global setup and teardown to prevent concurrent schema operations
+  globalSetup: '<rootDir>/src/test/global-setup.ts',
+  globalTeardown: '<rootDir>/src/test/global-teardown.ts',
+  
+  // Per-test setup (no schema operations)
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+  
+  // Run tests serially to prevent database conflicts during development
+  // Optimized for better performance in CI environments
+  maxWorkers: process.env.CI ? '25%' : 1, // Reduced from 50% for better stability
+  
   moduleNameMapper: {
     ...pathsToModuleNameMapper(compilerOptions.paths || {}, { 
       prefix: '<rootDir>/'

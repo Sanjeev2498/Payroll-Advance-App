@@ -263,14 +263,14 @@ describe('Employee Data Integrity Property Tests', () => {
       async (employeeData) => {
         try {
           // Act: Create employee
-          const createdEmployee = await employeesService.create(employeeData);
+          const createdEmployee = await employeesService.create(employeeData as any, 'ADMIN');
 
           // Assert: All required fields are preserved
           expect(createdEmployee.employeeNumber).toBe(employeeData.employeeNumber);
           expect(createdEmployee.firstName).toBe(employeeData.firstName);
           expect(createdEmployee.lastName).toBe(employeeData.lastName);
           expect(createdEmployee.hireDate).toEqual(employeeData.hireDate);
-          expect(createdEmployee.companyId).toBe(testCompanyId);
+          expect((createdEmployee as any).companyId).toBe(testCompanyId);
           expect(createdEmployee.employmentStatus).toBe('ACTIVE');
 
           // Assert: Optional fields are preserved when provided
@@ -297,12 +297,12 @@ describe('Employee Data Integrity Property Tests', () => {
           }
 
           // Assert: Employee can be retrieved with same data
-          const retrievedEmployee = await employeesService.findOne(createdEmployee.id);
+          const retrievedEmployee = await employeesService.findOne(createdEmployee.id, 'ADMIN');
           expect(retrievedEmployee.id).toBe(createdEmployee.id);
           expect(retrievedEmployee.employeeNumber).toBe(employeeData.employeeNumber);
 
           // Clean up: Delete the created employee
-          await employeesService.remove(createdEmployee.id);
+          await employeesService.remove(createdEmployee.id, 'ADMIN');
 
         } catch (error) {
           // Only accept known validation errors for invalid data
@@ -329,9 +329,9 @@ describe('Employee Data Integrity Property Tests', () => {
         try {
           // Act: Create employee with skills and certifications
           const createdEmployee = await employeesService.create({
-            ...employeeData,
+            ...employeeData as any,
             employeeNumber: `SKILL-${Date.now()}-${Math.random()}`, // Ensure uniqueness
-          });
+          }, 'test-user');
 
           // Assert: Skills array is properly formatted in database
           const skillNames = (employeeData.skills || []).map(skill => skill.name);
@@ -358,12 +358,12 @@ describe('Employee Data Integrity Property Tests', () => {
           }
 
           // Assert: Skills-based search works correctly
-          const foundBySkills = await employeesService.findBySkills(skillNames.slice(0, 2));
+          const foundBySkills = await employeesService.findBySkills(skillNames.slice(0, 2), 'test-user');
           const foundEmployee = foundBySkills.find(emp => emp.id === createdEmployee.id);
           expect(foundEmployee).toBeDefined();
 
           // Clean up
-          await employeesService.remove(createdEmployee.id);
+          await employeesService.remove(createdEmployee.id, 'ADMIN');
 
         } catch (error) {
           if (getErrorMessage(error).includes('already exists')) {
@@ -389,13 +389,13 @@ describe('Employee Data Integrity Property Tests', () => {
           // Setup: Create initial employee
           const uniqueEmployeeNumber = `UPD-${Date.now()}-${Math.random()}`;
           const employee = await employeesService.create({
-            ...initialData,
+            ...initialData as any,
             employeeNumber: uniqueEmployeeNumber,
-          });
+          }, 'test-user');
 
           // Act: Update employee with new data (excluding employeeNumber to avoid conflicts)
           const { employeeNumber: _, ...updateFields } = updateData;
-          const updatedEmployee = await employeesService.update(employee.id, updateFields);
+          const updatedEmployee = await employeesService.update(employee.id, updateFields as any, 'ADMIN');
 
           // Assert: Updated fields are correctly applied
           if (updateFields.firstName) {
@@ -409,7 +409,7 @@ describe('Employee Data Integrity Property Tests', () => {
           // Assert: Unchanged fields remain the same
           expect(updatedEmployee.employeeNumber).toBe(uniqueEmployeeNumber);
           expect(updatedEmployee.id).toBe(employee.id);
-          expect(updatedEmployee.companyId).toBe(testCompanyId);
+          expect((updatedEmployee as any).companyId).toBe(testCompanyId);
 
           // Assert: Metadata is properly merged
           const updatedMetadata = (updatedEmployee as any).metadata;
@@ -418,12 +418,12 @@ describe('Employee Data Integrity Property Tests', () => {
           }
 
           // Assert: Employee can still be found after update
-          const retrievedEmployee = await employeesService.findOne(employee.id);
+          const retrievedEmployee = await employeesService.findOne(employee.id, 'test-user');
           expect(retrievedEmployee.id).toBe(employee.id);
           expect(retrievedEmployee.firstName).toBe(updatedEmployee.firstName);
 
           // Clean up
-          await employeesService.remove(employee.id);
+          await employeesService.remove(employee.id, 'test-user');
 
         } catch (error) {
           if (getErrorMessage(error).includes('already exists') || 
@@ -448,9 +448,9 @@ describe('Employee Data Integrity Property Tests', () => {
         try {
           // Act: Create employee with compliance data
           const employee = await employeesService.create({
-            ...employeeData,
+            ...employeeData as any,
             employeeNumber: `COMP-${Date.now()}-${Math.random()}`,
-          });
+          }, 'test-user');
 
           // Assert: Compliance status is accurately stored
           const metadata = (employee as any).metadata;
@@ -483,7 +483,7 @@ describe('Employee Data Integrity Property Tests', () => {
           expect(['COMPLIANT', 'NON_COMPLIANT', 'PENDING']).toContain(complianceStatus);
 
           // Clean up
-          await employeesService.remove(employee.id);
+          await employeesService.remove(employee.id, 'test-user');
 
         } catch (error) {
           if (getErrorMessage(error).includes('already exists')) {
@@ -507,9 +507,9 @@ describe('Employee Data Integrity Property Tests', () => {
         try {
           // Setup: Create active employee
           const employee = await employeesService.create({
-            ...employeeData,
+            ...employeeData as any,
             employeeNumber: `TERM-${Date.now()}-${Math.random()}`,
-          });
+          }, 'test-user');
 
           // Store original data for comparison
           const originalData = {
@@ -522,7 +522,7 @@ describe('Employee Data Integrity Property Tests', () => {
           };
 
           // Act: Terminate employee
-          const terminatedEmployee = await employeesService.remove(employee.id);
+          const terminatedEmployee = await employeesService.remove(employee.id, 'test-user');
 
           // Assert: Employee status is changed to TERMINATED
           expect(terminatedEmployee.employmentStatus).toBe('TERMINATED');
@@ -540,12 +540,12 @@ describe('Employee Data Integrity Property Tests', () => {
           expect((terminatedEmployee as any).metadata).toEqual(originalData.metadata);
 
           // Assert: Terminated employee can still be retrieved (soft delete)
-          const retrievedEmployee = await employeesService.findOne(employee.id);
+          const retrievedEmployee = await employeesService.findOne(employee.id, 'test-user');
           expect(retrievedEmployee.employmentStatus).toBe('TERMINATED');
           expect(retrievedEmployee.firstName).toBe(originalData.firstName);
 
           // Clean up (hard delete for test cleanup)
-          await prisma.employee.delete({ where: { id: employee.id } });
+          await prisma.employees.delete({ where: { id: employee.id } });
 
         } catch (error) {
           if (getErrorMessage(error).includes('already exists')) {

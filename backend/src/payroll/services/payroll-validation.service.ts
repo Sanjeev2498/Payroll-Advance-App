@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Decimal } from 'decimal.js';
-import { Employee, PayrollRun } from '@prisma/client';
+import { employees, payroll_runs } from '@prisma/client';
 
 export interface PayrollValidationResult {
   isValid: boolean;
@@ -13,23 +13,23 @@ export class PayrollValidationService {
   /**
    * Validate payroll run data before processing
    */
-  validatePayrollRun(payrollRun: PayrollRun): PayrollValidationResult {
+  validatePayrollRun(payrollRun: payroll_runs): PayrollValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     // Validate pay period
-    if (payrollRun.payPeriodStart >= payrollRun.payPeriodEnd) {
+    if (payrollRun.pay_period_start >= payrollRun.pay_period_end) {
       errors.push('Pay period start date must be before end date');
     }
 
     // Validate total amount
-    if (payrollRun.totalAmount && new Decimal(payrollRun.totalAmount).lt(0)) {
+    if (payrollRun.total_amount && new Decimal(payrollRun.total_amount).lt(0)) {
       errors.push('Total amount cannot be negative');
     }
 
     // Check for future dates
     const today = new Date();
-    if (payrollRun.payPeriodEnd > today) {
+    if (payrollRun.pay_period_end > today) {
       warnings.push('Pay period end date is in the future');
     }
 
@@ -43,21 +43,21 @@ export class PayrollValidationService {
   /**
    * Validate employee data for payroll processing
    */
-  validateEmployee(employee: Employee): PayrollValidationResult {
+  validateEmployee(employee: employees): PayrollValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     // Check employment status
-    if (employee.employmentStatus !== 'ACTIVE') {
-      warnings.push(`Employee ${employee.employeeNumber} is not active`);
+    if (employee.employment_status !== 'ACTIVE') {
+      warnings.push(`Employee ${employee.employee_number} is not active`);
     }
 
     // Check mandatory fields
-    if (!employee.firstName || !employee.lastName) {
+    if (!employee.first_name || !employee.last_name) {
       errors.push('Employee name is required');
     }
 
-    if (!employee.hireDate) {
+    if (!employee.hire_date) {
       errors.push('Hire date is required for payroll processing');
     }
 

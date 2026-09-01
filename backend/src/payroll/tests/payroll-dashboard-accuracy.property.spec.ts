@@ -314,7 +314,7 @@ describe('Property 22: Payroll Dashboard Accuracy', () => {
 
           // Verify: Mathematical consistency
           expect(result).toBeTruthy();
-          expect(result!.totalAmount.equals(totalGross)).toBe(true);
+          expect(result!.total_amount.equals(totalGross)).toBe(true);
 
           // Verify individual employee calculations are consistent
           const employeeGroups = new Map<string, any[]>();
@@ -517,10 +517,10 @@ describe('Property 22: Payroll Dashboard Accuracy', () => {
             if (detailRun) {
               // Core fields must match
               expect(listRun.id).toBe(detailRun.id);
-              expect(listRun.runNumber).toBe(detailRun.runNumber);
+              expect(listRun.run_number).toBe(detailRun.run_number);
               expect(listRun.status).toBe(detailRun.status);
-              expect(new Decimal(listRun.totalAmount).equals(detailRun.totalAmount)).toBe(true);
-              expect(listRun.employeeCount).toBe(detailRun.employeeCount);
+              expect(new Decimal(listRun.total_amount).equals(detailRun.total_amount)).toBe(true);
+              expect((listRun as any).employeeCount).toBe((detailRun as any).employeeCount);
 
               // Calculated totals must be consistent
               const detailItems = (detailRun as any).payrollItems || [];
@@ -530,7 +530,7 @@ describe('Property 22: Payroll Dashboard Accuracy', () => {
               );
 
               // Allow for small rounding differences
-              const totalDifference = calculatedTotal.minus(detailRun.totalAmount).abs();
+              const totalDifference = calculatedTotal.minus(detailRun.total_amount).abs();
               expect(totalDifference.toNumber()).toBeLessThanOrEqual(0.01);
             }
           }
@@ -596,6 +596,8 @@ describe('Property 22: Payroll Dashboard Accuracy', () => {
             totalAmount: new Decimal(newRunAmount),
             employeeCount: employees.length,
             createdAt: new Date(),
+            payPeriodStart: new Date('2024-01-01'),
+            payPeriodEnd: new Date('2024-01-31'),
           };
 
           // Update mock data to include new run

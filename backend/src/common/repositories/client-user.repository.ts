@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../tenant-context.service';
-import { ClientUser, Prisma, ClientUserRole } from '@prisma/client';
+import { clients, client_users, Prisma, ClientUserRole } from '@prisma/client';
 
-export interface CreateClientUserDto {
+export interface Createclient_usersDto {
   clientId: string;
   email: string;
   firstName: string;
@@ -17,7 +17,7 @@ export interface CreateClientUserDto {
   preferences?: any;
 }
 
-export interface UpdateClientUserDto {
+export interface Updateclient_usersDto {
   email?: string;
   firstName?: string;
   lastName?: string;
@@ -50,14 +50,14 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Create a new client user
    */
-  async create(data: CreateClientUserDto): Promise<ClientUser> {
-    this.logOperation('CREATE', 'ClientUser');
+  async create(data: Createclient_usersDto): Promise<clients> {
+    this.logOperation('CREATE', 'client_users');
 
     // Verify client exists and belongs to current tenant
     const client = await this.prisma.client.findFirst({
       where: {
         id: data.clientId,
-        companyId: this.tenantContext.getTenantId(),
+        company_id: this.tenantContext.getTenantId(),
       },
     });
 
@@ -66,11 +66,11 @@ export class ClientUserRepository extends TenantAwareRepository {
     }
 
     // Check if email already exists for this client
-    const existingUser = await this.prisma.clientUser.findFirst({
+    const existingUser = await this.prisma.clientUsers.findFirst({
       where: {
         email: data.email,
         client: {
-          companyId: this.tenantContext.getTenantId(),
+          company_id: this.tenantContext.getTenantId(),
         },
       },
     });
@@ -79,24 +79,25 @@ export class ClientUserRepository extends TenantAwareRepository {
       throw new Error('Email address already exists');
     }
 
-    const createData: Prisma.ClientUserCreateInput = {
+    const createData: Prisma.client_usersCreateInput = {
       email: data.email,
-      firstName: data.firstName,
-      lastName: data.lastName,
+      first_name: data.firstName,
+      last_name: data.lastName,
       role: data.role,
       phone: data.phone,
-      jobTitle: data.jobTitle,
+      job_title: data.jobTitle,
       department: data.department,
       permissions: data.permissions as Prisma.JsonValue,
       preferences: data.preferences as Prisma.JsonValue,
-      invitedAt: new Date(),
+      invited_at: new Date(),
+      updated_at: new Date(),
       client: {
         connect: { id: data.clientId },
       },
     };
 
     return this.writeWithTenant(() =>
-      this.prisma.clientUser.create({
+      this.prisma.clientUsers.create({
         data: createData,
         include: {
           client: {
@@ -114,15 +115,15 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Find client user by ID with tenant isolation
    */
-  async findById(id: string): Promise<ClientUser | null> {
-    this.logOperation('READ', 'ClientUser', id);
+  async findById(id: string): Promise<client_users | null> {
+    this.logOperation('READ', 'client_users', id);
 
     return this.findWithTenant(() =>
-      this.prisma.clientUser.findFirst({
+      this.prisma.clientUsers.findFirst({
         where: {
           id,
           client: {
-            companyId: this.tenantContext.getTenantId(),
+            company_id: this.tenantContext.getTenantId(),
           },
         },
         include: {
@@ -142,19 +143,19 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Find client user by email
    */
-  async findByEmail(email: string, clientId?: string): Promise<ClientUser | null> {
-    this.logOperation('READ', 'ClientUser', `email:${email}`);
+  async findByEmail(email: string, clientId?: string): Promise<client_users | null> {
+    this.logOperation('READ', 'client_users', `email:${email}`);
 
-    const where: Prisma.ClientUserWhereInput = {
+    const where: Prisma.client_usersWhereInput = {
       email,
       client: {
-        companyId: this.tenantContext.getTenantId(),
+        company_id: this.tenantContext.getTenantId(),
         ...(clientId && { id: clientId }),
       },
     };
 
     return this.findWithTenant(() =>
-      this.prisma.clientUser.findFirst({
+      this.prisma.clientUsers.findFirst({
         where,
         include: {
           client: {
@@ -172,8 +173,8 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Update client user by ID
    */
-  async update(id: string, data: UpdateClientUserDto): Promise<ClientUser> {
-    this.logOperation('UPDATE', 'ClientUser', id);
+  async update(id: string, data: Updateclient_usersDto): Promise<client_users> {
+    this.logOperation('UPDATE', 'client_users', id);
 
     // First verify the user exists and belongs to the current tenant
     const existing = await this.findById(id);
@@ -189,26 +190,26 @@ export class ClientUserRepository extends TenantAwareRepository {
       }
     }
 
-    const updateData: Prisma.ClientUserUpdateInput = {
+    const updateData: Prisma.client_usersUpdateInput = {
       ...(data.email && { email: data.email }),
-      ...(data.firstName && { firstName: data.firstName }),
-      ...(data.lastName && { lastName: data.lastName }),
+      ...(data.firstName && { first_name: data.firstName }),
+      ...(data.lastName && { last_name: data.lastName }),
       ...(data.role && { role: data.role }),
       ...(data.phone && { phone: data.phone }),
-      ...(data.jobTitle && { jobTitle: data.jobTitle }),
+      ...(data.jobTitle && { job_title: data.jobTitle }),
       ...(data.department && { department: data.department }),
       ...(data.permissions && { permissions: data.permissions as Prisma.JsonValue }),
       ...(data.preferences && { preferences: data.preferences as Prisma.JsonValue }),
-      ...(data.isActive !== undefined && { isActive: data.isActive }),
+      ...(data.isActive !== undefined && { is_active: data.isActive }),
     };
 
     // Set activation timestamp if user is being activated
-    if (data.isActive === true && !existing.activatedAt) {
-      updateData.activatedAt = new Date();
+    if (data.isActive === true && !existing.activated_at) {
+      updateData.activated_at = new Date();
     }
 
     return this.writeWithTenant(() =>
-      this.prisma.clientUser.update({
+      this.prisma.clientUsers.update({
         where: { id },
         data: updateData,
         include: {
@@ -227,8 +228,8 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Deactivate client user
    */
-  async deactivate(id: string): Promise<ClientUser> {
-    this.logOperation('DEACTIVATE', 'ClientUser', id);
+  async deactivate(id: string): Promise<client_users> {
+    this.logOperation('DEACTIVATE', 'client_users', id);
 
     return this.update(id, { isActive: false });
   }
@@ -240,30 +241,30 @@ export class ClientUserRepository extends TenantAwareRepository {
     filters: ClientUserSearchFilters = {},
     page?: number,
     limit?: number,
-    sortBy?: keyof ClientUser,
+    sortBy?: keyof client_users,
     sortOrder?: 'asc' | 'desc',
   ): Promise<{
-    users: (ClientUser & { client: any })[];
+    users: (client_users & { client: any })[];
     total: number;
     page: number;
     limit: number;
     totalPages: number;
   }> {
-    this.logOperation('LIST', 'ClientUser');
+    this.logOperation('LIST', 'client_users');
 
     const pagination = this.getPaginationParams(page, limit);
     const sorting = this.getSortingParams(sortBy, sortOrder);
 
-    const where: Prisma.ClientUserWhereInput = {
+    const where: Prisma.client_usersWhereInput = {
       client: {
-        companyId: this.tenantContext.getTenantId(),
+        company_id: this.tenantContext.getTenantId(),
       },
-      ...this.buildClientUserSearchFilter(filters),
+      ...this.buildclient_usersSearchFilter(filters),
     };
 
     const [users, total] = await Promise.all([
       this.findWithTenant(() =>
-        this.prisma.clientUser.findMany({
+        this.prisma.clientUsers.findMany({
           where,
           include: {
             client: {
@@ -278,8 +279,8 @@ export class ClientUserRepository extends TenantAwareRepository {
           skip: pagination.skip,
           take: pagination.take,
         }),
-      ) as Promise<(ClientUser & { client: any })[]>,
-      this.findWithTenant(() => this.prisma.clientUser.count({ where })) as Promise<number>,
+      ) as Promise<(client_users & { client: any })[]>,
+      this.findWithTenant(() => this.prisma.clientUsers.count({ where })) as Promise<number>,
     ]);
 
     return {
@@ -294,21 +295,21 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Find client users by client ID
    */
-  async findByClientId(clientId: string): Promise<ClientUser[]> {
-    this.logOperation('SEARCH', 'ClientUser', `client:${clientId}`);
+  async findByClientId(clientId: string): Promise<client_users[]> {
+    this.logOperation('SEARCH', 'client_users', `client:${clientId}`);
 
     return this.findWithTenant(() =>
-      this.prisma.clientUser.findMany({
+      this.prisma.clientUsers.findMany({
         where: {
           clientId,
           client: {
-            companyId: this.tenantContext.getTenantId(),
+            company_id: this.tenantContext.getTenantId(),
           },
         },
         orderBy: [
           { role: 'asc' },
-          { lastName: 'asc' },
-          { firstName: 'asc' },
+          { last_name: 'asc' },
+          { first_name: 'asc' },
         ],
       }),
     );
@@ -317,15 +318,15 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Find client users by role
    */
-  async findByRole(role: ClientUserRole): Promise<ClientUser[]> {
-    this.logOperation('SEARCH', 'ClientUser', `role:${role}`);
+  async findByRole(role: ClientUserRole): Promise<client_users[]> {
+    this.logOperation('SEARCH', 'client_users', `role:${role}`);
 
     return this.findWithTenant(() =>
-      this.prisma.clientUser.findMany({
+      this.prisma.clientUsers.findMany({
         where: {
           role,
           client: {
-            companyId: this.tenantContext.getTenantId(),
+            company_id: this.tenantContext.getTenantId(),
           },
         },
         include: {
@@ -337,7 +338,7 @@ export class ClientUserRepository extends TenantAwareRepository {
             },
           },
         },
-        orderBy: { lastName: 'asc' },
+        orderBy: { last_name: 'asc' },
       }),
     );
   }
@@ -354,7 +355,7 @@ export class ClientUserRepository extends TenantAwareRepository {
     invitationsSent: number;
     pendingActivations: number;
   }> {
-    this.logOperation('STATS', 'ClientUser');
+    this.logOperation('STATS', 'client_users');
 
     const [
       total,
@@ -366,61 +367,61 @@ export class ClientUserRepository extends TenantAwareRepository {
       pendingActivations,
     ] = await Promise.all([
       this.findWithTenant(() =>
-        this.prisma.clientUser.count({
+        this.prisma.clientUsers.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            client: { company_id: this.tenantContext.getTenantId() },
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.clientUser.count({
+        this.prisma.clientUsers.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
-            isActive: true,
+            client: { company_id: this.tenantContext.getTenantId() },
+            is_active: true,
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.clientUser.count({
+        this.prisma.clientUsers.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
-            isActive: false,
+            client: { company_id: this.tenantContext.getTenantId() },
+            is_active: false,
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.clientUser.groupBy({
+        this.prisma.clientUsers.groupBy({
           by: ['role'],
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            client: { company_id: this.tenantContext.getTenantId() },
           },
           _count: true,
         }),
       ),
       this.findWithTenant(() =>
-        this.prisma.clientUser.groupBy({
-          by: ['clientId'],
+        this.prisma.clientUsers.groupBy({
+          by: ['client_id'],
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            client: { company_id: this.tenantContext.getTenantId() },
           },
           _count: true,
         }),
       ),
       this.findWithTenant(() =>
-        this.prisma.clientUser.count({
+        this.prisma.clientUsers.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
-            invitedAt: { not: null },
+            client: { company_id: this.tenantContext.getTenantId() },
+            invited_at: { not: null },
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.clientUser.count({
+        this.prisma.clientUsers.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
-            invitedAt: { not: null },
-            activatedAt: null,
-            isActive: true,
+            client: { company_id: this.tenantContext.getTenantId() },
+            invited_at: { not: null },
+            activated_at: null,
+            is_active: true,
           },
         }),
       ) as Promise<number>,
@@ -435,7 +436,7 @@ export class ClientUserRepository extends TenantAwareRepository {
     // Convert client stats to record (using client names)
     const clientStats: Record<string, number> = {};
     (byClient as any[]).forEach((item) => {
-      clientStats[item.clientId] = item._count;
+      clientStats[item.client_id] = item._count;
     });
 
     return {
@@ -452,17 +453,17 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Build search filter for client user queries
    */
-  private buildClientUserSearchFilter(filters: ClientUserSearchFilters): Prisma.ClientUserWhereInput {
-    const conditions: Prisma.ClientUserWhereInput[] = [];
+  private buildclient_usersSearchFilter(filters: ClientUserSearchFilters): Prisma.client_usersWhereInput {
+    const conditions: Prisma.client_usersWhereInput[] = [];
 
     // Text search across name and email
     if (filters.search) {
       conditions.push({
         OR: [
-          { firstName: { contains: filters.search, mode: 'insensitive' } },
-          { lastName: { contains: filters.search, mode: 'insensitive' } },
+          { first_name: { contains: filters.search, mode: 'insensitive' } },
+          { last_name: { contains: filters.search, mode: 'insensitive' } },
           { email: { contains: filters.search, mode: 'insensitive' } },
-          { jobTitle: { contains: filters.search, mode: 'insensitive' } },
+          { job_title: { contains: filters.search, mode: 'insensitive' } },
         ],
       });
     }
@@ -477,14 +478,14 @@ export class ClientUserRepository extends TenantAwareRepository {
     // Client filter
     if (filters.clientId) {
       conditions.push({
-        clientId: filters.clientId,
+        client_id: filters.clientId,
       });
     }
 
     // Active status filter
     if (filters.isActive !== undefined) {
       conditions.push({
-        isActive: filters.isActive,
+        is_active: filters.isActive,
       });
     }
 
@@ -504,8 +505,8 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Update user permissions
    */
-  async updatePermissions(id: string, permissions: any): Promise<ClientUser> {
-    this.logOperation('PERMISSIONS', 'ClientUser', id);
+  async updatePermissions(id: string, permissions: any): Promise<client_users> {
+    this.logOperation('PERMISSIONS', 'client_users', id);
 
     return this.update(id, { permissions });
   }
@@ -513,8 +514,8 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Update user preferences
    */
-  async updatePreferences(id: string, preferences: any): Promise<ClientUser> {
-    this.logOperation('PREFERENCES', 'ClientUser', id);
+  async updatePreferences(id: string, preferences: any): Promise<client_users> {
+    this.logOperation('PREFERENCES', 'client_users', id);
 
     return this.update(id, { preferences });
   }
@@ -522,14 +523,14 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Record user login
    */
-  async recordLogin(id: string): Promise<ClientUser> {
-    this.logOperation('LOGIN', 'ClientUser', id);
+  async recordLogin(id: string): Promise<client_users> {
+    this.logOperation('LOGIN', 'client_users', id);
 
     return this.writeWithTenant(() =>
-      this.prisma.clientUser.update({
+      this.prisma.clientUsers.update({
         where: { id },
         data: {
-          lastLoginAt: new Date(),
+          last_login_at: new Date(),
         },
       }),
     );
@@ -538,14 +539,14 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Send invitation to client user
    */
-  async sendInvitation(id: string): Promise<ClientUser> {
-    this.logOperation('INVITE', 'ClientUser', id);
+  async sendInvitation(id: string): Promise<client_users> {
+    this.logOperation('INVITE', 'client_users', id);
 
     return this.writeWithTenant(() =>
-      this.prisma.clientUser.update({
+      this.prisma.clientUsers.update({
         where: { id },
         data: {
-          invitedAt: new Date(),
+          invited_at: new Date(),
         },
         include: {
           client: {
@@ -563,15 +564,15 @@ export class ClientUserRepository extends TenantAwareRepository {
   /**
    * Activate client user account
    */
-  async activate(id: string): Promise<ClientUser> {
-    this.logOperation('ACTIVATE', 'ClientUser', id);
+  async activate(id: string): Promise<client_users> {
+    this.logOperation('ACTIVATE', 'client_users', id);
 
     return this.writeWithTenant(() =>
-      this.prisma.clientUser.update({
+      this.prisma.clientUsers.update({
         where: { id },
         data: {
-          isActive: true,
-          activatedAt: new Date(),
+          is_active: true,
+          activated_at: new Date(),
         },
       }),
     );

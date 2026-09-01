@@ -129,31 +129,31 @@ describe('Deployment Assignment Correctness Properties', () => {
           mockTenantContextService.setContext(company.id);
           
           // Set tenant context for the test
-          tenantContext.setContext(company.id);
+          mockTenantContextService.setContext(company.id);
           
           try {
             // Test: Verify assignment tracking through direct database queries
             for (const site of sites) {
               // Count actual assignments for this site
-              const actualAssignedGuards = await prisma.assignment.count({
+              const actualAssignedGuards = await prisma.assignments.count({
                 where: { 
-                  siteId: site.id, 
+                  site_id: site.id, 
                   status: 'ACTIVE' 
                 }
               });
               
               // Get site with assignments included
-              const siteWithAssignments = await prisma.site.findUnique({
+              const siteWithAssignments = await prisma.sites.findUnique({
                 where: { id: site.id },
                 include: {
                   assignments: {
                     where: { status: 'ACTIVE' },
                     include: {
-                      employee: {
+                      employees: {
                         select: { 
                           id: true, 
-                          firstName: true, 
-                          lastName: true 
+                          first_name: true, 
+                          last_name: true 
                         }
                       }
                     }
@@ -167,18 +167,18 @@ describe('Deployment Assignment Correctness Properties', () => {
               
               // Verify assignment data consistency
               for (const assignment of siteWithAssignments!.assignments) {
-                expect(assignment.siteId).toBe(site.id);
+                expect(assignment.site_id).toBe(site.id);
                 expect(assignment.status).toBe('ACTIVE');
-                expect(assignment.employee).toBeDefined();
-                expect(assignment.employee.id).toBeTruthy();
+                expect(assignment.employees).toBeDefined();
+                expect(assignment.employees.id).toBeTruthy();
               }
               
               // Test assignment count accuracy
-              const assignmentsByEmployee = assignments.filter(a => a.siteId === site.id && a.status === 'ACTIVE');
+              const assignmentsByEmployee = assignments.filter(a => a.site_id === site.id && a.status === 'ACTIVE');
               expect(actualAssignedGuards).toBe(assignmentsByEmployee.length);
               
               // Verify no duplicate assignments for the same employee at the same site
-              const employeeIds = siteWithAssignments!.assignments.map(a => a.employeeId);
+              const employeeIds = siteWithAssignments!.assignments.map(a => a.employee_id);
               const uniqueEmployeeIds = [...new Set(employeeIds)];
               expect(employeeIds.length).toBe(uniqueEmployeeIds.length);
             }
@@ -255,24 +255,24 @@ describe('Deployment Assignment Correctness Properties', () => {
             
             // Test database-level conflict detection for scheduling overlaps
             if (conflictingAssignments && conflictingAssignments.length > 0) {
-              const overlappingAssignments = await prisma.assignment.findMany({
+              const overlappingAssignments = await prisma.assignments.findMany({
                 where: {
                   status: 'ACTIVE',
-                  employee: {
-                    companyId: company.id
+                  employees: {
+                    company_id: company.id
                   }
                 },
                 include: {
-                  employee: { select: { id: true, firstName: true, lastName: true } },
-                  site: { select: { id: true, name: true } }
+                  employees: { select: { id: true, first_name: true, last_name: true } },
+                  sites: { select: { id: true, name: true } }
                 }
               });
               
               // Check for potential scheduling conflicts in database
               const employeeAssignmentCounts = new Map<string, number>();
               for (const assignment of overlappingAssignments) {
-                const currentCount = employeeAssignmentCounts.get(assignment.employeeId) || 0;
-                employeeAssignmentCounts.set(assignment.employeeId, currentCount + 1);
+                const currentCount = employeeAssignmentCounts.get(assignment.employee_id) || 0;
+                employeeAssignmentCounts.set(assignment.employee_id, currentCount + 1);
               }
               
               // Verify no employee has multiple active assignments (potential conflict)
@@ -412,7 +412,7 @@ describe('Deployment Assignment Correctness Properties', () => {
             expect(recommendations.recommendedGuards.length).toBeLessThanOrEqual(10);
           } catch (error) {
             // If site doesn't exist in test scenario, that's acceptable
-            if (error.message?.includes('not found')) {
+            if ((error as Error).message?.includes('not found')) {
               // This is expected for some test scenarios
               return;
             }
@@ -441,9 +441,9 @@ describe('Deployment Assignment Correctness Properties', () => {
           
           try {
             // Get initial assignment count for verification
-            const initialAssignments = await prisma.assignment.count({
+            const initialAssignments = await prisma.assignments.count({
               where: { 
-                siteId: site.id, 
+                site_id: site.id, 
                 status: 'ACTIVE' 
               }
             });
@@ -451,11 +451,11 @@ describe('Deployment Assignment Correctness Properties', () => {
             // Test: Perform quick assignment if guard is available
             if (availableGuard) {
               // Verify guard exists and is available
-              const guardExists = await prisma.employee.findUnique({
+              const guardExists = await prisma.employees.findUnique({
                 where: { id: availableGuard.id },
                 select: { 
                   id: true, 
-                  employmentStatus: true,
+                  employment_status: true,
                   assignments: {
                     where: { status: 'ACTIVE' },
                     select: { id: true }
@@ -464,7 +464,7 @@ describe('Deployment Assignment Correctness Properties', () => {
               });
               
               expect(guardExists).toBeDefined();
-              expect(guardExists!.employmentStatus).toBe('ACTIVE');
+              expect(guardExists!.employment_status).toBe('ACTIVE');
               
               // Perform the quick assignment
               await deploymentService.quickAssign({ 
@@ -473,9 +473,9 @@ describe('Deployment Assignment Correctness Properties', () => {
               });
               
               // Verify: Assignment was created
-              const finalAssignments = await prisma.assignment.count({
+              const finalAssignments = await prisma.assignments.count({
                 where: { 
-                  siteId: site.id, 
+                  site_id: site.id, 
                   status: 'ACTIVE' 
                 }
               });
@@ -483,17 +483,17 @@ describe('Deployment Assignment Correctness Properties', () => {
               expect(finalAssignments).toBe(initialAssignments + 1);
               
               // Verify the specific assignment exists
-              const newAssignment = await prisma.assignment.findFirst({
+              const newAssignment = await prisma.assignments.findFirst({
                 where: {
-                  siteId: site.id,
-                  employeeId: availableGuard.id,
+                  site_id: site.id,
+                  employee_id: availableGuard.id,
                   status: 'ACTIVE'
                 }
               });
               
               expect(newAssignment).toBeDefined();
-              expect(newAssignment!.siteId).toBe(site.id);
-              expect(newAssignment!.employeeId).toBe(availableGuard.id);
+              expect(newAssignment!.site_id).toBe(site.id);
+              expect(newAssignment!.employee_id).toBe(availableGuard.id);
               expect(newAssignment!.status).toBe('ACTIVE');
             } else {
               // Test automatic assignment (no specific guard provided)
@@ -501,9 +501,9 @@ describe('Deployment Assignment Correctness Properties', () => {
                 await deploymentService.quickAssign({ siteId: site.id });
                 
                 // If successful, verify an assignment was made
-                const finalAssignments = await prisma.assignment.count({
+                const finalAssignments = await prisma.assignments.count({
                   where: { 
-                    siteId: site.id, 
+                    site_id: site.id, 
                     status: 'ACTIVE' 
                   }
                 });
@@ -514,9 +514,9 @@ describe('Deployment Assignment Correctness Properties', () => {
                 expect(error).toBeDefined();
                 
                 // Verify no partial assignments were created
-                const finalAssignments = await prisma.assignment.count({
+                const finalAssignments = await prisma.assignments.count({
                   where: { 
-                    siteId: site.id, 
+                    site_id: site.id, 
                     status: 'ACTIVE' 
                   }
                 });

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../tenant-context.service';
-import { Employee, Prisma } from '@prisma/client';
+import { employees, Prisma } from '@prisma/client';
 
 export interface CreateEmployeeDto {
   employeeNumber: string;
@@ -43,7 +43,7 @@ export interface EmployeeSearchFilters {
 }
 
 export interface SkillMatchResult {
-  employee: Employee;
+  employee: employees;
   matchPercentage: number;
   matchedSkills: string[];
   missingSkills: string[];
@@ -62,8 +62,8 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Create a new employee
    */
-  async create(data: CreateEmployeeDto): Promise<Employee> {
-    this.logOperation('CREATE', 'Employee');
+  async create(data: CreateEmployeeDto): Promise<employees> {
+    this.logOperation('CREATE', 'employees');
 
     // Convert skills array to proper format for database storage
     const skillsArray = this.extractSkillNames(data.skills);
@@ -83,8 +83,8 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Find employee by ID with tenant isolation
    */
-  async findById(id: string): Promise<Employee | null> {
-    this.logOperation('READ', 'Employee', id);
+  async findById(id: string): Promise<employees | null> {
+    this.logOperation('READ', 'employees', id);
 
     return this.findWithTenant(() =>
       this.prisma.employee.findFirst({
@@ -99,8 +99,8 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Find employee by employee number
    */
-  async findByEmployeeNumber(employeeNumber: string): Promise<Employee | null> {
-    this.logOperation('READ', 'Employee', `number:${employeeNumber}`);
+  async findByemployeesNumber(employeeNumber: string): Promise<employees | null> {
+    this.logOperation('READ', 'employees', `number:${employeeNumber}`);
 
     return this.findWithTenant(() =>
       this.prisma.employee.findFirst({
@@ -115,13 +115,13 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Update employee by ID
    */
-  async update(id: string, data: UpdateEmployeeDto): Promise<Employee> {
-    this.logOperation('UPDATE', 'Employee', id);
+  async update(id: string, data: UpdateEmployeeDto): Promise<employees> {
+    this.logOperation('UPDATE', 'employees', id);
 
     // First verify the employee exists and belongs to the current tenant
     const existing = await this.findById(id);
     if (!existing) {
-      throw new NotFoundException(`Employee with ID ${id} not found`);
+      throw new NotFoundException(`employees with ID ${id} not found`);
     }
 
     // Convert skills array to proper format for database storage
@@ -141,13 +141,13 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Soft delete employee
    */
-  async delete(id: string): Promise<Employee> {
-    this.logOperation('DELETE', 'Employee', id);
+  async delete(id: string): Promise<employees> {
+    this.logOperation('DELETE', 'employees', id);
 
     // First verify the employee exists and belongs to the current tenant
     const existing = await this.findById(id);
     if (!existing) {
-      throw new NotFoundException(`Employee with ID ${id} not found`);
+      throw new NotFoundException(`employees with ID ${id} not found`);
     }
 
     return this.writeWithTenant(() =>
@@ -168,21 +168,21 @@ export class EmployeeRepository extends TenantAwareRepository {
     filters: EmployeeSearchFilters = {},
     page?: number,
     limit?: number,
-    sortBy?: keyof Employee,
+    sortBy?: keyof employees,
     sortOrder?: 'asc' | 'desc',
   ): Promise<{
-    employees: Employee[];
+    employees: employees[];
     total: number;
     page: number;
     limit: number;
     totalPages: number;
   }> {
-    this.logOperation('LIST', 'Employee');
+    this.logOperation('LIST', 'employees');
 
     const pagination = this.getPaginationParams(page, limit);
     const sorting = this.getSortingParams(sortBy, sortOrder);
 
-    const where: Prisma.EmployeeWhereInput = {
+    const where: Prisma.employeesWhereInput = {
       ...this.getTenantFilter(),
       ...this.buildEmployeeSearchFilter(filters),
     };
@@ -195,7 +195,7 @@ export class EmployeeRepository extends TenantAwareRepository {
           skip: pagination.skip,
           take: pagination.take,
         }),
-      ) as Promise<Employee[]>,
+      ) as Promise<employees[]>,
       this.findWithTenant(() => this.prisma.employee.count({ where })) as Promise<number>,
     ]);
 
@@ -211,8 +211,8 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Find employees by skills with advanced matching
    */
-  async findBySkills(requiredSkills: string[]): Promise<Employee[]> {
-    this.logOperation('SEARCH', 'Employee', `skills:${requiredSkills.join(',')}`);
+  async findBySkills(requiredSkills: string[]): Promise<employees[]> {
+    this.logOperation('SEARCH', 'employees', `skills:${requiredSkills.join(',')}`);
 
     return this.findWithTenant(() =>
       this.prisma.employee.findMany({
@@ -231,8 +231,8 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Advanced skills-based matching with scoring
    */
-  async findEmployeesWithSkillMatching(requiredSkills: string[]): Promise<SkillMatchResult[]> {
-    this.logOperation('MATCH', 'Employee', `skills-match:${requiredSkills.join(',')}`);
+  async findemployeessWithSkillMatching(requiredSkills: string[]): Promise<SkillMatchResult[]> {
+    this.logOperation('MATCH', 'employees', `skills-match:${requiredSkills.join(',')}`);
 
     const employees = await this.findWithTenant(() =>
       this.prisma.employee.findMany({
@@ -242,7 +242,7 @@ export class EmployeeRepository extends TenantAwareRepository {
         },
         orderBy: { lastName: 'asc' },
       }),
-    ) as Employee[];
+    ) as employees[];
 
     return employees.map(employee => {
       const employeeSkills = employee.skills || [];
@@ -274,14 +274,14 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Find available employees for a specific time range
    */
-  async findAvailableEmployees(
+  async findAvailableemployeess(
     startDate: Date,
     endDate: Date,
     requiredSkills?: string[],
-  ): Promise<Employee[]> {
+  ): Promise<employees[]> {
     this.logOperation(
       'SEARCH',
-      'Employee',
+      'employees',
       `available:${startDate.toISOString()}-${endDate.toISOString()}`,
     );
 
@@ -321,7 +321,7 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Get employee statistics for the current tenant
    */
-  async getEmployeeStats(): Promise<{
+  async getemployeesStats(): Promise<{
     total: number;
     active: number;
     inactive: number;
@@ -331,7 +331,7 @@ export class EmployeeRepository extends TenantAwareRepository {
     complianceIssues: number;
     averagePerformanceRating: number;
   }> {
-    this.logOperation('STATS', 'Employee');
+    this.logOperation('STATS', 'employees');
 
     const [total, active, inactive, onLeave, terminated] = await Promise.all([
       this.findWithTenant(() =>
@@ -393,8 +393,8 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Find employees with expiring certifications
    */
-  async findEmployeesWithExpiringCertifications(daysUntilExpiry: number = 30): Promise<Employee[]> {
-    this.logOperation('SEARCH', 'Employee', `certifications-expiring:${daysUntilExpiry}`);
+  async findemployeessWithExpiringCertifications(daysUntilExpiry: number = 30): Promise<employees[]> {
+    this.logOperation('SEARCH', 'employees', `certifications-expiring:${daysUntilExpiry}`);
 
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + daysUntilExpiry);
@@ -418,8 +418,8 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Find employees by compliance status
    */
-  async findByComplianceStatus(status: 'COMPLIANT' | 'NON_COMPLIANT' | 'PENDING'): Promise<Employee[]> {
-    this.logOperation('SEARCH', 'Employee', `compliance:${status}`);
+  async findByComplianceStatus(status: 'COMPLIANT' | 'NON_COMPLIANT' | 'PENDING'): Promise<employees[]> {
+    this.logOperation('SEARCH', 'employees', `compliance:${status}`);
 
     // This would need to be implemented based on the actual compliance status logic
     // For now, return all active employees
@@ -437,8 +437,8 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Build search filter for employee queries
    */
-  private buildEmployeeSearchFilter(filters: EmployeeSearchFilters): Prisma.EmployeeWhereInput {
-    const conditions: Prisma.EmployeeWhereInput[] = [];
+  private buildEmployeeSearchFilter(filters: EmployeeSearchFilters): Prisma.employeesWhereInput {
+    const conditions: Prisma.employeesWhereInput[] = [];
 
     // Text search across name, email, and employee number
     if (filters.search) {
@@ -461,7 +461,7 @@ export class EmployeeRepository extends TenantAwareRepository {
     // Employment status filter
     if (filters.employmentStatus) {
       conditions.push({
-        employmentStatus: filters.employmentStatus as any,
+        employment_status: filters.employmentStatus as any,
       });
     }
 
@@ -484,7 +484,7 @@ export class EmployeeRepository extends TenantAwareRepository {
       const dateFilter = this.buildDateRangeFilter(filters.hireDateFrom, filters.hireDateTo);
       if (dateFilter) {
         conditions.push({
-          hireDate: dateFilter,
+          hire_date: dateFilter,
         });
       }
     }
@@ -513,7 +513,7 @@ export class EmployeeRepository extends TenantAwareRepository {
   /**
    * Calculate availability score for an employee
    */
-  private calculateAvailabilityScore(employee: Employee): number {
+  private calculateAvailabilityScore(employee: employees): number {
     // This is a simplified calculation
     // In a real implementation, you'd check current assignments, time off, etc.
     const availability = employee.metadata as any;
@@ -544,7 +544,7 @@ export class EmployeeRepository extends TenantAwareRepository {
           certifications: { not: null },
         },
       }),
-    ) as Employee[];
+    ) as employees[];
 
     return employees.filter(employee => {
       const certifications = employee.certifications as any;
@@ -574,7 +574,7 @@ export class EmployeeRepository extends TenantAwareRepository {
           employmentStatus: 'ACTIVE',
         },
       }),
-    ) as Employee[];
+    ) as employees[];
 
     return employees.filter(employee => {
       const compliance = (employee.metadata as any)?.complianceStatus;
@@ -599,7 +599,7 @@ export class EmployeeRepository extends TenantAwareRepository {
           employmentStatus: 'ACTIVE',
         },
       }),
-    ) as Employee[];
+    ) as employees[];
 
     const ratingsSum = employees.reduce((sum, employee) => {
       const performance = (employee.metadata as any)?.performanceMetrics;

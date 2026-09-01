@@ -13,7 +13,7 @@ import { AttendanceRepository } from './repositories/attendance.repository';
 import { EmployeeRepository } from './repositories/employee.repository';
 import { AssignmentRepository } from './repositories/assignment.repository';
 import { ShiftRepository } from './repositories/shift.repository';
-import { ClientUserRepository } from './repositories/client-user.repository';
+// import { ClientUserRepository } from './repositories/client-user.repository';
 import { ContractRepository } from './repositories/contract.repository';
 import { GlobalExceptionFilter } from './filters/global-exception.filter';
 import { ValidationExceptionFilter } from './filters/validation-exception.filter';
@@ -40,7 +40,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     EmployeeRepository,
     AssignmentRepository,
     ShiftRepository,
-    ClientUserRepository,
+    // ClientUserRepository, // TODO: Fix - references non-existent ClientUser table
     ContractRepository,
     RateLimitGuard,
     // Global exception filters (order matters - most specific first)
@@ -75,7 +75,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     EmployeeRepository,
     AssignmentRepository,
     ShiftRepository,
-    ClientUserRepository,
+    // ClientUserRepository, // TODO: Fix - references non-existent ClientUser table
     ContractRepository,
     RateLimitGuard,
   ],

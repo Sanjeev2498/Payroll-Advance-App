@@ -5,8 +5,8 @@ import { PayrollCalculationService } from './services/payroll-calculation.servic
 import { PayrollPolicyService } from './services/payroll-policy.service';
 import { PayrollRunManagementService } from './services/payroll-run-management.service';
 import { 
-  PayrollRun, 
-  PayrollItem, 
+  payroll_runs, 
+  payroll_items, 
   PayrollStatus, 
   PayrollItemType, 
   AttendanceStatus,
@@ -108,7 +108,7 @@ export class PayrollService {
         );
         
         // Save payroll items to database
-        await this.savePayrollItems(payrollRun.id, employeeData.employeeId, calculation.items);
+        await this.savepayroll_itemss(payrollRun.id, employeeData.employeeId, calculation.items);
         
         employeeResults.push(calculation);
         totalRunAmount = totalRunAmount.add(calculation.grossSalary);
@@ -151,7 +151,7 @@ export class PayrollService {
   /**
    * Save payroll items to database
    */
-  private async savePayrollItems(
+  private async savepayroll_itemss(
     payrollRunId: string,
     employeeId: string,
     items: PayrollItemCalculation[],
@@ -179,9 +179,9 @@ export class PayrollService {
     endDate: Date,
     employeeIds?: string[],
   ) {
-    const whereClause: Prisma.AttendanceWhereInput = {
-      employee: { companyId },
-      clockIn: {
+    const whereClause: Prisma.attendanceWhereInput = {
+      employees: { company_id: companyId },
+      clock_in: {
         gte: startDate,
         lte: endDate,
       },
@@ -189,7 +189,7 @@ export class PayrollService {
     };
 
     if (employeeIds?.length) {
-      whereClause.employeeId = { in: employeeIds };
+      whereClause.employee_id = { in: employeeIds };
     }
 
     const attendanceRecords = await this.prisma.attendance.findMany({
@@ -302,7 +302,7 @@ export class PayrollService {
   /**
    * Get payroll run by ID
    */
-  async getPayrollRun(id: string): Promise<PayrollRun | null> {
+  async getPayrollRun(id: string): Promise<payroll_runs | null> {
     const companyId = this.tenantContext.getTenantId();
     
     return this.prisma.payrollRun.findFirst({

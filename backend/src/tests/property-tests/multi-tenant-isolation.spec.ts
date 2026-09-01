@@ -66,12 +66,12 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
             // Test: Query as tenant1 should only see tenant1 data
             // Note: Companies are tenants themselves, so we query related data instead
             const tenant1Users = await prismaService.withTenant(tenant1Id, async (prisma) => {
-              return prisma.user.findMany();
+              return prisma.users.findMany();
             });
 
             // Test: Query as tenant2 should only see tenant2 data
             const tenant2Users = await prismaService.withTenant(tenant2Id, async (prisma) => {
-              return prisma.user.findMany();
+              return prisma.users.findMany();
             });
 
             // Verify: Each tenant sees only their own data (even if empty)
@@ -86,7 +86,7 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
 
             // Verify companies were created successfully by direct query
             const allCompanies = await prismaService.withSystemContext(async (prisma) => {
-              return prisma.company.findMany({
+              return prisma.companies.findMany({
                 where: { id: { in: [tenant1Id, tenant2Id] } }
               });
             });
@@ -149,7 +149,7 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
 
             // Test: System context should see all companies
             const allCompanies = await prismaService.withSystemContext(async (prisma) => {
-              return prisma.company.findMany({
+              return prisma.companies.findMany({
                 where: {
                   id: { in: [tenant1Id, tenant2Id] },
                 },
@@ -163,10 +163,10 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
               
               // Check if companies exist individually
               const t1Check = await prismaService.withSystemContext(async (prisma) => {
-                return prisma.company.findUnique({ where: { id: tenant1Id } });
+                return prisma.companies.findUnique({ where: { id: tenant1Id } });
               });
               const t2Check = await prismaService.withSystemContext(async (prisma) => {
-                return prisma.company.findUnique({ where: { id: tenant2Id } });
+                return prisma.companies.findUnique({ where: { id: tenant2Id } });
               });
               console.error(`Tenant1 exists:`, !!t1Check, `Tenant2 exists:`, !!t2Check);
             }
@@ -192,7 +192,7 @@ describe('Property Test: Multi-tenant Data Isolation', () => {
   async function cleanup(tenant1Id: string, tenant2Id: string) {
     try {
       await prismaService.withSystemContext(async (prisma) => {
-        await prisma.company.deleteMany({
+        await prisma.companies.deleteMany({
           where: {
             id: { in: [tenant1Id, tenant2Id] },
           },

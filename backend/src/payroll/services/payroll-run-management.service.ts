@@ -12,9 +12,9 @@ import { PayrollCalculationService } from './payroll-calculation.service';
 import { PayrollValidationService } from './payroll-validation.service';
 import { PayrollNotificationService } from './payroll-notification.service';
 import { 
-  PayrollRun, 
+  payroll_runs, 
   PayrollStatus, 
-  PayrollItem,
+  payroll_items,
   Prisma 
 } from '@prisma/client';
 import { 
@@ -122,8 +122,8 @@ export class PayrollRunManagementService {
     const skip = ((filter.page || 1) - 1) * (filter.limit || 20);
 
     // Build where clause for filtering
-    const whereClause: Prisma.PayrollRunWhereInput = {
-      companyId,
+    const whereClause: Prisma.payroll_runsWhereInput = {
+      company_id: companyId,
     };
 
     if (filter.status) {
@@ -131,19 +131,19 @@ export class PayrollRunManagementService {
     }
 
     if (filter.runNumber) {
-      whereClause.runNumber = {
+      whereClause.run_number = {
         contains: filter.runNumber,
         mode: 'insensitive',
       };
     }
 
     if (filter.payPeriodFrom || filter.payPeriodTo) {
-      whereClause.payPeriodStart = {};
+      whereClause.pay_period_start = {};
       if (filter.payPeriodFrom) {
-        whereClause.payPeriodStart.gte = new Date(filter.payPeriodFrom);
+        whereClause.pay_period_start.gte = new Date(filter.payPeriodFrom);
       }
       if (filter.payPeriodTo) {
-        whereClause.payPeriodEnd = {
+        whereClause.pay_period_end = {
           lte: new Date(filter.payPeriodTo)
         };
       }
@@ -362,15 +362,15 @@ export class PayrollRunManagementService {
     // Create a mock payroll run for validation
     const mockPayrollRun = {
       id: 'temp-id',
-      companyId,
-      runNumber: 'temp-run',
-      payPeriodStart: new Date(dto.payPeriodStart),
-      payPeriodEnd: new Date(dto.payPeriodEnd),
+      company_id: companyId,
+      run_number: 'temp-run',
+      pay_period_start: new Date(dto.payPeriodStart),
+      pay_period_end: new Date(dto.payPeriodEnd),
       status: 'DRAFT' as const,
-      totalAmount: new Decimal(0),
-      processedAt: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      total_amount: new Decimal(0),
+      processed_at: null,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
 
     const validationResult = await this.payrollValidationService.validatePayrollRun(mockPayrollRun);
@@ -416,20 +416,20 @@ export class PayrollRunManagementService {
   ) {
     const runNumber = dto.runNumber || await this.generateRunNumber(companyId, new Date(dto.payPeriodStart));
 
-    return tx.payrollRun.create({
+    return tx.payroll_runs.create({
       data: {
-        companyId,
-        runNumber,
-        payPeriodStart: new Date(dto.payPeriodStart),
-        payPeriodEnd: new Date(dto.payPeriodEnd),
+        company_id: companyId,
+        run_number: runNumber,
+        pay_period_start: new Date(dto.payPeriodStart),
+        pay_period_end: new Date(dto.payPeriodEnd),
         status: PayrollStatus.PROCESSING,
-        totalAmount: new Decimal(0),
-      },
+        total_amount: new Decimal(0),
+      } as any,
     });
   }
 
   private async processPayrollBatch(
-    payrollRun: PayrollRun,
+    payrollRun: payroll_runs,
     dto: PayrollBatchProcessingDto,
     companyId: string,
     tx: Prisma.TransactionClient
@@ -493,7 +493,7 @@ export class PayrollRunManagementService {
     
     return {
       payrollRunId: payrollRun.id,
-      runNumber: payrollRun.runNumber,
+      run_number: payrollRun.runNumber,
       payPeriod: {
         start: payrollRun.payPeriodStart,
         end: payrollRun.payPeriodEnd,
@@ -517,14 +517,14 @@ export class PayrollRunManagementService {
     };
   }
 
-  private calculateItemBreakdown(items: PayrollItem[]) {
+  private calculateItemBreakdown(items: payroll_items[]) {
     const breakdown: Record<string, Decimal> = {};
     
     items.forEach(item => {
-      if (!breakdown[item.itemType]) {
-        breakdown[item.itemType] = new Decimal(0);
+      if (!breakdown[item.item_type]) {
+        breakdown[item.item_type] = new Decimal(0);
       }
-      breakdown[item.itemType] = breakdown[item.itemType].add(item.amount);
+      breakdown[item.item_type] = breakdown[item.item_type].add(item.amount);
     });
 
     return breakdown;
@@ -537,7 +537,7 @@ export class PayrollRunManagementService {
     const count = await this.prisma.payrollRun.count({
       where: {
         companyId,
-        runNumber: {
+        run_number: {
           startsWith: `PAY-${year}-${month}`,
         },
       },

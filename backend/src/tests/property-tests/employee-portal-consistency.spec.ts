@@ -76,11 +76,15 @@ describe('Property Test: Employee Portal Data Consistency', () => {
 
     // Setup: Create test company
     await prismaService.withSystemContext(async (prisma) => {
-      await prisma.company.create({
+      await prisma.companies.create({
         data: {
           id: testTenantId,
           name: 'Portal Test Company',
           slug: `portal-test-${testTenantId.substring(0, 8)}`,
+          created_at: new Date(),
+          updated_at: new Date(),
+          settings: {},
+          branding: {}
         },
       });
     });
@@ -113,16 +117,18 @@ describe('Property Test: Employee Portal Data Consistency', () => {
 
             await prismaService.withTenant(testTenantId, async (prisma) => {
               // Create client using minimal required fields
-              const client = await prisma.client.create({
+              const client = await prisma.clients.create({
                 data: {
                   name: testData.client.name,
-                  contactEmail: testData.client.contactEmail,
-                  companyId: testTenantId
+                  contact_email: testData.client.contactEmail,
+                  company_id: testTenantId,
+                  created_at: new Date(),
+                  updated_at: new Date()
                 }
               });
 
               // Create contract first
-              const contract = await prisma.contract.create({
+              const contract = await prisma.contracts.create({
                 data: {
                   clientId: client.id,
                   contractNumber: `CONT-${Date.now()}-${Math.random()}`,
@@ -284,13 +290,13 @@ describe('Property Test: Employee Portal Data Consistency', () => {
 
             // Cleanup: Remove test data
             await prismaService.withTenant(testTenantId, async (prisma) => {
-              await prisma.shiftNotification.deleteMany({});
-              await prisma.attendance.deleteMany({});
-              await prisma.shift.deleteMany({});
-              await prisma.assignment.deleteMany({});
-              await prisma.site.deleteMany({});
-              await prisma.employee.deleteMany({});
-              await prisma.client.deleteMany({});
+              await prisma.shiftNotifications.deleteMany({});
+              await prisma.attendances.deleteMany({});
+              await prisma.shifts.deleteMany({});
+              await prisma.assignments.deleteMany({});
+              await prisma.sites.deleteMany({});
+              await prisma.employees.deleteMany({});
+              await prisma.clients.deleteMany({});
             });
           }
         ),
@@ -304,8 +310,8 @@ describe('Property Test: Employee Portal Data Consistency', () => {
     } finally {
       // Cleanup: Remove test company
       await prismaService.withSystemContext(async (prisma) => {
-        await prisma.company
-          .delete({ where: { id: testTenantId } })
+        await prisma.companies
+          .deleteMany({ where: { id: testTenantId } })
           .catch(() => {
             // Ignore cleanup errors
           });
@@ -325,11 +331,15 @@ describe('Property Test: Employee Portal Data Consistency', () => {
 
     // Setup: Create test company
     await prismaService.withSystemContext(async (prisma) => {
-      await prisma.company.create({
+      await prisma.companies.create({
         data: {
           id: testTenantId,
           name: 'Math Test Company',
           slug: `math-test-${testTenantId.substring(0, 8)}`,
+          created_at: new Date(),
+          updated_at: new Date(),
+          settings: {},
+          branding: {}
         },
       });
     });
@@ -346,15 +356,17 @@ describe('Property Test: Employee Portal Data Consistency', () => {
 
             await prismaService.withTenant(testTenantId, async (prisma) => {
               // Create minimal employee
-              createdEmployee = await prisma.employee.create({
+              createdEmployee = await prisma.employees.create({
                 data: {
-                  employeeNumber: employeeData.employeeNumber,
-                  firstName: employeeData.firstName,
-                  lastName: employeeData.lastName,
+                  employee_number: employeeData.employeeNumber,
+                  first_name: employeeData.firstName,
+                  last_name: employeeData.lastName,
                   email: employeeData.email,
-                  employmentStatus: 'ACTIVE',
-                  hireDate: new Date('2024-01-01'),
-                  companyId: testTenantId
+                  employment_status: 'ACTIVE',
+                  hire_date: new Date('2024-01-01'),
+                  company_id: testTenantId,
+                  created_at: new Date(),
+                  updated_at: new Date()
                 }
               });
             });
@@ -401,7 +413,7 @@ describe('Property Test: Employee Portal Data Consistency', () => {
 
             // Cleanup
             await prismaService.withTenant(testTenantId, async (prisma) => {
-              await prisma.employee.deleteMany({});
+              await prisma.employees.deleteMany({});
             });
           }
         ),
@@ -415,8 +427,8 @@ describe('Property Test: Employee Portal Data Consistency', () => {
     } finally {
       // Cleanup: Remove test company
       await prismaService.withSystemContext(async (prisma) => {
-        await prisma.company
-          .delete({ where: { id: testTenantId } })
+        await prisma.companies
+          .deleteMany({ where: { id: testTenantId } })
           .catch(() => {
             // Ignore cleanup errors
           });

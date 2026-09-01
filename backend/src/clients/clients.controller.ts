@@ -74,14 +74,15 @@ export class ClientsController {
     const client = await this.clientsService.create(createClientDto);
     return {
       id: client.id,
+
       name: client.name,
-      contactEmail: client.contactEmail,
-      contactInfo: client.contactInfo,
-      organizationType: client.organizationType,
+      contactEmail: client.contact_email,
+      contactInfo: client.contact_info,
+      organizationType: client.organization_type,
       industry: client.industry,
-      companySize: client.companySize,
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt,
+      companySize: client.company_size,
+      createdAt: client.created_at,
+      updatedAt: client.updated_at,
     };
   }
 
@@ -129,20 +130,21 @@ export class ClientsController {
     return {
       clients: result.clients.map((client) => ({
         id: client.id,
+  
         name: client.name,
-        contactEmail: client.contactEmail,
-        contactInfo: client.contactInfo,
-        organizationType: client.organizationType,
+        contactEmail: client.contact_email,
+        contactInfo: client.contact_info,
+        organizationType: client.organization_type,
         industry: client.industry,
-        companySize: client.companySize,
-        tags: client.tags,
-        accountManagerId: client.accountManagerId,
-        createdAt: client.createdAt,
-        updatedAt: client.updatedAt,
+        companySize: client.company_size,
+        // tags: client.tags, // Field doesn't exist in schema
+        // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
+        createdAt: client.created_at,
+        updatedAt: client.updated_at,
         _count: {
           sites: 0, // TODO: Get from contracts->sites when needed
-          contracts: client._count.contracts,
-          clientUsers: client._count.clientUsers,
+          contracts: client._count?.contracts,
+          clientUsers: client._count?.clientUsers,
         },
       })),
       total: result.total,
@@ -201,14 +203,15 @@ export class ClientsController {
     const clients = await this.clientsService.findExpiringContracts(days);
     return clients.map((client) => ({
       id: client.id,
+
       name: client.name,
-      contactEmail: client.contactEmail,
-      contactInfo: client.contactInfo,
-      organizationType: client.organizationType,
+      contactEmail: client.contact_email,
+      contactInfo: client.contact_info,
+      organizationType: client.organization_type,
       industry: client.industry,
-      companySize: client.companySize,
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt,
+      companySize: client.company_size,
+      createdAt: client.created_at,
+      updatedAt: client.updated_at,
     }));
   }
 
@@ -229,16 +232,17 @@ export class ClientsController {
     const clients = await this.clientsService.findByOrganizationType(status);
     return clients.map((client) => ({
       id: client.id,
+
       name: client.name,
-      contactEmail: client.contactEmail,
-      contactInfo: client.contactInfo,
-      organizationType: client.organizationType,
+      contactEmail: client.contact_email,
+      contactInfo: client.contact_info,
+      organizationType: client.organization_type,
       industry: client.industry,
-      companySize: client.companySize,
-      tags: client.tags,
-      accountManagerId: client.accountManagerId,
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt,
+      companySize: client.company_size,
+      // tags: client.tags, // Field doesn't exist in schema
+      // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
+      createdAt: client.created_at,
+      updatedAt: client.updated_at,
     }));
   }
 
@@ -263,16 +267,17 @@ export class ClientsController {
     const client = await this.clientsService.findOne(id);
     return {
       id: client.id,
+
       name: client.name,
-      contactEmail: client.contactEmail,
-      contactInfo: client.contactInfo,
-      organizationType: client.organizationType,
+      contactEmail: client.contact_email,
+      contactInfo: client.contact_info,
+      organizationType: client.organization_type,
       industry: client.industry,
-      companySize: client.companySize,
-      tags: client.tags,
-      accountManagerId: client.accountManagerId,
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt,
+      companySize: client.company_size,
+      // tags: client.tags, // Field doesn't exist in schema
+      // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
+      createdAt: client.created_at,
+      updatedAt: client.updated_at,
     };
   }
 
@@ -305,16 +310,17 @@ export class ClientsController {
     const client = await this.clientsService.update(id, updateClientDto);
     return {
       id: client.id,
+
       name: client.name,
-      contactEmail: client.contactEmail,
-      contactInfo: client.contactInfo,
-      organizationType: client.organizationType,
+      contactEmail: client.contact_email,
+      contactInfo: client.contact_info,
+      organizationType: client.organization_type,
       industry: client.industry,
-      companySize: client.companySize,
-      tags: client.tags,
-      accountManagerId: client.accountManagerId,
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt,
+      companySize: client.company_size,
+      // tags: client.tags, // Field doesn't exist in schema
+      // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
+      createdAt: client.created_at,
+      updatedAt: client.updated_at,
     };
   }
 
@@ -339,16 +345,17 @@ export class ClientsController {
     const client = await this.clientsService.remove(id);
     return {
       id: client.id,
+
       name: client.name,
-      contactEmail: client.contactEmail,
-      contactInfo: client.contactInfo,
-      organizationType: client.organizationType,
+      contactEmail: client.contact_email,
+      contactInfo: client.contact_info,
+      organizationType: client.organization_type,
       industry: client.industry,
-      companySize: client.companySize,
-      tags: client.tags,
-      accountManagerId: client.accountManagerId,
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt,
+      companySize: client.company_size,
+      // tags: client.tags, // Field doesn't exist in schema
+      // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
+      createdAt: client.created_at,
+      updatedAt: client.updated_at,
     };
   }
 

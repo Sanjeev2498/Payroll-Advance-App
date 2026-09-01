@@ -10,7 +10,7 @@ import { ClientRepository } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSiteDto, UpdateSiteDto, SiteQueryDto, SiteOperationalStatus } from './dto';
-import { Site, Prisma } from '@prisma/client';
+import { sites as Site, Prisma } from '@prisma/client';
 import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
 
 // In-memory store for demo sites (persistent across requests)
@@ -49,25 +49,25 @@ export class SitesService {
         contractId: createSiteDto.contractId,
         name: createSiteDto.name,
         address: createSiteDto.address,
-        accessRequirements: createSiteDto.accessRequirements || {
+        access_requirements: createSiteDto.accessRequirements || {
           securityClearance: 'Standard',
           requiredCertifications: ['Basic Security Training'],
           accessProcedures: 'Standard access procedures apply'
         },
-        safetyProtocols: createSiteDto.safetyProtocols || {
+        safety_protocols: createSiteDto.safetyProtocols || {
           evacuationProcedures: 'Standard evacuation procedures',
           hazardMitigation: 'Basic safety protocols',
           incidentReporting: 'Report to site manager immediately'
         },
-        operationalStatus: createSiteDto.operationalStatus || SiteOperationalStatus.ACTIVE,
-        contactInfo: createSiteDto.contactInfo || {
+        operational_status: createSiteDto.operationalStatus || SiteOperationalStatus.ACTIVE,
+        contact_info: createSiteDto.contactInfo || {
           primaryContact: 'Site Manager',
           primaryPhone: '+91 98765-43210',
           primaryEmail: 'sitemanager@client.com'
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        contract: {
+        contracts: {
           client: {
             id: 'client-1',
             name: 'Demo Corporate Client'
@@ -87,15 +87,15 @@ export class SitesService {
     }
 
     // Validate that the contract exists and belongs to the current tenant
-    const contract = await this.prisma.contract.findFirst({
+    const contract = await this.prisma.contracts.findFirst({
       where: {
         id: createSiteDto.contractId,
-        client: {
-          companyId: this.tenantContext.getTenantId(),
+        clients: {
+          company_id: this.tenantContext.getTenantId(),
         },
       },
       include: {
-        client: true,
+        clients: true,
       },
     });
 
@@ -104,8 +104,8 @@ export class SitesService {
     }
 
     // Validate contract status
-    if (contract.status === 'TERMINATED') {
-      throw new BadRequestException('Cannot create sites for terminated contracts');
+    if (contract.status === 'TERMINATED' || contract.status === 'EXPIRED') {
+      throw new BadRequestException('Cannot create sites for terminated or expired contracts');
     }
 
     // Set default operational status if not provided
@@ -114,20 +114,25 @@ export class SitesService {
     }
 
     // Prepare the site data for creation
-    const siteData: Prisma.SiteCreateInput = {
+    const siteData: Prisma.sitesCreateInput = {
+      id: crypto.randomUUID(),
       name: createSiteDto.name,
       address: createSiteDto.address as unknown as Prisma.JsonValue,
-      accessRequirements: createSiteDto.accessRequirements
+      access_requirements: createSiteDto.accessRequirements
         ? (createSiteDto.accessRequirements as unknown as Prisma.JsonValue)
         : undefined,
-      safetyProtocols: createSiteDto.safetyProtocols
+      safety_protocols: createSiteDto.safetyProtocols
         ? (createSiteDto.safetyProtocols as unknown as Prisma.JsonValue)
         : undefined,
-      operationalStatus: createSiteDto.operationalStatus as any,
-      contactInfo: createSiteDto.contactInfo
+      operational_status: createSiteDto.operationalStatus as any,
+      contact_info: createSiteDto.contactInfo
         ? (createSiteDto.contactInfo as unknown as Prisma.JsonValue)
         : undefined,
-      contract: {
+      updated_at: new Date(),
+      clients: {
+        connect: { id: contract.client_id }
+      },
+      contracts: {
         connect: { id: createSiteDto.contractId },
       },
     };
@@ -147,8 +152,8 @@ export class SitesService {
 
     if (Object.keys(metadata).length > 0) {
       // Store additional data in JSON fields for flexibility
-      siteData.accessRequirements = {
-        ...((siteData.accessRequirements as any) || {}),
+      siteData.access_requirements = {
+        ...((siteData.access_requirements as any) || {}),
         metadata,
       };
     }
@@ -183,7 +188,7 @@ export class SitesService {
     const filters = {
       search: queryDto.search,
       clientId: queryDto.clientId,
-      operationalStatus: queryDto.operationalStatus,
+      operational_status: queryDto.operationalStatus,
     };
 
     try {
@@ -239,15 +244,15 @@ export class SitesService {
 
     // Validate contract relationship if being changed
     if (updateSiteDto.contractId) {
-      const contract = await this.prisma.contract.findFirst({
+      const contract = await this.prisma.contracts.findFirst({
         where: {
           id: updateSiteDto.contractId,
-          client: {
-            companyId: this.tenantContext.getTenantId(),
+          clients: {
+            company_id: this.tenantContext.getTenantId(),
           },
         },
         include: {
-          client: true,
+          clients: true,
         },
       });
       
@@ -262,7 +267,7 @@ export class SitesService {
     }
 
     // Prepare the update data
-    const updateData: Prisma.SiteUpdateInput = {};
+    const updateData: Prisma.sitesUpdateInput = {};
 
     if (updateSiteDto.name) {
       updateData.name = updateSiteDto.name;
@@ -273,24 +278,24 @@ export class SitesService {
     }
 
     if (updateSiteDto.accessRequirements) {
-      updateData.accessRequirements =
+      updateData.access_requirements =
         updateSiteDto.accessRequirements as unknown as Prisma.JsonValue;
     }
 
     if (updateSiteDto.safetyProtocols) {
-      updateData.safetyProtocols = updateSiteDto.safetyProtocols as unknown as Prisma.JsonValue;
+      updateData.safety_protocols = updateSiteDto.safetyProtocols as unknown as Prisma.JsonValue;
     }
 
     if (updateSiteDto.operationalStatus) {
-      updateData.operationalStatus = updateSiteDto.operationalStatus as any;
+      updateData.operational_status = updateSiteDto.operationalStatus as any;
     }
 
     if (updateSiteDto.contactInfo) {
-      updateData.contactInfo = updateSiteDto.contactInfo as unknown as Prisma.JsonValue;
+      updateData.contact_info = updateSiteDto.contactInfo as unknown as Prisma.JsonValue;
     }
 
     if (updateSiteDto.contractId) {
-      updateData.contract = {
+      updateData.contracts = {
         connect: { id: updateSiteDto.contractId },
       };
     }
@@ -368,19 +373,19 @@ export class SitesService {
 
     try {
       // Find sites through the contract relationship
-      const sites = await this.prisma.site.findMany({
+      const sites = await this.prisma.sites.findMany({
         where: {
-          contract: {
-            clientId: clientId,
-            client: {
-              companyId: this.tenantContext.getTenantId(),
+          contracts: {
+            client_id: clientId,
+            clients: {
+              company_id: this.tenantContext.getTenantId(),
             },
           },
         },
         include: {
-          contract: {
+          contracts: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -453,7 +458,7 @@ export class SitesService {
     newStatus: SiteOperationalStatus,
   ): Promise<void> {
     const currentSite = await this.findOne(siteId);
-    const currentStatus = currentSite.operationalStatus;
+    const currentStatus = currentSite.operational_status;
 
     // Define valid status transitions
     const validTransitions: Record<string, SiteOperationalStatus[]> = {
@@ -581,25 +586,25 @@ export class SitesService {
           postalCode: '400001',
           country: 'India'
         },
-        accessRequirements: {
+        access_requirements: {
           securityClearance: 'Level 2',
           uniformRequired: true,
           equipmentProvided: ['radio', 'flashlight', 'logbook']
         },
-        safetyProtocols: {
+        safety_protocols: {
           emergencyContacts: ['911', '+91-22-2672-3456'],
           evacuationProcedures: 'Standard corporate evacuation protocol',
           incidentReporting: 'Immediate supervisor notification required'
         },
-        operationalStatus: SiteOperationalStatus.ACTIVE,
-        contactInfo: {
+        operational_status: SiteOperationalStatus.ACTIVE,
+        contact_info: {
           primaryContact: 'Site Manager',
           phone: '+91-22-2672-3456',
           email: 'sitemanager@democorp.com'
         },
         createdAt: new Date('2024-01-15'),
         updatedAt: new Date('2024-07-19'),
-        contract: {
+        contracts: {
           client: {
             id: 'client-1',
             name: 'Demo Corporate Client'
@@ -621,25 +626,25 @@ export class SitesService {
           postalCode: '400002', 
           country: 'India'
         },
-        accessRequirements: {
+        access_requirements: {
           securityClearance: 'Level 1',
           uniformRequired: true,
           equipmentProvided: ['radio', 'whistle', 'logbook']
         },
-        safetyProtocols: {
+        safety_protocols: {
           emergencyContacts: ['911', '+91-22-2672-3457'],
           evacuationProcedures: 'Parking area evacuation protocol',
           incidentReporting: 'Log and radio supervisor immediately'
         },
-        operationalStatus: SiteOperationalStatus.ACTIVE,
-        contactInfo: {
+        operational_status: SiteOperationalStatus.ACTIVE,
+        contact_info: {
           primaryContact: 'Parking Supervisor',
           phone: '+91-22-2672-3457',
           email: 'parking@democorp.com'
         },
         createdAt: new Date('2024-02-01'),
         updatedAt: new Date('2024-07-18'),
-        contract: {
+        contracts: {
           client: {
             id: 'client-1',
             name: 'Demo Corporate Client'
@@ -667,24 +672,24 @@ export class SitesService {
     }
 
     try {
-      const employees = await this.prisma.employee.findMany({
+      const employees = await this.prisma.employees.findMany({
         where: {
           assignments: {
             some: {
-              siteId: siteId,
+              site_id: siteId,
               status: 'ACTIVE',
             },
           },
-          companyId: this.tenantContext.getTenantId(),
+          company_id: this.tenantContext.getTenantId(),
         },
         include: {
           assignments: {
             where: {
-              siteId: siteId,
+              site_id: siteId,
               status: 'ACTIVE',
             },
             include: {
-              site: {
+              sites: {
                 select: {
                   id: true,
                   name: true,
@@ -769,24 +774,24 @@ export class SitesService {
     }
 
     try {
-      const assignments = await this.prisma.assignment.findMany({
+      const assignments = await this.prisma.assignments.findMany({
         where: {
-          siteId: siteId,
+          site_id: siteId,
           status: 'ACTIVE',
         },
         include: {
-          employee: {
+          employees: {
             select: {
               id: true,
-              employeeNumber: true,
-              firstName: true,
-              lastName: true,
+              employee_number: true,
+              first_name: true,
+              last_name: true,
               email: true,
               phone: true,
               skills: true,
             },
           },
-          site: {
+          sites: {
             select: {
               id: true,
               name: true,

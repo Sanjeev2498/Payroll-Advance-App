@@ -7,6 +7,7 @@ import {
   ValidateNested,
   IsDateString,
   IsUUID,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -130,6 +131,7 @@ export class CreateContractAmendmentDto {
 
 export class ApproveAmendmentDto {
   @ApiProperty({ description: 'Approval decision', example: true })
+  @IsBoolean()
   approved: boolean;
 
   @ApiPropertyOptional({ description: 'Approval comments' })

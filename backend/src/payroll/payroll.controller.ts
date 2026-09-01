@@ -153,15 +153,15 @@ export class PayrollController {
     // Calculate summary from payroll items
     const summary = {
       payrollRunId: payrollRun.id,
-      runNumber: payrollRun.runNumber,
+      runNumber: payrollRun.run_number,
       payPeriod: {
-        start: payrollRun.payPeriodStart,
-        end: payrollRun.payPeriodEnd,
+        start: payrollRun.pay_period_start,
+        end: payrollRun.pay_period_end,
       },
       status: payrollRun.status,
       employeeCount: new Set((payrollRun as any).payrollItems?.map((item: any) => item.employeeId) || []).size,
-      totalAmount: payrollRun.totalAmount,
-      processedAt: payrollRun.processedAt,
+      totalAmount: payrollRun.total_amount,
+      processedAt: payrollRun.processed_at,
       itemBreakdown: this.calculateItemBreakdown((payrollRun as any).payrollItems || []),
     };
 

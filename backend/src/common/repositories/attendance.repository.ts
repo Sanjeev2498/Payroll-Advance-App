@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { TenantContextService } from '../tenant-context.service';
-import { Attendance, AttendanceStatus, Prisma } from '@prisma/client';
+import { attendance, AttendanceStatus, Prisma } from '@prisma/client';
 import { AttendanceQueryDto } from '../../attendance/dto';
 
-export interface AttendanceWithRelations extends Attendance {
+export interface AttendanceWithRelations extends attendance {
   employee: {
     id: string;
     firstName: string;
@@ -77,7 +77,7 @@ export class AttendanceRepository extends TenantAwareRepository {
   /**
    * Create attendance record with tenant context
    */
-  async create(data: Prisma.AttendanceCreateInput): Promise<Attendance> {
+  async create(data: Prisma.attendanceCreateInput): Promise<attendance> {
     this.logger.log('Creating attendance record');
     
     return this.prisma.attendance.create({
@@ -95,8 +95,8 @@ export class AttendanceRepository extends TenantAwareRepository {
     const attendance = await this.prisma.attendance.findFirst({
       where: {
         id,
-        employee: {
-          companyId: this.tenantContext.getTenantId(),
+        employees: {
+          company_id: this.tenantContext.getTenantId(),
         },
       },
       include: this.getDefaultIncludes(),
@@ -150,14 +150,14 @@ export class AttendanceRepository extends TenantAwareRepository {
   /**
    * Update attendance record
    */
-  async update(id: string, data: Prisma.AttendanceUpdateInput): Promise<Attendance> {
+  async update(id: string, data: Prisma.attendanceUpdateInput): Promise<attendance> {
     this.logger.log(`Updating attendance: ${id}`);
 
     return this.prisma.attendance.update({
       where: {
         id,
-        employee: {
-          companyId: this.tenantContext.getTenantId(),
+        employees: {
+          company_id: this.tenantContext.getTenantId(),
         },
       },
       data,
@@ -168,14 +168,14 @@ export class AttendanceRepository extends TenantAwareRepository {
   /**
    * Delete attendance record (soft delete by updating status)
    */
-  async remove(id: string): Promise<Attendance> {
+  async remove(id: string): Promise<attendance> {
     this.logger.log(`Removing attendance: ${id}`);
 
     return this.prisma.attendance.update({
       where: {
         id,
-        employee: {
-          companyId: this.tenantContext.getTenantId(),
+        employees: {
+          company_id: this.tenantContext.getTenantId(),
         },
       },
       data: {
@@ -196,8 +196,8 @@ export class AttendanceRepository extends TenantAwareRepository {
       where: {
         employeeId,
         shiftId,
-        employee: {
-          companyId: this.tenantContext.getTenantId(),
+        employees: {
+          company_id: this.tenantContext.getTenantId(),
         },
       },
       include: this.getDefaultIncludes(),
@@ -219,10 +219,10 @@ export class AttendanceRepository extends TenantAwareRepository {
     const attendance = await this.prisma.attendance.findMany({
       where: {
         employeeId,
-        employee: {
-          companyId: this.tenantContext.getTenantId(),
+        employees: {
+          company_id: this.tenantContext.getTenantId(),
         },
-        shift: {
+        shifts: {
           shiftDate: {
             gte: dateFrom,
             lte: dateTo,
@@ -231,7 +231,7 @@ export class AttendanceRepository extends TenantAwareRepository {
       },
       include: this.getDefaultIncludes(),
       orderBy: {
-        shift: {
+        shifts: {
           shiftDate: 'asc',
         },
       },
@@ -252,7 +252,7 @@ export class AttendanceRepository extends TenantAwareRepository {
 
     const attendance = await this.prisma.attendance.findMany({
       where: {
-        shift: {
+        shifts: {
           siteId,
           shiftDate: {
             gte: dateFrom,
@@ -260,7 +260,7 @@ export class AttendanceRepository extends TenantAwareRepository {
           },
           site: {
             client: {
-              companyId: this.tenantContext.getTenantId(),
+              company_id: this.tenantContext.getTenantId(),
             },
           },
         },
@@ -268,12 +268,12 @@ export class AttendanceRepository extends TenantAwareRepository {
       include: this.getDefaultIncludes(),
       orderBy: [
         {
-          shift: {
+          shifts: {
             shiftDate: 'asc',
           },
         },
         {
-          clockIn: 'asc',
+          clock_in: 'asc',
         },
       ],
     });
@@ -293,9 +293,9 @@ export class AttendanceRepository extends TenantAwareRepository {
   ) {
     this.logger.log('Detecting attendance anomalies');
 
-    const where: Prisma.AttendanceWhereInput = {
-      employee: {
-        companyId: this.tenantContext.getTenantId(),
+    const where: Prisma.attendanceWhereInput = {
+      employees: {
+        company_id: this.tenantContext.getTenantId(),
       },
     };
 
@@ -313,18 +313,18 @@ export class AttendanceRepository extends TenantAwareRepository {
     }
 
     if (Object.keys(shiftFilter).length > 0) {
-      where.shift = shiftFilter;
+      where.shifts = shiftFilter;
     }
 
     if (employeeId) {
-      where.employeeId = employeeId;
+      where.employee_id = employeeId;
     }
 
     const attendance = await this.prisma.attendance.findMany({
       where,
       include: this.getDefaultIncludes(),
       orderBy: {
-        shift: {
+        shifts: {
           shiftDate: 'desc',
         },
       },
@@ -429,9 +429,9 @@ export class AttendanceRepository extends TenantAwareRepository {
   ): Promise<AttendanceStats> {
     this.logger.log('Calculating attendance statistics');
 
-    const where: Prisma.AttendanceWhereInput = {
-      employee: {
-        companyId: this.tenantContext.getTenantId(),
+    const where: Prisma.attendanceWhereInput = {
+      employees: {
+        company_id: this.tenantContext.getTenantId(),
       },
     };
 
@@ -449,19 +449,19 @@ export class AttendanceRepository extends TenantAwareRepository {
         };
       }
       
-      where.shift = shiftFilter;
+      where.shifts = shiftFilter;
     }
 
     if (employeeId) {
-      where.employeeId = employeeId;
+      where.employee_id = employeeId;
     }
 
     const attendance = await this.prisma.attendance.findMany({
       where,
       include: {
-        shift: {
+        shifts: {
           select: {
-            shiftDate: true,
+            shift_date: true,
             startTime: true,
             endTime: true,
           },
@@ -544,7 +544,7 @@ export class AttendanceRepository extends TenantAwareRepository {
    */
   async bulkUpdate(
     attendanceIds: string[],
-    updateData: Prisma.AttendanceUpdateInput,
+    updateData: Prisma.attendanceUpdateInput,
   ): Promise<{ count: number }> {
     this.logger.log(`Bulk updating ${attendanceIds.length} attendance records`);
 
@@ -553,8 +553,8 @@ export class AttendanceRepository extends TenantAwareRepository {
         id: {
           in: attendanceIds,
         },
-        employee: {
-          companyId: this.tenantContext.getTenantId(),
+        employees: {
+          company_id: this.tenantContext.getTenantId(),
         },
       },
       data: updateData,
@@ -567,34 +567,34 @@ export class AttendanceRepository extends TenantAwareRepository {
   /**
    * Get default includes for attendance queries
    */
-  private getDefaultIncludes(): Prisma.AttendanceInclude {
+  private getDefaultIncludes(): Prisma.attendanceInclude {
     return {
-      employee: {
+      employees: {
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
-          employeeNumber: true,
+          first_name: true,
+          last_name: true,
+          employee_number: true,
           email: true,
         },
       },
-      shift: {
+      shifts: {
         select: {
           id: true,
-          shiftDate: true,
-          startTime: true,
-          endTime: true,
-          shiftType: true,
+          shift_date: true,
+          start_time: true,
+          end_time: true,
+          shift_type: true,
           status: true,
-          site: {
+          sites: {
             select: {
               id: true,
               name: true,
-              contract: {
+              contracts: {
                 select: {
                   id: true,
                   title: true,
-                  client: {
+                  clients: {
                     select: {
                       id: true,
                       name: true,
@@ -612,20 +612,20 @@ export class AttendanceRepository extends TenantAwareRepository {
   /**
    * Build WHERE clause for filtering
    */
-  private buildWhereClause(filters: AttendanceFilters): Prisma.AttendanceWhereInput {
-    const where: Prisma.AttendanceWhereInput = {
-      employee: {
-        companyId: this.tenantContext.getTenantId(),
+  private buildWhereClause(filters: AttendanceFilters): Prisma.attendanceWhereInput {
+    const where: Prisma.attendanceWhereInput = {
+      employees: {
+        company_id: this.tenantContext.getTenantId(),
       },
     };
 
     // Basic filters
     if (filters.employeeId) {
-      where.employeeId = filters.employeeId;
+      where.employee_id = filters.employeeId;
     }
 
     if (filters.shiftId) {
-      where.shiftId = filters.shiftId;
+      where.shift_id = filters.shiftId;
     }
 
     if (filters.status) {
@@ -647,12 +647,12 @@ export class AttendanceRepository extends TenantAwareRepository {
         };
       }
       
-      where.shift = shiftFilter;
+      where.shifts = shiftFilter;
     }
 
     // Clock-in time filters
     if (filters.clockInFrom || filters.clockInTo) {
-      where.clockIn = {
+      where.clock_in = {
         ...(filters.clockInFrom && { gte: filters.clockInFrom }),
         ...(filters.clockInTo && { lte: filters.clockInTo }),
       };
@@ -662,22 +662,22 @@ export class AttendanceRepository extends TenantAwareRepository {
     if (filters.search) {
       where.OR = [
         {
-          employee: {
+          employees: {
             OR: [
               {
-                firstName: {
+                first_name: {
                   contains: filters.search,
                   mode: 'insensitive',
                 },
               },
               {
-                lastName: {
+                last_name: {
                   contains: filters.search,
                   mode: 'insensitive',
                 },
               },
               {
-                employeeNumber: {
+                employee_number: {
                   contains: filters.search,
                   mode: 'insensitive',
                 },
@@ -686,8 +686,8 @@ export class AttendanceRepository extends TenantAwareRepository {
           },
         },
         {
-          shift: {
-            site: {
+          shifts: {
+            sites: {
               name: {
                 contains: filters.search,
                 mode: 'insensitive',
@@ -707,18 +707,18 @@ export class AttendanceRepository extends TenantAwareRepository {
   private buildOrderByClause(
     sortBy: string,
     sortOrder: 'asc' | 'desc',
-  ): Prisma.AttendanceOrderByWithRelationInput {
+  ): Prisma.attendanceOrderByWithRelationInput {
     switch (sortBy) {
       case 'employeeId':
         return {
-          employee: {
-            lastName: sortOrder,
+          employees: {
+            last_name: sortOrder,
           },
         };
       case 'shiftDate':
         return {
-          shift: {
-            shiftDate: sortOrder,
+          shifts: {
+            shift_date: sortOrder,
           },
         };
       case 'clockIn':
@@ -727,7 +727,7 @@ export class AttendanceRepository extends TenantAwareRepository {
       case 'createdAt':
         return { [sortBy]: sortOrder };
       default:
-        return { clockIn: sortOrder };
+        return { clock_in: sortOrder };
     }
   }
 

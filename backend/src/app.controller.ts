@@ -76,7 +76,7 @@ export class AppController {
   @Get('supervisor-portal/dashboard')
   async getSupervisorDashboard(@Query() query: any) {
     // Get tenant context - for now use first company
-    const company = await this.prisma.company.findFirst();
+    const company = await this.prisma.companies.findFirst();
     if (!company) {
       throw new Error('No company found');
     }
@@ -141,7 +141,7 @@ export class AppController {
   @Get('supervisor-portal/muster-roll')
   async getSupervisorMusterRoll(@Query() query: any) {
     // Get tenant context - for now use first company
-    const company = await this.prisma.company.findFirst();
+    const company = await this.prisma.companies.findFirst();
     if (!company) {
       throw new Error('No company found');
     }
@@ -428,7 +428,7 @@ export class AppController {
   @Get('client-portal/guards')
   async getClientGuards(@Query() query: any) {
     // Get tenant context - for now use first company
-    const company = await this.prisma.company.findFirst({
+    const company = await this.prisma.companies.findFirst({
       include: {
         employees: {
           where: {
@@ -471,7 +471,7 @@ export class AppController {
   @Get('employees/stats')
   async getEmployeeStats() {
     // Get tenant context - for now use first company
-    const company = await this.prisma.company.findFirst();
+    const company = await this.prisma.companies.findFirst();
     if (!company) {
       throw new Error('No company found');
     }
@@ -512,7 +512,7 @@ export class AppController {
   @Get('attendance/real-time-events')
   async getRealTimeAttendanceEvents(@Query() query: any) {
     // Get tenant context - for now use first company
-    const company = await this.prisma.company.findFirst();
+    const company = await this.prisma.companies.findFirst();
     if (!company) {
       throw new Error('No company found');
     }

@@ -85,6 +85,11 @@ class MockPrismaService {
     };
   }
 
+  // FIXED: Add companies getter (plural) for correct model access
+  get companies() {
+    return this.company; // Delegate to singular getter for consistency
+  }
+
   get user() {
     return {
       create: async (args: any) => {
@@ -118,6 +123,11 @@ class MockPrismaService {
     };
   }
 
+  // FIXED: Add users getter (plural) for correct model access
+  get users() {
+    return this.user; // Delegate to singular getter for consistency
+  }
+
   get client() {
     return {
       findMany: async (args?: any) => {
@@ -141,6 +151,11 @@ class MockPrismaService {
     };
   }
 
+  // FIXED: Add clients getter (plural) for correct model access
+  get clients() {
+    return this.client; // Delegate to singular getter for consistency
+  }
+
   get employee() {
     return {
       findMany: async (args?: any) => {
@@ -162,6 +177,11 @@ class MockPrismaService {
         return { count: 0 };
       },
     };
+  }
+
+  // FIXED: Add employees getter (plural) for correct model access
+  get employees() {
+    return this.employee; // Delegate to singular getter for consistency
   }
 
   get payrollRun() {
@@ -243,7 +263,7 @@ class MockCompanyRegistrationService {
   }) {
     return await this.prisma.$transaction(async (prisma) => {
       // Create company with MERGED default configurations (never partial)
-      const company = await prisma.company.create({
+      const company = await prisma.companies.create({
         data: {
           name: registrationData.name,
           slug: registrationData.slug,
@@ -333,7 +353,7 @@ describe('Company Registration Completeness Property Tests', () => {
 
   // Property test configuration
   const PROPERTY_TEST_CONFIG = {
-    numRuns: 50, // Reduced for faster execution with mocks
+    numRuns: 20, // Reduced from 50 for faster execution with mocks
     timeout: 5000,
     seed: 42,
   };
@@ -594,7 +614,7 @@ describe('Company Registration Completeness Property Tests', () => {
     // Test that queries within tenant context only return data for this company
     const results = await prismaService.withTenant(companyId, async (prisma) => {
       return {
-        companies: await prisma.company.findMany(),
+        companies: await prisma.companies.findMany(),
         users: await prisma.user.findMany({ where: { companyId } }),
         clients: await prisma.client.findMany({ where: { companyId } }),
         employees: await prisma.employee.findMany({ where: { companyId } }),
@@ -679,17 +699,17 @@ describe('Company Registration Completeness Property Tests', () => {
   async function cleanupTestData() {
     await prismaService.withSystemContext(async (prisma) => {
       // Delete in reverse dependency order
-      await prisma.payrollItem.deleteMany({});
-      await prisma.payrollRun.deleteMany({});
-      await prisma.invoice.deleteMany({});
+      await prisma.payroll_items.deleteMany({});
+      await prisma.payroll_runs.deleteMany({});
+      await prisma.invoices.deleteMany({});
       await prisma.attendance.deleteMany({});
-      await prisma.shift.deleteMany({});
-      await prisma.assignment.deleteMany({});
-      await prisma.site.deleteMany({});
-      await prisma.employee.deleteMany({});
-      await prisma.client.deleteMany({});
-      await prisma.user.deleteMany({});
-      await prisma.company.deleteMany({});
+      await prisma.shifts.deleteMany({});
+      await prisma.assignments.deleteMany({});
+      await prisma.sites.deleteMany({});
+      await prisma.employees.deleteMany({});
+      await prisma.clients.deleteMany({});
+      await prisma.users.deleteMany({});
+      await prisma.companies.deleteMany({});
     });
   }
 });

@@ -164,12 +164,14 @@ export class DragDropAssignmentTestDataGenerator {
 
   async createDragDropScenario(scenario: DragDropAssignmentScenario) {
     // Create company
-    const company = await this.prisma.company.create({
+    const company = await this.prisma.companies.create({
       data: {
         id: uuidv4(),
         name: scenario.companyName,
         slug: scenario.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-') + 
               '-dragdrop-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        created_at: new Date(),
+        updated_at: new Date(),
         settings: {},
         branding: {}
       }
@@ -342,12 +344,14 @@ export class DragDropAssignmentTestDataGenerator {
 
   async createValidationScenario(scenario: AssignmentValidationScenario) {
     // Create company
-    const company = await this.prisma.company.create({
+    const company = await this.prisma.companies.create({
       data: {
         id: uuidv4(),
         name: scenario.companyName,
         slug: scenario.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-') + 
               '-validation-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        created_at: new Date(),
+        updated_at: new Date(),
         settings: {
           constraints: scenario.constraints
         },
@@ -475,6 +479,6 @@ export class DragDropAssignmentTestDataGenerator {
     await this.prisma.employee.deleteMany({});
     await this.prisma.site.deleteMany({});
     await this.prisma.client.deleteMany({});
-    await this.prisma.company.deleteMany({});
+    await this.prisma.companies.deleteMany({});
   }
 }

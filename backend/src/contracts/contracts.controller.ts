@@ -376,7 +376,7 @@ export class ContractsController {
     const metrics = {
       contractId: id,
       period: {
-        startDate: startDate || contract.startDate,
+        startDate: startDate || contract.start_date,
         endDate: endDate || new Date().toISOString(),
       },
       financialMetrics: {
@@ -435,7 +435,7 @@ export class ContractsController {
       totalOutstanding: 0,
       invoiceCount: (contract as any).invoices?.length || 0,
       averageInvoiceAmount: 0,
-      billingFrequency: (contract.billingPreferences as any)?.billingFrequency || 'MONTHLY',
+      billingFrequency: (contract.billing_preferences as any)?.billingFrequency || 'MONTHLY',
       monthlyBreakdown: [], // Monthly billing breakdown
       paymentMetrics: {
         onTimePaymentRate: 0,

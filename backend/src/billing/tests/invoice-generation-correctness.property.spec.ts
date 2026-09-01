@@ -40,7 +40,7 @@ const ClientBillingDataGenerator = fc.record({
 
 const DeploymentDataGenerator = fc.record({
   siteId: fc.uuid(),
-  siteName: fc.string({ minLength: 3, max: 30 }),
+  siteName: fc.string({ minLength: 3, maxLength: 30 }),
   employeeId: fc.uuid(),
   employeeName: fc.string({ minLength: 3, maxLength: 30 }),
   hoursWorked: fc.integer({ min: 1, max: 12 }).map(n => n + Math.random()),

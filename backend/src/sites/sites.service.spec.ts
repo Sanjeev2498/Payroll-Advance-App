@@ -129,7 +129,6 @@ describe('SitesService', () => {
 
     it('should throw BadRequestException if client not found', async () => {
       const createSiteDto: CreateSiteDto = {
-        clientId: 'non-existent-client-id',
         contractId: 'test-contract-id',
         name: 'Test Site',
         address: {
@@ -148,7 +147,6 @@ describe('SitesService', () => {
 
     it('should throw BadRequestException if client is terminated', async () => {
       const createSiteDto: CreateSiteDto = {
-        clientId: 'test-client-id',
         contractId: 'test-contract-id',
         name: 'Test Site',
         address: {

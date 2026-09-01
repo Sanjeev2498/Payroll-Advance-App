@@ -425,7 +425,7 @@ describe('Supervisor Operations Consistency Property Tests', () => {
 
         // Mock available employees for replacement
         const availableEmployees = Array.from({ length: 3 }, (_, i) => ({
-          employeeId: fc.uuid()._value,
+          employeeId: fc.sample(fc.uuid(), 1)[0],
           name: `Available Employee ${i + 1}`,
           employeeNumber: `EMP${String(i + 1).padStart(3, '0')}`,
           phone: `+1-555-000${i + 1}`,

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../tenant-context.service';
-import { Site, Prisma } from '@prisma/client';
+import { sites, Prisma } from '@prisma/client';
 
 export interface SiteSearchFilters {
   search?: string;
@@ -23,14 +23,14 @@ export class SiteRepository extends TenantAwareRepository {
   /**
    * Create a new site
    */
-  async create(data: Prisma.SiteCreateInput): Promise<Site> {
-    this.logOperation('CREATE', 'Site');
+  async create(data: Prisma.sitesCreateInput): Promise<sites> {
+    this.logOperation('CREATE', 'sites');
 
     return this.writeWithTenant(() =>
       this.prisma.site.create({
         data,
         include: {
-          contract: {
+          contracts: {
             include: {
               client: {
                 select: {
@@ -54,19 +54,19 @@ export class SiteRepository extends TenantAwareRepository {
   /**
    * Find site by ID with tenant isolation through client relationship
    */
-  async findById(id: string): Promise<Site | null> {
-    this.logOperation('READ', 'Site', id);
+  async findById(id: string): Promise<sites | null> {
+    this.logOperation('READ', 'sites', id);
 
     return this.findWithTenant(() =>
       this.prisma.site.findFirst({
         where: {
           id,
-          contract: {
+          contracts: {
             client: this.getTenantFilter(), // Tenant isolation via contract->client
           },
         },
         include: {
-          contract: {
+          contracts: {
             include: {
               client: {
                 select: {
@@ -90,13 +90,13 @@ export class SiteRepository extends TenantAwareRepository {
   /**
    * Update site by ID
    */
-  async update(id: string, data: Prisma.SiteUpdateInput): Promise<Site> {
-    this.logOperation('UPDATE', 'Site', id);
+  async update(id: string, data: Prisma.sitesUpdateInput): Promise<sites> {
+    this.logOperation('UPDATE', 'sites', id);
 
     // First verify the site exists and belongs to the current tenant
     const existing = await this.findById(id);
     if (!existing) {
-      throw new Error(`Site with ID ${id} not found`);
+      throw new Error(`sites with ID ${id} not found`);
     }
 
     return this.writeWithTenant(() =>
@@ -104,7 +104,7 @@ export class SiteRepository extends TenantAwareRepository {
         where: { id },
         data,
         include: {
-          contract: {
+          contracts: {
             include: {
               client: {
                 select: {
@@ -128,13 +128,13 @@ export class SiteRepository extends TenantAwareRepository {
   /**
    * Soft delete site by setting status to INACTIVE
    */
-  async delete(id: string): Promise<Site> {
-    this.logOperation('DELETE', 'Site', id);
+  async delete(id: string): Promise<sites> {
+    this.logOperation('DELETE', 'sites', id);
 
     // First verify the site exists and belongs to the current tenant
     const existing = await this.findById(id);
     if (!existing) {
-      throw new Error(`Site with ID ${id} not found`);
+      throw new Error(`sites with ID ${id} not found`);
     }
 
     return this.writeWithTenant(() =>
@@ -144,7 +144,7 @@ export class SiteRepository extends TenantAwareRepository {
           operationalStatus: 'INACTIVE',
         },
         include: {
-          contract: {
+          contracts: {
             include: {
               client: {
                 select: {
@@ -172,11 +172,11 @@ export class SiteRepository extends TenantAwareRepository {
     filters: SiteSearchFilters = {},
     page?: number,
     limit?: number,
-    sortBy?: keyof Site,
+    sortBy?: keyof sites,
     sortOrder?: 'asc' | 'desc',
   ): Promise<{
-    sites: (Site & {
-      contract: { client: { id: string; name: string } };
+    sites: (sites & {
+      contracts: { client: { id: string; name: string } };
       _count: { assignments: number; shifts: number };
     })[];
     total: number;
@@ -184,14 +184,14 @@ export class SiteRepository extends TenantAwareRepository {
     limit: number;
     totalPages: number;
   }> {
-    this.logOperation('LIST', 'Site');
+    this.logOperation('LIST', 'sites');
 
     const pagination = this.getPaginationParams(page, limit);
     const sorting = this.getSortingParams(sortBy, sortOrder);
 
-    const where: Prisma.SiteWhereInput = {
-      contract: {
-        client: this.getTenantFilter(), // Tenant isolation via contract->client
+    const where: Prisma.sitesWhereInput = {
+      contracts: {
+        clients: { company_id: this.tenantContext.getTenantId() }, // Tenant isolation via contract->client
       },
       ...this.buildSiteSearchFilter(filters),
     };
@@ -201,7 +201,7 @@ export class SiteRepository extends TenantAwareRepository {
         this.prisma.site.findMany({
           where,
           include: {
-            contract: {
+            contracts: {
               include: {
                 client: {
                   select: {
@@ -223,8 +223,8 @@ export class SiteRepository extends TenantAwareRepository {
           take: pagination.take,
         }),
       ) as Promise<
-        (Site & {
-          contract: { client: { id: string; name: string } };
+        (sites & {
+          contracts: { client: { id: string; name: string } };
           _count: { assignments: number; shifts: number };
         })[]
       >,
@@ -243,19 +243,19 @@ export class SiteRepository extends TenantAwareRepository {
   /**
    * Find sites by client ID (through contract relationship)
    */
-  async findByClientId(clientId: string): Promise<Site[]> {
-    this.logOperation('SEARCH', 'Site', `client:${clientId}`);
+  async findByClientId(clientId: string): Promise<sites[]> {
+    this.logOperation('SEARCH', 'sites', `client:${clientId}`);
 
     return this.findWithTenant(() =>
       this.prisma.site.findMany({
         where: {
-          contract: {
+          contracts: {
             clientId: clientId,
             client: this.getTenantFilter(), // Tenant isolation via contract->client
           },
         },
         include: {
-          contract: {
+          contracts: {
             include: {
               client: {
                 select: {
@@ -280,19 +280,19 @@ export class SiteRepository extends TenantAwareRepository {
   /**
    * Find sites by operational status
    */
-  async findByOperationalStatus(status: string): Promise<Site[]> {
-    this.logOperation('SEARCH', 'Site', `status:${status}`);
+  async findByOperationalStatus(status: string): Promise<sites[]> {
+    this.logOperation('SEARCH', 'sites', `status:${status}`);
 
     return this.findWithTenant(() =>
       this.prisma.site.findMany({
         where: {
           operationalStatus: status as any,
-          contract: {
+          contracts: {
             client: this.getTenantFilter(), // Tenant isolation via contract->client
           },
         },
         include: {
-          contract: {
+          contracts: {
             include: {
               client: {
                 select: {
@@ -326,13 +326,13 @@ export class SiteRepository extends TenantAwareRepository {
     totalAssignments: number;
     averageAssignmentsPerSite: number;
   }> {
-    this.logOperation('STATS', 'Site');
+    this.logOperation('STATS', 'sites');
 
     const [total, active, inactive, maintenance, suspended, assignmentStats] = await Promise.all([
       this.findWithTenant(() =>
         this.prisma.site.count({
           where: {
-            contract: {
+            contracts: {
               client: this.getTenantFilter(),
             },
           },
@@ -342,7 +342,7 @@ export class SiteRepository extends TenantAwareRepository {
         this.prisma.site.count({
           where: {
             operationalStatus: 'ACTIVE',
-            contract: {
+            contracts: {
               client: this.getTenantFilter(),
             },
           },
@@ -352,7 +352,7 @@ export class SiteRepository extends TenantAwareRepository {
         this.prisma.site.count({
           where: {
             operationalStatus: 'INACTIVE',
-            contract: {
+            contracts: {
               client: this.getTenantFilter(),
             },
           },
@@ -362,7 +362,7 @@ export class SiteRepository extends TenantAwareRepository {
         this.prisma.site.count({
           where: {
             operationalStatus: 'MAINTENANCE',
-            contract: {
+            contracts: {
               client: this.getTenantFilter(),
             },
           },
@@ -372,7 +372,7 @@ export class SiteRepository extends TenantAwareRepository {
         this.prisma.site.count({
           where: {
             operationalStatus: 'SUSPENDED',
-            contract: {
+            contracts: {
               client: this.getTenantFilter(),
             },
           },
@@ -381,7 +381,7 @@ export class SiteRepository extends TenantAwareRepository {
       this.findWithTenant(() =>
         this.prisma.site.aggregate({
           where: {
-            contract: {
+            contracts: {
               client: this.getTenantFilter(),
             },
           },
@@ -425,8 +425,8 @@ export class SiteRepository extends TenantAwareRepository {
   /**
    * Build search filter for site queries
    */
-  private buildSiteSearchFilter(filters: SiteSearchFilters): Prisma.SiteWhereInput {
-    const conditions: Prisma.SiteWhereInput[] = [];
+  private buildSiteSearchFilter(filters: SiteSearchFilters): Prisma.sitesWhereInput {
+    const conditions: Prisma.sitesWhereInput[] = [];
 
     // Text search across name and address
     if (filters.search) {
@@ -437,8 +437,8 @@ export class SiteRepository extends TenantAwareRepository {
     // Client filter - through contract relationship
     if (filters.clientId) {
       conditions.push({
-        contract: {
-          clientId: filters.clientId,
+        contracts: {
+          client_id: filters.clientId,
         },
       });
     }
@@ -446,14 +446,14 @@ export class SiteRepository extends TenantAwareRepository {
     // Contract filter
     if (filters.contractId) {
       conditions.push({
-        contractId: filters.contractId,
+        contract_id: filters.contractId,
       });
     }
 
     // Operational status filter
     if (filters.operationalStatus) {
       conditions.push({
-        operationalStatus: filters.operationalStatus as any,
+        operational_status: filters.operationalStatus as any,
       });
     }
 

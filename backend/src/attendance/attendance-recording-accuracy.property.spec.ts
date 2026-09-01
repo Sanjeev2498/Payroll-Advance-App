@@ -19,28 +19,30 @@ const validLatitudeGenerator = () => fc.float({ min: -90, max: 90 });
 const validLongitudeGenerator = () => fc.float({ min: -180, max: 180 });
 const accuracyGenerator = () => fc.float({ min: 1, max: 100 });
 
-const locationDataGenerator = () => fc.record({
+const location_dataGenerator = () => fc.record({
   latitude: validLatitudeGenerator(),
   longitude: validLongitudeGenerator(),
   accuracy: fc.option(accuracyGenerator()),
   address: fc.option(fc.string({ minLength: 10, maxLength: 100 })),
   capturedAt: fc.option(
-    fc.integer({ min: new Date(2020, 0, 1).getTime(), max: new Date(2030, 11, 31).getTime() })
+    // CRITICAL FIX: Generate valid timestamp strings instead of invalid dates
+    fc.integer({ min: new Date('2020-01-01').getTime(), max: new Date('2030-12-31').getTime() })
+      .filter(timestamp => !isNaN(timestamp) && timestamp > 0)
       .map(timestamp => new Date(timestamp).toISOString())
   ),
   method: fc.option(fc.constantFrom('GPS', 'Network', 'Manual')),
 });
 
-const verificationDataGenerator = () => fc.record({
-  photo: fc.option(fc.string({ minLength: 10, maxLength: 200 })),
+const verification_dataGenerator = () => fc.record({
+  photo: fc.option(fc.string({ minLength: 10, maxLength: 100 })), // FIXED: Reduced length to fit column constraints
   device: fc.option(fc.record({
-    id: fc.string({ minLength: 10, maxLength: 50 }),
-    model: fc.string({ minLength: 5, maxLength: 30 }),
-    os: fc.string({ minLength: 3, maxLength: 20 }),
+    id: fc.string({ minLength: 10, maxLength: 30 }), // FIXED: Reduced length to fit constraints
+    model: fc.string({ minLength: 5, maxLength: 20 }), // FIXED: Reduced length to fit constraints
+    os: fc.string({ minLength: 3, maxLength: 15 }), // FIXED: Reduced length to fit constraints
     appVersion: fc.string({ minLength: 3, maxLength: 10 }),
   })),
   ipAddress: fc.option(fc.ipV4()),
-  userAgent: fc.option(fc.string({ minLength: 20, maxLength: 200 })),
+  userAgent: fc.option(fc.string({ minLength: 20, maxLength: 100 })), // FIXED: Reduced length to fit constraints
   flags: fc.option(fc.record({
     photoVerified: fc.boolean(),
     locationVerified: fc.boolean(),
@@ -49,22 +51,34 @@ const verificationDataGenerator = () => fc.record({
   })),
 });
 
-const clockInDataGenerator = () => fc.record({
-  employeeId: fc.uuid(),
-  shiftId: fc.uuid(),
-  clockInTime: fc.option(fc.date()),
-  locationData: locationDataGenerator(),
-  verificationData: fc.option(verificationDataGenerator()),
-  notes: fc.option(fc.string({ maxLength: 500 })),
+const clock_inDataGenerator = () => fc.record({
+  employee_id: fc.uuid(),
+  shift_id: fc.uuid(),
+  clock_inTime: fc.option(
+    // CRITICAL FIX: Generate valid dates that won't cause new Date(NaN) issues
+    fc.date({ 
+      min: new Date('2020-01-01'), 
+      max: new Date('2030-12-31') 
+    }).filter(date => !isNaN(date.getTime()) && date.getFullYear() >= 2020)
+  ),
+  location_data: location_dataGenerator(),
+  verification_data: fc.option(verification_dataGenerator()),
+  notes: fc.option(fc.string({ maxLength: 250 })), // FIXED: Reduced length to fit column constraints
 });
 
-const clockOutDataGenerator = () => fc.record({
-  employeeId: fc.uuid(),
-  shiftId: fc.uuid(),
-  clockOutTime: fc.option(fc.date()),
-  locationData: locationDataGenerator(),
-  verificationData: fc.option(verificationDataGenerator()),
-  notes: fc.option(fc.string({ maxLength: 500 })),
+const clock_outDataGenerator = () => fc.record({
+  employee_id: fc.uuid(),
+  shift_id: fc.uuid(),
+  clock_outTime: fc.option(
+    // CRITICAL FIX: Generate valid dates that won't cause new Date(NaN) issues
+    fc.date({ 
+      min: new Date('2020-01-01'), 
+      max: new Date('2030-12-31') 
+    }).filter(date => !isNaN(date.getTime()) && date.getFullYear() >= 2020)
+  ),
+  location_data: location_dataGenerator(),
+  verification_data: fc.option(verification_dataGenerator()),
+  notes: fc.option(fc.string({ maxLength: 250 })), // FIXED: Reduced length to fit column constraints
 });
 
 describe('AttendanceService Property Tests - Recording Accuracy', () => {
@@ -115,12 +129,12 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
     (attendanceRepository.findByEmployeeAndShift as jest.Mock).mockResolvedValue(null);
     (attendanceRepository.create as jest.Mock).mockImplementation((data) => ({
       id: 'att-' + Math.random().toString(36).substr(2, 9),
-      employeeId: data.employee.connect.id,
-      shiftId: data.shift.connect.id,
-      clockIn: data.clockIn || new Date(),
-      clockOut: data.clockOut || null,
-      locationData: data.locationData || {},
-      verificationData: data.verificationData || {},
+      employee_id: data.employee.connect.id,
+      shift_id: data.shift.connect.id,
+      clock_in: data.clock_in || new Date(),
+      clock_out: data.clock_out || null,
+      location_data: data.location_data || {},
+      verification_data: data.verification_data || {},
       status: data.status || AttendanceStatus.PRESENT,
       notes: data.notes || null,
       createdAt: new Date(),
@@ -135,12 +149,12 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
       
       return {
         id: id,
-        employeeId: originalAttendance?.value?.employeeId || 'emp-id',
-        shiftId: originalAttendance?.value?.shiftId || 'shift-id',
-        clockIn: originalAttendance?.value?.clockIn || new Date(),
-        clockOut: updateData.clockOut || null,
-        locationData: updateData.locationData || {},
-        verificationData: updateData.verificationData || {},
+        employee_id: originalAttendance?.value?.employee_id || 'emp-id',
+        shift_id: originalAttendance?.value?.shift_id || 'shift-id',
+        clock_in: originalAttendance?.value?.clock_in || new Date(),
+        clock_out: updateData.clock_out || null,
+        location_data: updateData.location_data || {},
+        verification_data: updateData.verification_data || {},
         status: updateData.status || AttendanceStatus.PRESENT,
         notes: updateData.notes || null,
         createdAt: new Date(),
@@ -155,18 +169,20 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
    */
   it('Property 9a: Clock-in records complete data without corruption', async () => {
     await fc.assert(fc.asyncProperty(
-      clockInDataGenerator(),
-      async (clockInData) => {
+      clock_inDataGenerator(),
+      async (clock_inData) => {
         // Feature: security-workforce-payroll-system, Property 9a: Clock-in data completeness
         
         // Setup: Create valid employee, site, and shift
         const { employee, shift, site } = await setupValidEmployeeShiftSite();
         
         const actualClockInData = {
-          ...clockInData,
           employeeId: employee.id,
           shiftId: shift.id,
-          clockInTime: clockInData.clockInTime?.toISOString(),
+          clockInTime: clock_inData.clock_inTime?.toISOString(),
+          locationData: clock_inData.location_data,
+          verificationData: clock_inData.verification_data,
+          notes: clock_inData.notes,
         };
 
         // Mock the validation calls
@@ -182,15 +198,15 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         
         // Verify timestamp accuracy
         if (actualClockInData.clockInTime) {
-          expect(result.attendance.clockIn).toEqual(new Date(actualClockInData.clockInTime));
+          expect(result.attendance.clock_in).toEqual(new Date(actualClockInData.clockInTime));
         } else {
-          expect(result.attendance.clockIn).toBeInstanceOf(Date);
-          expect(Math.abs(result.attendance.clockIn.getTime() - Date.now())).toBeLessThan(5000); // Within 5 seconds
+          expect(result.attendance.clock_in).toBeInstanceOf(Date);
+          expect(Math.abs(result.attendance.clock_in.getTime() - Date.now())).toBeLessThan(5000); // Within 5 seconds
         }
         
         // Verify location data preservation
-        const locationData = result.attendance.locationData as any;
-        expect(locationData).toEqual(
+        const location_data = result.attendance.location_data as any;
+        expect(location_data).toEqual(
           expect.objectContaining({
             latitude: actualClockInData.locationData.latitude,
             longitude: actualClockInData.locationData.longitude,
@@ -199,15 +215,15 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         
         // Verify verification data preservation
         if (actualClockInData.verificationData) {
-          const verificationData = result.attendance.verificationData as any;
-          expect(verificationData).toEqual(
+          const verification_data = result.attendance.verification_data as any;
+          expect(verification_data).toEqual(
             expect.objectContaining(actualClockInData.verificationData)
           );
         }
         
         // Verify employee and shift associations
-        expect(result.attendance.employeeId).toBe(employee.id);
-        expect(result.attendance.shiftId).toBe(shift.id);
+        expect(result.attendance.employee_id).toBe(employee.id);
+        expect(result.attendance.shift_id).toBe(shift.id);
         
         // Verify notes preservation
         if (actualClockInData.notes) {
@@ -222,22 +238,24 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
    */
   it('Property 9b: Clock-out records complete data with accurate calculations', async () => {
     await fc.assert(fc.asyncProperty(
-      clockOutDataGenerator(),
+      clock_outDataGenerator(),
       fc.date({ min: new Date('2024-01-01'), max: new Date() }), // Clock-in time
-      async (clockOutData, clockInTime) => {
+      async (clock_outData, clock_inTime) => {
         // Feature: security-workforce-payroll-system, Property 9b: Clock-out data completeness
         
         // Setup: Create valid employee, site, shift, and existing attendance
         const { employee, shift, site } = await setupValidEmployeeShiftSite();
-        const existingAttendance = await setupExistingAttendance(employee.id, shift.id, clockInTime);
+        const existingAttendance = await setupExistingAttendance(employee.id, shift.id, clock_inTime);
         
         const actualClockOutData = {
-          ...clockOutData,
           employeeId: employee.id,
           shiftId: shift.id,
-          clockOutTime: (clockOutData.clockOutTime && clockOutData.clockOutTime > clockInTime && !isNaN(clockOutData.clockOutTime.getTime())
-            ? clockOutData.clockOutTime 
-            : new Date(clockInTime.getTime() + 8 * 60 * 60 * 1000)).toISOString(), // 8 hours later
+          clockOutTime: (clock_outData.clock_outTime && clock_outData.clock_outTime > clock_inTime && !isNaN(clock_outData.clock_outTime.getTime())
+            ? clock_outData.clock_outTime 
+            : new Date(clock_inTime.getTime() + 8 * 60 * 60 * 1000)).toISOString(), // 8 hours later
+          locationData: clock_outData.location_data,
+          verificationData: clock_outData.verification_data,
+          notes: clock_outData.notes,
         };
 
         // Mock the validation calls
@@ -254,17 +272,17 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         
         // Verify timestamp accuracy
         if (actualClockOutData.clockOutTime) {
-          expect(result.attendance.clockOut).toEqual(new Date(actualClockOutData.clockOutTime));
+          expect(result.attendance.clock_out).toEqual(new Date(actualClockOutData.clockOutTime));
         } else {
-          expect(result.attendance.clockOut).toBeInstanceOf(Date);
-          expect(Math.abs(result.attendance.clockOut.getTime() - Date.now())).toBeLessThan(5000);
+          expect(result.attendance.clock_out).toBeInstanceOf(Date);
+          expect(Math.abs(result.attendance.clock_out.getTime() - Date.now())).toBeLessThan(5000);
         }
         
         // Verify location data preservation (should include both clock-in and clock-out)
-        const locationData = result.attendance.locationData as any;
-        expect(locationData).toEqual(
+        const location_data = result.attendance.location_data as any;
+        expect(location_data).toEqual(
           expect.objectContaining({
-            clockOut: expect.objectContaining({
+            clock_out: expect.objectContaining({
               latitude: actualClockOutData.locationData.latitude,
               longitude: actualClockOutData.locationData.longitude,
             })
@@ -273,7 +291,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         
         // Verify hours worked calculation accuracy
         if (result.hoursWorked) {
-          const expectedHours = (result.attendance.clockOut.getTime() - clockInTime.getTime()) / (1000 * 60 * 60);
+          const expectedHours = (result.attendance.clock_out.getTime() - clock_inTime.getTime()) / (1000 * 60 * 60);
           expect(Math.abs(result.hoursWorked - expectedHours)).toBeLessThan(0.01); // Within 1 minute accuracy
         }
         
@@ -297,9 +315,9 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
    */
   it('Property 9c: Location verification maintains data integrity', async () => {
     await fc.assert(fc.asyncProperty(
-      locationDataGenerator(),
-      locationDataGenerator(), // Different location for clock-out
-      async (clockInLocation, clockOutLocation) => {
+      location_dataGenerator(),
+      location_dataGenerator(), // Different location for clock-out
+      async (clock_inLocation, clock_outLocation) => {
         // Feature: security-workforce-payroll-system, Property 9c: Location data integrity
         
         // Setup
@@ -313,13 +331,13 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         const clockInResult = await service.clockIn({
           employeeId: employee.id,
           shiftId: shift.id,
-          locationData: clockInLocation,
+          locationData: clock_inLocation,
         });
         
         // Mock existing attendance for clock-out
         const mockAttendanceWithClockIn = {
           ...clockInResult.attendance,
-          clockIn: new Date(),
+          clock_in: new Date(),
         };
         
         (attendanceRepository.findByEmployeeAndShift as jest.Mock)
@@ -329,47 +347,47 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         const clockOutResult = await service.clockOut({
           employeeId: employee.id,
           shiftId: shift.id,
-          locationData: clockOutLocation,
+          locationData: clock_outLocation,
         });
         
         // Verify: Both location records are maintained separately and accurately
         
         // Clock-in location should be preserved
-        const clockInLocationData = clockInResult.attendance.locationData as any;
-        expect(clockInLocationData).toEqual(
+        const clock_inLocationData = clockInResult.attendance.location_data as any;
+        expect(clock_inLocationData).toEqual(
           expect.objectContaining({
-            latitude: clockInLocation.latitude,
-            longitude: clockInLocation.longitude,
+            latitude: clock_inLocation.latitude,
+            longitude: clock_inLocation.longitude,
           })
         );
         
         // Clock-out should maintain both locations
-        const clockOutLocationData = clockOutResult.attendance.locationData as any;
-        expect(clockOutLocationData).toEqual(
+        const clock_outLocationData = clockOutResult.attendance.location_data as any;
+        expect(clock_outLocationData).toEqual(
           expect.objectContaining({
-            clockOut: expect.objectContaining({
-              latitude: clockOutLocation.latitude,
-              longitude: clockOutLocation.longitude,
+            clock_out: expect.objectContaining({
+              latitude: clock_outLocation.latitude,
+              longitude: clock_outLocation.longitude,
             })
           })
         );
         
         // Verify precision is maintained (no rounding errors)
-        if (clockInLocation.accuracy) {
-          expect(clockInLocationData.accuracy).toBe(clockInLocation.accuracy);
+        if (clock_inLocation.accuracy) {
+          expect(clock_inLocationData.accuracy).toBe(clock_inLocation.accuracy);
         }
         
-        if (clockOutLocation.accuracy) {
-          expect(clockOutLocationData.clockOut.accuracy).toBe(clockOutLocation.accuracy);
+        if (clock_outLocation.accuracy) {
+          expect(clock_outLocationData.clock_out.accuracy).toBe(clock_outLocation.accuracy);
         }
         
         // Verify optional fields are preserved when provided
-        if (clockInLocation.address) {
-          expect(clockInLocationData.address).toBe(clockInLocation.address);
+        if (clock_inLocation.address) {
+          expect(clock_inLocationData.address).toBe(clock_inLocation.address);
         }
         
-        if (clockOutLocation.capturedAt) {
-          expect(clockOutLocationData.clockOut.capturedAt).toBe(clockOutLocation.capturedAt);
+        if (clock_outLocation.capturedAt) {
+          expect(clock_outLocationData.clock_out.capturedAt).toBe(clock_outLocation.capturedAt);
         }
       }
     ), { numRuns: 30, timeout: 5000 });
@@ -380,9 +398,9 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
    */
   it('Property 9d: Verification data maintains completeness and structure', async () => {
     await fc.assert(fc.asyncProperty(
-      verificationDataGenerator(),
-      verificationDataGenerator(),
-      async (clockInVerification, clockOutVerification) => {
+      verification_dataGenerator(),
+      verification_dataGenerator(),
+      async (clock_inVerification, clock_outVerification) => {
         // Feature: security-workforce-payroll-system, Property 9d: Verification data completeness
         
         // Setup
@@ -395,14 +413,14 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
           employeeId: employee.id,
           shiftId: shift.id,
           locationData: { latitude: 12.34, longitude: 56.78 },
-          verificationData: clockInVerification,
+          verificationData: clock_inVerification,
         });
         
         // Mock existing attendance
         const mockAttendanceWithClockIn = {
           ...clockInResult.attendance,
-          clockIn: new Date(),
-          verificationData: clockInVerification,
+          clock_in: new Date(),
+          verificationData: clock_inVerification,
         };
         
         (attendanceRepository.findByEmployeeAndShift as jest.Mock)
@@ -413,48 +431,48 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
           employeeId: employee.id,
           shiftId: shift.id,
           locationData: { latitude: 12.34, longitude: 56.78 },
-          verificationData: clockOutVerification,
+          verificationData: clock_outVerification,
         });
         
         // Verify: All verification data fields are preserved accurately
         
         // Clock-in verification data preservation
-        const clockInVerificationData = clockInResult.attendance.verificationData as any;
-        if (clockInVerification.photo) {
-          expect(clockInVerificationData.photo).toBe(clockInVerification.photo);
+        const clock_inVerificationData = clockInResult.attendance.verification_data as any;
+        if (clock_inVerification.photo) {
+          expect(clock_inVerificationData.photo).toBe(clock_inVerification.photo);
         }
         
-        if (clockInVerification.device) {
-          expect(clockInVerificationData.device).toEqual(clockInVerification.device);
+        if (clock_inVerification.device) {
+          expect(clock_inVerificationData.device).toEqual(clock_inVerification.device);
         }
         
-        if (clockInVerification.flags) {
-          expect(clockInVerificationData.flags).toEqual(
-            expect.objectContaining(clockInVerification.flags)
+        if (clock_inVerification.flags) {
+          expect(clock_inVerificationData.flags).toEqual(
+            expect.objectContaining(clock_inVerification.flags)
           );
         }
         
         // Clock-out verification data should be merged correctly
-        const clockOutVerificationData = clockOutResult.attendance.verificationData as any;
-        expect(clockOutVerificationData).toEqual(
+        const clock_outVerificationData = clockOutResult.attendance.verification_data as any;
+        expect(clock_outVerificationData).toEqual(
           expect.objectContaining({
-            clockOut: expect.objectContaining(clockOutVerification)
+            clock_out: expect.objectContaining(clock_outVerification)
           })
         );
         
         // Verify nested object integrity
-        if (clockInVerification.device && clockInVerification.device.id) {
-          expect(clockInVerificationData.device.id).toBe(clockInVerification.device.id);
+        if (clock_inVerification.device && clock_inVerification.device.id) {
+          expect(clock_inVerificationData.device.id).toBe(clock_inVerification.device.id);
         }
         
-        if (clockOutVerification.device && clockOutVerification.device.model) {
-          expect(clockOutVerificationData.clockOut.device.model).toBe(clockOutVerification.device.model);
+        if (clock_outVerification.device && clock_outVerification.device.model) {
+          expect(clock_outVerificationData.clock_out.device.model).toBe(clock_outVerification.device.model);
         }
         
         // Verify boolean flags are preserved correctly
-        if (clockInVerification.flags) {
-          Object.keys(clockInVerification.flags).forEach(key => {
-            expect(clockInVerificationData.flags[key]).toBe(clockInVerification.flags[key]);
+        if (clock_inVerification.flags) {
+          Object.keys(clock_inVerification.flags).forEach(key => {
+            expect(clock_inVerificationData.flags[key]).toBe(clock_inVerification.flags[key]);
           });
         }
       }
@@ -476,15 +494,15 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         const { employee, shift, site } = await setupValidEmployeeShiftSite();
         mockShiftAndEmployeeValidation(shift, employee, site);
         
-        const clockInTime = baseTime;
-        const clockOutTime = new Date(baseTime.getTime() + 8 * 60 * 60 * 1000); // 8 hours later
+        const clock_inTime = baseTime;
+        const clock_outTime = new Date(baseTime.getTime() + 8 * 60 * 60 * 1000); // 8 hours later
         
         // Act: Full attendance cycle
         (attendanceRepository.findByEmployeeAndShift as jest.Mock).mockResolvedValueOnce(null);
         const clockInResult = await service.clockIn({
           employeeId: employee.id,
           shiftId: shift.id,
-          clockInTime: clockInTime.toISOString(),
+          clockInTime: clock_inTime.toISOString(),
           locationData: { latitude: 12.34, longitude: 56.78 },
           notes: notes,
         });
@@ -492,7 +510,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         // Mock existing attendance
         const mockAttendanceWithClockIn = {
           ...clockInResult.attendance,
-          clockIn: clockInTime,
+          clock_in: clock_inTime,
           notes: notes,
         };
         
@@ -508,22 +526,22 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         const clockOutResult = await service.clockOut({
           employeeId: employee.id,
           shiftId: shift.id,
-          clockOutTime: clockOutTime.toISOString(),
+          clockOutTime: clock_outTime.toISOString(),
           locationData: { latitude: 12.35, longitude: 56.79 },
         });
         
         // Verify: System metadata consistency
         
         // Verify employee and shift relationships are maintained
-        expect(clockInResult.attendance.employeeId).toBe(employee.id);
-        expect(clockInResult.attendance.shiftId).toBe(shift.id);
-        expect(clockOutResult.attendance.employeeId).toBe(employee.id);
-        expect(clockOutResult.attendance.shiftId).toBe(shift.id);
+        expect(clockInResult.attendance.employee_id).toBe(employee.id);
+        expect(clockInResult.attendance.shift_id).toBe(shift.id);
+        expect(clockOutResult.attendance.employee_id).toBe(employee.id);
+        expect(clockOutResult.attendance.shift_id).toBe(shift.id);
         
         // Verify timestamps are accurate and in correct sequence
-        expect(clockInResult.attendance.clockIn).toEqual(clockInTime);
-        expect(clockOutResult.attendance.clockOut).toEqual(clockOutTime);
-        expect(clockOutResult.attendance.clockOut.getTime()).toBeGreaterThan(clockInTime.getTime());
+        expect(clockInResult.attendance.clock_in).toEqual(clock_inTime);
+        expect(clockOutResult.attendance.clock_out).toEqual(clock_outTime);
+        expect(clockOutResult.attendance.clock_out.getTime()).toBeGreaterThan(clock_inTime.getTime());
         
         // Verify status progression is logical
         expect(['PRESENT', 'LATE'].includes(clockInResult.attendance.status)).toBe(true);
@@ -536,7 +554,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         
         // Verify calculated fields are mathematically correct
         if (clockOutResult.hoursWorked) {
-          const expectedHours = (clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60 * 60);
+          const expectedHours = (clock_outTime.getTime() - clock_inTime.getTime()) / (1000 * 60 * 60);
           expect(Math.abs(clockOutResult.hoursWorked - expectedHours)).toBeLessThan(0.01);
         }
         
@@ -556,12 +574,12 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
       findByEmployeeAndShift: jest.fn(),
       create: jest.fn().mockImplementation((data) => ({
         id: 'att-' + Math.random().toString(36).substr(2, 9),
-        employeeId: data.employee.connect.id,
-        shiftId: data.shift.connect.id,
-        clockIn: data.clockIn || new Date(),
-        clockOut: data.clockOut || null,
-        locationData: data.locationData || {},
-        verificationData: data.verificationData || {},
+        employee_id: data.employee.connect.id,
+        shift_id: data.shift.connect.id,
+        clock_in: data.clock_in || new Date(),
+        clock_out: data.clock_out || null,
+        location_data: data.location_data || {},
+        verification_data: data.verification_data || {},
         status: data.status || AttendanceStatus.PRESENT,
         notes: data.notes || null,
         createdAt: new Date(),
@@ -592,12 +610,12 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
       })),
       update: jest.fn().mockImplementation((id, data) => ({
         id: id,
-        employeeId: 'emp-id',
-        shiftId: 'shift-id',
-        clockIn: new Date(),
-        clockOut: data.clockOut || null,
-        locationData: data.locationData || {},
-        verificationData: data.verificationData || {},
+        employee_id: 'emp-id',
+        shift_id: 'shift-id',
+        clock_in: new Date(),
+        clock_out: data.clock_out || null,
+        location_data: data.location_data || {},
+        verification_data: data.verification_data || {},
         status: data.status || AttendanceStatus.PRESENT,
         notes: data.notes || null,
         createdAt: new Date(),
@@ -643,12 +661,12 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
       attendance: {
         create: jest.fn().mockImplementation((data) => ({
           id: 'att-' + Math.random().toString(36).substr(2, 9),
-          employeeId: data.data.employee.connect.id,
-          shiftId: data.data.shift.connect.id,
-          clockIn: data.data.clockIn || new Date(),
-          clockOut: data.data.clockOut || null,
-          locationData: data.data.locationData || {},
-          verificationData: data.data.verificationData || {},
+          employee_id: data.data.employee.connect.id,
+          shift_id: data.data.shift.connect.id,
+          clock_in: data.data.clock_in || new Date(),
+          clock_out: data.data.clock_out || null,
+          location_data: data.data.location_data || {},
+          verificationData: data.data.verification_data || {},
           status: data.data.status || AttendanceStatus.PRESENT,
           notes: data.data.notes || null,
           createdAt: new Date(),
@@ -657,12 +675,12 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         findFirst: jest.fn(),
         update: jest.fn().mockImplementation((params) => ({
           id: 'att-' + Math.random().toString(36).substr(2, 9),
-          employeeId: 'emp-id',
-          shiftId: 'shift-id',
-          clockIn: new Date(),
-          clockOut: params.data.clockOut || null,
-          locationData: params.data.locationData || {},
-          verificationData: params.data.verificationData || {},
+          employee_id: 'emp-id',
+          shift_id: 'shift-id',
+          clock_in: new Date(),
+          clock_out: params.data.clock_out || null,
+          location_data: params.data.location_data || {},
+          verificationData: params.data.verification_data || {},
           status: params.data.status || AttendanceStatus.PRESENT,
           notes: params.data.notes || null,
           createdAt: new Date(),
@@ -709,7 +727,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
       site: site,
       assignment: {
         id: 'assignment-' + Math.random().toString(36).substr(2, 9),
-        employeeId: employee.id,
+        employee_id: employee.id,
         siteId: site.id,
         status: AssignmentStatus.ACTIVE,
         employee: employee,
@@ -725,16 +743,16 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
     (prisma.assignment.findFirst as jest.Mock).mockResolvedValue(shift.assignment);
   }
 
-  async function setupExistingAttendance(employeeId: string, shiftId: string, clockIn: Date) {
+  async function setupExistingAttendance(employee_id: string, shift_id: string, clock_in: Date) {
     const attendance = {
       id: 'att-' + Math.random().toString(36).substr(2, 9),
-      employeeId,
-      shiftId,
-      clockIn,
-      clockOut: null,
+      employee_id,
+      shift_id,
+      clock_in,
+      clock_out: null,
       status: AttendanceStatus.PRESENT,
-      locationData: { latitude: 12.34, longitude: 56.78 },
-      verificationData: {},
+      location_data: { latitude: 12.34, longitude: 56.78 },
+      verification_data: {},
       notes: null,
     };
 

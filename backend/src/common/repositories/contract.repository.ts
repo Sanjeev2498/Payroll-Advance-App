@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../tenant-context.service';
-import { Contract, Site, Assignment, Invoice, Prisma, ContractStatus } from '@prisma/client';
+import { contracts, sites, assignments, invoices, Prisma, ContractStatus } from '@prisma/client';
 
-export interface CreateContractDto {
+export interface CreatecontractsDto {
   clientId: string;
   contractNumber: string;
   title: string;
@@ -21,7 +21,7 @@ export interface CreateContractDto {
   autoRenewalEnabled?: boolean;
 }
 
-export interface UpdateContractDto {
+export interface UpdatecontractsDto {
   title?: string;
   description?: string;
   startDate?: Date;
@@ -37,7 +37,7 @@ export interface UpdateContractDto {
   status?: ContractStatus;
 }
 
-export interface ContractSearchFilters {
+export interface contractsSearchFilters {
   search?: string;
   status?: ContractStatus;
   clientId?: string;
@@ -56,8 +56,8 @@ export class ContractRepository extends TenantAwareRepository {
   /**
    * Create a new contract
    */
-  async create(data: CreateContractDto): Promise<Contract> {
-    this.logOperation('CREATE', 'Contract');
+  async create(data: CreatecontractsDto): Promise<contracts> {
+    this.logOperation('CREATE', 'contracts');
 
     // Verify client exists and belongs to current tenant
     const client = await this.prisma.client.findFirst({
@@ -71,21 +71,14 @@ export class ContractRepository extends TenantAwareRepository {
       throw new Error('Client not found or access denied');
     }
 
-    const createData: Prisma.ContractCreateInput = {
-      contractNumber: data.contractNumber,
+    const createData: Prisma.contractsCreateInput = {
+      contract_number: data.contractNumber,
       title: data.title,
       description: data.description,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      serviceDefinitions: data.serviceDefinitions as Prisma.JsonValue,
-      serviceLevelAgreement: data.serviceLevelAgreement as Prisma.JsonValue,
-      billingPreferences: data.billingPreferences as Prisma.JsonValue,
-      defaultBillingRates: data.defaultBillingRates as Prisma.JsonValue,
-      contractValue: data.contractValue,
-      paymentTerms: data.paymentTerms as Prisma.JsonValue,
-      renewalNotificationDays: data.renewalNotificationDays || 90,
-      autoRenewalEnabled: data.autoRenewalEnabled || false,
-      client: {
+      start_date: data.startDate,
+      end_date: data.endDate,
+      contract_value: data.contractValue,
+      clients: {
         connect: { id: data.clientId },
       },
     };
@@ -94,7 +87,7 @@ export class ContractRepository extends TenantAwareRepository {
       this.prisma.contract.create({
         data: createData,
         include: {
-          client: {
+          clients: {
             select: {
               id: true,
               name: true,
@@ -114,19 +107,19 @@ export class ContractRepository extends TenantAwareRepository {
   /**
    * Find contract by ID with tenant isolation
    */
-  async findById(id: string): Promise<Contract | null> {
-    this.logOperation('READ', 'Contract', id);
+  async findById(id: string): Promise<contracts | null> {
+    this.logOperation('READ', 'contracts', id);
 
     return this.findWithTenant(() =>
       this.prisma.contract.findFirst({
         where: {
           id,
-          client: {
+          clients: {
             companyId: this.tenantContext.getTenantId(),
           },
         },
         include: {
-          client: {
+          clients: {
             select: {
               id: true,
               name: true,
@@ -167,16 +160,16 @@ export class ContractRepository extends TenantAwareRepository {
   /**
    * Update contract by ID
    */
-  async update(id: string, data: UpdateContractDto): Promise<Contract> {
-    this.logOperation('UPDATE', 'Contract', id);
+  async update(id: string, data: UpdatecontractsDto): Promise<contracts> {
+    this.logOperation('UPDATE', 'contracts', id);
 
     // First verify the contract exists and belongs to the current tenant
     const existing = await this.findById(id);
     if (!existing) {
-      throw new Error(`Contract with ID ${id} not found`);
+      throw new Error(`contracts with ID ${id} not found`);
     }
 
-    const updateData: Prisma.ContractUpdateInput = {
+    const updateData: Prisma.contractsUpdateInput = {
       ...(data.title && { title: data.title }),
       ...(data.description && { description: data.description }),
       ...(data.startDate && { startDate: data.startDate }),
@@ -214,10 +207,10 @@ export class ContractRepository extends TenantAwareRepository {
         updatedBy: 'system', // This should be the current user ID in real implementation
       };
 
-      updateData.contractHistory = {
-        ...(existing.contractHistory as any),
+      (updateData as any).contractHistory = {
+        ...((existing as any).contractHistory as any),
         updates: [
-          ...((existing.contractHistory as any)?.updates || []),
+          ...(((existing as any).contractHistory as any)?.updates || []),
           historyEntry,
         ],
       };
@@ -228,7 +221,7 @@ export class ContractRepository extends TenantAwareRepository {
         where: { id },
         data: updateData,
         include: {
-          client: {
+          clients: {
             select: {
               id: true,
               name: true,
@@ -248,8 +241,8 @@ export class ContractRepository extends TenantAwareRepository {
   /**
    * Delete contract (set status to TERMINATED)
    */
-  async delete(id: string): Promise<Contract> {
-    this.logOperation('DELETE', 'Contract', id);
+  async delete(id: string): Promise<contracts> {
+    this.logOperation('DELETE', 'contracts', id);
 
     return this.update(id, { status: 'TERMINATED' });
   }
@@ -258,13 +251,13 @@ export class ContractRepository extends TenantAwareRepository {
    * Find contracts with search and filtering
    */
   async findMany(
-    filters: ContractSearchFilters = {},
+    filters: contractsSearchFilters = {},
     page?: number,
     limit?: number,
-    sortBy?: keyof Contract,
+    sortBy?: keyof contracts,
     sortOrder?: 'asc' | 'desc',
   ): Promise<{
-    contracts: (Contract & {
+    contracts: (contracts & {
       client: any;
       _count: { sites: number; invoices: number };
     })[];
@@ -273,16 +266,16 @@ export class ContractRepository extends TenantAwareRepository {
     limit: number;
     totalPages: number;
   }> {
-    this.logOperation('LIST', 'Contract');
+    this.logOperation('LIST', 'contracts');
 
     const pagination = this.getPaginationParams(page, limit);
     const sorting = this.getSortingParams(sortBy, sortOrder);
 
-    const where: Prisma.ContractWhereInput = {
-      client: {
-        companyId: this.tenantContext.getTenantId(),
+    const where: Prisma.contractsWhereInput = {
+      clients: {
+        company_id: this.tenantContext.getTenantId(),
       },
-      ...this.buildContractSearchFilter(filters),
+      ...this.buildcontractsSearchFilter(filters),
     };
 
     const [contracts, total] = await Promise.all([
@@ -290,7 +283,7 @@ export class ContractRepository extends TenantAwareRepository {
         this.prisma.contract.findMany({
           where,
           include: {
-            client: {
+            clients: {
               select: {
                 id: true,
                 name: true,
@@ -309,7 +302,7 @@ export class ContractRepository extends TenantAwareRepository {
           skip: pagination.skip,
           take: pagination.take,
         }),
-      ) as Promise<(Contract & { client: any; _count: { sites: number; invoices: number } })[]>,
+      ) as Promise<(contracts & { client: any; _count: { sites: number; invoices: number } })[]>,
       this.findWithTenant(() => this.prisma.contract.count({ where })) as Promise<number>,
     ]);
 
@@ -325,8 +318,8 @@ export class ContractRepository extends TenantAwareRepository {
   /**
    * Find contracts expiring within specified days
    */
-  async findExpiringContracts(daysUntilExpiry: number = 30): Promise<Contract[]> {
-    this.logOperation('SEARCH', 'Contract', `expiring:${daysUntilExpiry}days`);
+  async findExpiringcontractss(daysUntilExpiry: number = 30): Promise<contracts[]> {
+    this.logOperation('SEARCH', 'contracts', `expiring:${daysUntilExpiry}days`);
 
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + daysUntilExpiry);
@@ -334,7 +327,7 @@ export class ContractRepository extends TenantAwareRepository {
     return this.findWithTenant(() =>
       this.prisma.contract.findMany({
         where: {
-          client: {
+          clients: {
             companyId: this.tenantContext.getTenantId(),
           },
           status: 'ACTIVE',
@@ -344,7 +337,7 @@ export class ContractRepository extends TenantAwareRepository {
           },
         },
         include: {
-          client: {
+          clients: {
             select: {
               id: true,
               name: true,
@@ -361,7 +354,7 @@ export class ContractRepository extends TenantAwareRepository {
   /**
    * Get contract statistics
    */
-  async getContractStats(): Promise<{
+  async getcontractsStats(): Promise<{
     total: number;
     active: number;
     pending: number;
@@ -369,9 +362,9 @@ export class ContractRepository extends TenantAwareRepository {
     terminated: number;
     expiringThisMonth: number;
     totalValue: number;
-    avgContractLength: number;
+    avgcontractsLength: number;
   }> {
-    this.logOperation('STATS', 'Contract');
+    this.logOperation('STATS', 'contracts');
 
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -389,14 +382,14 @@ export class ContractRepository extends TenantAwareRepository {
       this.findWithTenant(() =>
         this.prisma.contract.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            clients: { companyId: this.tenantContext.getTenantId() },
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
         this.prisma.contract.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            clients: { companyId: this.tenantContext.getTenantId() },
             status: 'ACTIVE',
           },
         }),
@@ -404,7 +397,7 @@ export class ContractRepository extends TenantAwareRepository {
       this.findWithTenant(() =>
         this.prisma.contract.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            clients: { companyId: this.tenantContext.getTenantId() },
             status: 'PENDING',
           },
         }),
@@ -412,7 +405,7 @@ export class ContractRepository extends TenantAwareRepository {
       this.findWithTenant(() =>
         this.prisma.contract.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            clients: { companyId: this.tenantContext.getTenantId() },
             status: 'EXPIRED',
           },
         }),
@@ -420,7 +413,7 @@ export class ContractRepository extends TenantAwareRepository {
       this.findWithTenant(() =>
         this.prisma.contract.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            clients: { companyId: this.tenantContext.getTenantId() },
             status: 'TERMINATED',
           },
         }),
@@ -428,7 +421,7 @@ export class ContractRepository extends TenantAwareRepository {
       this.findWithTenant(() =>
         this.prisma.contract.count({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            clients: { companyId: this.tenantContext.getTenantId() },
             status: 'ACTIVE',
             endDate: {
               lte: nextMonth,
@@ -440,7 +433,7 @@ export class ContractRepository extends TenantAwareRepository {
       this.findWithTenant(() =>
         this.prisma.contract.findMany({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            clients: { companyId: this.tenantContext.getTenantId() },
             contractValue: { not: null },
           },
           select: { contractValue: true },
@@ -449,7 +442,7 @@ export class ContractRepository extends TenantAwareRepository {
       this.findWithTenant(() =>
         this.prisma.contract.findMany({
           where: {
-            client: { companyId: this.tenantContext.getTenantId() },
+            clients: { companyId: this.tenantContext.getTenantId() },
             endDate: { not: null },
           },
           select: { startDate: true, endDate: true },
@@ -463,7 +456,7 @@ export class ContractRepository extends TenantAwareRepository {
     }, 0);
 
     // Calculate average contract length in months
-    const avgContractLength = contractLengths.length > 0 ? 
+    const avgcontractsLength = contractLengths.length > 0 ? 
       contractLengths.reduce((sum, contract) => {
         if (contract.endDate) {
           const months = Math.abs(
@@ -482,23 +475,23 @@ export class ContractRepository extends TenantAwareRepository {
       terminated,
       expiringThisMonth,
       totalValue,
-      avgContractLength: Math.round(avgContractLength),
+      avgcontractsLength: Math.round(avgcontractsLength),
     };
   }
 
   /**
    * Build search filter for contract queries
    */
-  private buildContractSearchFilter(filters: ContractSearchFilters): Prisma.ContractWhereInput {
-    const conditions: Prisma.ContractWhereInput[] = [];
+  private buildcontractsSearchFilter(filters: contractsSearchFilters): Prisma.contractsWhereInput {
+    const conditions: Prisma.contractsWhereInput[] = [];
 
     // Text search across contract number, title, and client name
     if (filters.search) {
       conditions.push({
         OR: [
-          { contractNumber: { contains: filters.search, mode: 'insensitive' } },
+          { contract_number: { contains: filters.search, mode: 'insensitive' } },
           { title: { contains: filters.search, mode: 'insensitive' } },
-          { client: { name: { contains: filters.search, mode: 'insensitive' } } },
+          { clients: { name: { contains: filters.search, mode: 'insensitive' } } },
         ],
       });
     }
@@ -513,14 +506,14 @@ export class ContractRepository extends TenantAwareRepository {
     // Client filter
     if (filters.clientId) {
       conditions.push({
-        clientId: filters.clientId,
+        client_id: filters.clientId,
       });
     }
 
     // Expiring before date filter
     if (filters.expiringBefore) {
       conditions.push({
-        endDate: {
+        end_date: {
           lte: filters.expiringBefore,
         },
       });
@@ -532,7 +525,7 @@ export class ContractRepository extends TenantAwareRepository {
   /**
    * Get contract performance metrics
    */
-  async getContractPerformance(contractId: string): Promise<{
+  async getcontractsPerformance(contractId: string): Promise<{
     siteCount: number;
     totalEmployeesAssigned: number;
     attendanceRate: number;
@@ -541,13 +534,13 @@ export class ContractRepository extends TenantAwareRepository {
     outstandingAmount: number;
     serviceUptime: number;
   }> {
-    this.logOperation('PERFORMANCE', 'Contract', contractId);
+    this.logOperation('PERFORMANCE', 'contracts', contractId);
 
     const contract = await this.findWithTenant(() =>
       this.prisma.contract.findFirst({
         where: {
           id: contractId,
-          client: { companyId: this.tenantContext.getTenantId() },
+          clients: { companyId: this.tenantContext.getTenantId() },
         },
         include: {
           sites: {
@@ -560,13 +553,13 @@ export class ContractRepository extends TenantAwareRepository {
           invoices: true,
         },
       }),
-    ) as Contract & {
-      sites: Array<Site & { assignments: Assignment[] }>;
-      invoices: Invoice[];
+    ) as contracts & {
+      sites: Array<sites & { assignments: assignments[] }>;
+      invoices: invoices[];
     };
 
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new Error('contracts not found');
     }
 
     const siteCount = contract.sites.length;
@@ -577,12 +570,12 @@ export class ContractRepository extends TenantAwareRepository {
 
     const invoiceCount = contract.invoices.length;
     const totalBilled = contract.invoices.reduce(
-      (sum, invoice) => sum + parseFloat(invoice.totalAmount.toString()),
+      (sum, invoice) => sum + parseFloat(invoice.total_amount.toString()),
       0,
     );
     const outstandingAmount = contract.invoices
       .filter(invoice => invoice.status !== 'PAID')
-      .reduce((sum, invoice) => sum + parseFloat(invoice.totalAmount.toString()), 0);
+      .reduce((sum, invoice) => sum + parseFloat(invoice.total_amount.toString()), 0);
 
     return {
       siteCount,

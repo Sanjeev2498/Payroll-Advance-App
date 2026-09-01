@@ -508,7 +508,7 @@ export class ClientPortalService {
    */
   private async validateInvoiceAccess(clientId: string, invoiceId: string): Promise<void> {
     const invoice = await this.billingService.getInvoice(invoiceId);
-    if (!invoice || invoice.contract.client.id !== clientId) {
+    if (!invoice || invoice.client.id !== clientId) {
       throw new BadRequestException(`Invoice ${invoiceId} does not belong to client ${clientId}`);
     }
   }

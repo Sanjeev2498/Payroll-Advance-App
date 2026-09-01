@@ -5,6 +5,7 @@ import { DeploymentHours, SiteDeploymentSummary } from './billing-calculation.dt
 
 export interface InvoiceResponse {
   id: string;
+  contractId: string;
   clientId: string;
   client: {
     id: string;
@@ -23,7 +24,18 @@ export interface InvoiceResponse {
   paidAt?: string;
   createdAt: string;
   updatedAt: string;
-  gstDetails?: GstCalculationResult;
+  gstDetails?: {
+    taxableAmount: number;
+    gstRate: number;
+    cgst: number;
+    sgst: number;
+    igst: number;
+    utgst: number;
+    totalGst: number;
+    totalAmount: number;
+    isInterState: boolean;
+    hsnCode: string;
+  };
   deploymentSummary?: {
     totalHours: number;
     totalSites: number;

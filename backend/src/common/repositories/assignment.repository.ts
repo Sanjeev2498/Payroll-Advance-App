@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../tenant-context.service';
-import { Assignment, Prisma, Employee, Site } from '@prisma/client';
+import { assignments, Prisma, employees, sites } from '@prisma/client';
 
 export interface CreateAssignmentDto {
   employeeId: string;
@@ -49,9 +49,9 @@ export interface AssignmentSearchFilters {
   includeCancelled?: boolean;
 }
 
-export interface AssignmentWithRelations extends Assignment {
-  employee: Employee;
-  site: Site & {
+export interface AssignmentWithRelations extends assignments {
+  employee: employees;
+  site: sites & {
     contract: {
       client: {
         id: string;
@@ -109,7 +109,7 @@ export class AssignmentRepository extends TenantAwareRepository {
       this.prisma.assignment.create({
         data: assignmentData,
         include: {
-          employee: true,
+          employees: true,
           site: {
             include: {
               contract: {
@@ -139,7 +139,7 @@ export class AssignmentRepository extends TenantAwareRepository {
       this.prisma.assignment.findFirst({
         where: { id },
         include: {
-          employee: true,
+          employees: true,
           site: {
             include: {
               contract: {
@@ -160,7 +160,7 @@ export class AssignmentRepository extends TenantAwareRepository {
 
     // Validate assignment belongs to current tenant through employee
     if (assignment) {
-      this.validateTenantOwnership(assignment.employee.companyId);
+      this.validateTenantOwnership(assignment.employee.company_id);
     }
 
     return assignment as AssignmentWithRelations | null;
@@ -183,7 +183,7 @@ export class AssignmentRepository extends TenantAwareRepository {
         where: { id },
         data,
         include: {
-          employee: true,
+          employees: true,
           site: {
             include: {
               contract: {
@@ -223,7 +223,7 @@ export class AssignmentRepository extends TenantAwareRepository {
           endDate: new Date(),
         },
         include: {
-          employee: true,
+          employees: true,
           site: {
             include: {
               contract: {
@@ -250,7 +250,7 @@ export class AssignmentRepository extends TenantAwareRepository {
     filters: AssignmentSearchFilters = {},
     page?: number,
     limit?: number,
-    sortBy?: keyof Assignment,
+    sortBy?: keyof assignments,
     sortOrder?: 'asc' | 'desc',
   ): Promise<{
     assignments: AssignmentWithRelations[];
@@ -262,7 +262,7 @@ export class AssignmentRepository extends TenantAwareRepository {
     this.logOperation('LIST', 'Assignment');
 
     const pagination = this.getPaginationParams(page, limit);
-    const sorting = this.getSortingParams(sortBy, sortOrder);
+    const sorting = this.getSortingParams(sortBy as string, sortOrder);
 
     const where = this.buildAssignmentSearchFilter(filters);
 
@@ -271,7 +271,7 @@ export class AssignmentRepository extends TenantAwareRepository {
         this.prisma.assignment.findMany({
           where,
           include: {
-            employee: true,
+            employees: true,
             site: {
               include: {
                 contract: {
@@ -322,7 +322,7 @@ export class AssignmentRepository extends TenantAwareRepository {
           },
         },
         include: {
-          employee: true,
+          employees: true,
           site: {
             include: {
               contract: {
@@ -361,7 +361,7 @@ export class AssignmentRepository extends TenantAwareRepository {
           },
         },
         include: {
-          employee: true,
+          employees: true,
           site: {
             include: {
               contract: {
@@ -393,14 +393,14 @@ export class AssignmentRepository extends TenantAwareRepository {
     const assignments = await this.findWithTenant(() =>
       this.prisma.assignment.findMany({
         where: {
-          employee: {
+          employees: {
             companyId: this.getTenantFilter().companyId,
             employmentStatus: 'ACTIVE',
           },
           status: 'ACTIVE',
         },
         include: {
-          employee: true,
+          employees: true,
           site: {
             include: {
               contract: {
@@ -434,10 +434,10 @@ export class AssignmentRepository extends TenantAwareRepository {
         : 100;
 
       const competencyScore = this.calculateCompetencyScore(assignment.employee, requiredSkills);
-      const experienceScore = this.calculateExperienceScore(assignment.employee, assignment.role);
+      const experienceScore = this.calculateExperienceScore(assignment.employee, (assignment as any).role);
 
       const skillMatchingScore: SkillMatchingScore = {
-        assignmentId: assignment.id,
+        assignmentId: (assignment as any).id,
         matchPercentage,
         matchedSkills,
         missingSkills,
@@ -492,7 +492,7 @@ export class AssignmentRepository extends TenantAwareRepository {
           }
         },
       }),
-    ) as Array<Assignment & { site: { name: string } }>;
+    ) as Array<assignments & { site: { name: string } }>;
 
     if (employeeConflicts.length > 0) {
       conflicts.push({
@@ -642,13 +642,13 @@ export class AssignmentRepository extends TenantAwareRepository {
   /**
    * Build search filter for assignment queries
    */
-  private buildAssignmentSearchFilter(filters: AssignmentSearchFilters): Prisma.AssignmentWhereInput {
-    const conditions: Prisma.AssignmentWhereInput[] = [];
+  private buildAssignmentSearchFilter(filters: AssignmentSearchFilters): Prisma.assignmentsWhereInput {
+    const conditions: Prisma.assignmentsWhereInput[] = [];
 
     // Add tenant filter through employee relationship
     conditions.push({
-      employee: {
-        companyId: this.getTenantFilter().companyId,
+      employees: {
+        company_id: this.getTenantFilter().companyId,
       },
     });
 
@@ -658,16 +658,16 @@ export class AssignmentRepository extends TenantAwareRepository {
         OR: [
           { role: { contains: filters.search, mode: 'insensitive' } },
           {
-            employee: {
+            employees: {
               OR: [
-                { firstName: { contains: filters.search, mode: 'insensitive' } },
-                { lastName: { contains: filters.search, mode: 'insensitive' } },
-                { employeeNumber: { contains: filters.search, mode: 'insensitive' } },
+                { first_name: { contains: filters.search, mode: 'insensitive' } },
+                { last_name: { contains: filters.search, mode: 'insensitive' } },
+                { employee_number: { contains: filters.search, mode: 'insensitive' } },
               ],
             },
           },
           {
-            site: {
+            sites: {
               name: { contains: filters.search, mode: 'insensitive' },
             },
           },
@@ -677,11 +677,11 @@ export class AssignmentRepository extends TenantAwareRepository {
 
     // Specific filters
     if (filters.employeeId) {
-      conditions.push({ employeeId: filters.employeeId });
+      conditions.push({ employee_id: filters.employeeId });
     }
 
     if (filters.siteId) {
-      conditions.push({ siteId: filters.siteId });
+      conditions.push({ site_id: filters.siteId });
     }
 
     if (filters.role) {
@@ -714,14 +714,14 @@ export class AssignmentRepository extends TenantAwareRepository {
     if (filters.startDateFrom || filters.startDateTo) {
       const dateFilter = this.buildDateRangeFilter(filters.startDateFrom, filters.startDateTo);
       if (dateFilter) {
-        conditions.push({ startDate: dateFilter });
+        conditions.push({ start_date: dateFilter });
       }
     }
 
     if (filters.endDateFrom || filters.endDateTo) {
       const dateFilter = this.buildDateRangeFilter(filters.endDateFrom, filters.endDateTo);
       if (dateFilter) {
-        conditions.push({ endDate: dateFilter });
+        conditions.push({ end_date: dateFilter });
       }
     }
 
@@ -734,7 +734,7 @@ export class AssignmentRepository extends TenantAwareRepository {
       if (filters.maxHourlyRate) {
         rateFilter.lte = filters.maxHourlyRate;
       }
-      conditions.push({ hourlyRate: rateFilter });
+      conditions.push({ hourly_rate: rateFilter });
     }
 
     // Priority and urgency filters
@@ -798,7 +798,7 @@ export class AssignmentRepository extends TenantAwareRepository {
   /**
    * Calculate competency score for an employee based on required skills
    */
-  private calculateCompetencyScore(employee: Employee, requiredSkills: string[]): number {
+  private calculateCompetencyScore(employee: employees, requiredSkills: string[]): number {
     const employeeSkills = employee.skills || [];
     const certifications = (employee.certifications as any) || [];
     
@@ -827,12 +827,12 @@ export class AssignmentRepository extends TenantAwareRepository {
   /**
    * Calculate experience score for an employee in a specific role
    */
-  private calculateExperienceScore(employee: Employee, role: string): number {
+  private calculateExperienceScore(employee: employees, role: string): number {
     const metadata = (employee.metadata as any) || {};
     const performanceMetrics = metadata.performanceMetrics || {};
     
     // Base score from hire date (tenure)
-    const hireDate = new Date(employee.hireDate);
+    const hireDate = new Date(employee.hire_date);
     const now = new Date();
     const yearsOfService = (now.getTime() - hireDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
     const tenureScore = Math.min(yearsOfService * 20, 60); // Max 60 points from tenure

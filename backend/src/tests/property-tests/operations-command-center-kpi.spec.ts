@@ -101,7 +101,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
             await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
               // Create payroll runs if specified
               for (const payrollData of testData.payrollRuns) {
-                await systemPrisma.payrollRun.create({
+                await systemPrisma.payroll_runs.create({
                   data: {
                     runNumber: `RUN-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
                     payPeriodStart: payrollData.payPeriodStart,
@@ -230,7 +230,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
 
     // Setup: Create test company using system context to avoid FK violations
     await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
-      await systemPrisma.company.create({
+      await systemPrisma.companies.create({
         data: {
           id: testTenantId,
           name: 'Performance Test Company',
@@ -260,7 +260,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
             // Create large dataset using system context to avoid FK violations
             await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
               // Create client first
-              const client = await systemPrisma.client.create({
+              const client = await systemPrisma.clients.create({
                 data: {
                   name: 'Performance Test Client',
                   contactEmail: 'perf-test@example.com',
@@ -271,7 +271,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
               });
 
               // Create contract for the client
-              const contract = await systemPrisma.contract.create({
+              const contract = await systemPrisma.contracts.create({
                 data: {
                   clientId: client.id,
                   contractNumber: `CONTRACT-LOAD-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
@@ -330,7 +330,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
                 metadata: {},
               }));
 
-              await systemPrisma.employee.createMany({ data: employeeData });
+              await systemPrisma.employees.createMany({ data: employeeData });
 
               // Batch create sites
               const siteData = Array.from({ length: loadData.siteCount }, (_, i) => ({
@@ -381,7 +381,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
         ),
         {
           numRuns: 2, // Reduced for faster performance testing
-          timeout: 20000, // 20 second timeout per test
+          timeout: 15000, // Reduced from 20s for faster execution
           seed: 123,
           endOnFailure: true,
         }
@@ -404,7 +404,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
 
     // Setup: Create test company using system context
     await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
-      await systemPrisma.company.create({
+      await systemPrisma.companies.create({
         data: {
           id: testTenantId,
           name: 'Time Range Test Company',
@@ -476,7 +476,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
 
                 const status = i % 3 === 0 ? 'PAID' : (i % 4 === 0 ? 'SENT' : 'DRAFT');
 
-                await systemPrisma.invoice.create({
+                await systemPrisma.invoices.create({
                   data: {
                     invoiceNumber: `INV-TIME-${i}`,
                     billingPeriodStart: invoiceDate,
@@ -503,7 +503,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
                 const amount = timeData.payrollAmounts[i];
                 const runDate = new Date(monthStart.getTime() + i * 7 * 24 * 60 * 60 * 1000);
 
-                await systemPrisma.payrollRun.create({
+                await systemPrisma.payroll_runs.create({
                   data: {
                     runNumber: `PAY-TIME-${i}`,
                     payPeriodStart: runDate,

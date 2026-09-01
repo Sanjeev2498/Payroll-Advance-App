@@ -1,0 +1,471 @@
+﻿prisma/seed.ts(29,5): error TS2322: Type '{ name: string; slug: string; settings: { timezone: string; dateFormat: string; currency: string; }; branding: { primaryColor: string; logo: null; companyAddress: string; }; }' is not assignable to type '(Without<companiesCreateInput, companiesUncheckedCreateInput> & companiesUncheckedCreateInput) | (Without<...> & companiesCreateInput)'.
+  Type '{ name: string; slug: string; settings: { timezone: string; dateFormat: string; currency: string; }; branding: { primaryColor: string; logo: null; companyAddress: string; }; }' is not assignable to type 'Without<companiesUncheckedCreateInput, companiesCreateInput> & companiesCreateInput'.
+    Type '{ name: string; slug: string; settings: { timezone: string; dateFormat: string; currency: string; }; branding: { primaryColor: string; logo: null; companyAddress: string; }; }' is missing the following properties from type 'companiesCreateInput': id, updated_at
+prisma/seed.ts(50,5): error TS2322: Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "COMPANY_ADMIN"; is_active: true; }' is not assignable to type '(Without<usersCreateInput, usersUncheckedCreateInput> & usersUncheckedCreateInput) | (Without<...> & usersCreateInput)'.
+  Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "COMPANY_ADMIN"; is_active: true; }' is not assignable to type 'Without<usersUncheckedCreateInput, usersCreateInput> & usersCreateInput'.
+    Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "COMPANY_ADMIN"; is_active: true; }' is not assignable to type 'Without<usersUncheckedCreateInput, usersCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(65,5): error TS2322: Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "SUPERVISOR"; is_active: true; }' is not assignable to type '(Without<usersCreateInput, usersUncheckedCreateInput> & usersUncheckedCreateInput) | (Without<...> & usersCreateInput)'.
+  Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "SUPERVISOR"; is_active: true; }' is not assignable to type 'Without<usersUncheckedCreateInput, usersCreateInput> & usersCreateInput'.
+    Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "SUPERVISOR"; is_active: true; }' is not assignable to type 'Without<usersUncheckedCreateInput, usersCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(80,5): error TS2322: Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "EMPLOYEE"; is_active: true; }' is not assignable to type '(Without<usersCreateInput, usersUncheckedCreateInput> & usersUncheckedCreateInput) | (Without<...> & usersCreateInput)'.
+  Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "EMPLOYEE"; is_active: true; }' is not assignable to type 'Without<usersUncheckedCreateInput, usersCreateInput> & usersCreateInput'.
+    Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "EMPLOYEE"; is_active: true; }' is not assignable to type 'Without<usersUncheckedCreateInput, usersCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(93,5): error TS2322: Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "EMPLOYEE"; is_active: true; }' is not assignable to type '(Without<usersCreateInput, usersUncheckedCreateInput> & usersUncheckedCreateInput) | (Without<...> & usersCreateInput)'.
+  Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "EMPLOYEE"; is_active: true; }' is not assignable to type 'Without<usersUncheckedCreateInput, usersCreateInput> & usersCreateInput'.
+    Type '{ company_id: string; email: string; first_name: string; last_name: string; password_hash: string; role: "EMPLOYEE"; is_active: true; }' is not assignable to type 'Without<usersUncheckedCreateInput, usersCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(117,7): error TS2561: Object literal may only specify known properties, but 'organizationType' does not exist in type '(Without<clientsCreateInput, clientsUncheckedCreateInput> & clientsUncheckedCreateInput) | (Without<...> & clientsCreateInput)'. Did you mean to write 'organization_type'?
+prisma/seed.ts(154,5): error TS2322: Type '{ contract_id: string; name: string; address: { street: string; city: string; state: string; zipCode: string; building: string; }; access_requirements: { securityClearance: string; uniformRequired: true; equipmentProvided: string[]; }; safety_protocols: { ...; }; contact_info: { ...; }; }' is not assignable to type '(Without<sitesCreateInput, sitesUncheckedCreateInput> & sitesUncheckedCreateInput) | (Without<...> & sitesCreateInput)'.
+  Type '{ contract_id: string; name: string; address: { street: string; city: string; state: string; zipCode: string; building: string; }; access_requirements: { securityClearance: string; uniformRequired: true; equipmentProvided: string[]; }; safety_protocols: { ...; }; contact_info: { ...; }; }' is not assignable to type 'Without<sitesUncheckedCreateInput, sitesCreateInput> & sitesCreateInput'.
+    Type '{ contract_id: string; name: string; address: { street: string; city: string; state: string; zipCode: string; building: string; }; access_requirements: { securityClearance: string; uniformRequired: true; equipmentProvided: string[]; }; safety_protocols: { ...; }; contact_info: { ...; }; }' is not assignable to type 'Without<sitesUncheckedCreateInput, sitesCreateInput>'.
+      Types of property 'contract_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(182,5): error TS2322: Type '{ contract_id: string; name: string; address: { street: string; city: string; state: string; zipCode: string; building: string; }; access_requirements: { securityClearance: string; uniformRequired: true; equipmentProvided: string[]; }; safety_protocols: { ...; }; contact_info: { ...; }; }' is not assignable to type '(Without<sitesCreateInput, sitesUncheckedCreateInput> & sitesUncheckedCreateInput) | (Without<...> & sitesCreateInput)'.
+  Type '{ contract_id: string; name: string; address: { street: string; city: string; state: string; zipCode: string; building: string; }; access_requirements: { securityClearance: string; uniformRequired: true; equipmentProvided: string[]; }; safety_protocols: { ...; }; contact_info: { ...; }; }' is not assignable to type 'Without<sitesUncheckedCreateInput, sitesCreateInput> & sitesCreateInput'.
+    Type '{ contract_id: string; name: string; address: { street: string; city: string; state: string; zipCode: string; building: string; }; access_requirements: { securityClearance: string; uniformRequired: true; equipmentProvided: string[]; }; safety_protocols: { ...; }; contact_info: { ...; }; }' is not assignable to type 'Without<sitesUncheckedCreateInput, sitesCreateInput>'.
+      Types of property 'contract_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(213,5): error TS2322: Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type '(Without<employeesCreateInput, employeesUncheckedCreateInput> & employeesUncheckedCreateInput) | (Without<...> & employeesCreateInput)'.
+  Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput> & employeesCreateInput'.
+    Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(247,5): error TS2322: Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type '(Without<employeesCreateInput, employeesUncheckedCreateInput> & employeesUncheckedCreateInput) | (Without<...> & employeesCreateInput)'.
+  Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput> & employeesCreateInput'.
+    Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(277,5): error TS2322: Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type '(Without<employeesCreateInput, employeesUncheckedCreateInput> & employeesUncheckedCreateInput) | (Without<...> & employeesCreateInput)'.
+  Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput> & employeesCreateInput'.
+    Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(306,5): error TS2322: Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type '(Without<employeesCreateInput, employeesUncheckedCreateInput> & employeesUncheckedCreateInput) | (Without<...> & employeesCreateInput)'.
+  Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput> & employeesCreateInput'.
+    Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ACTIVE"; hire_dat...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(340,5): error TS2322: Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ON_LEAVE"; hire_d...' is not assignable to type '(Without<employeesCreateInput, employeesUncheckedCreateInput> & employeesUncheckedCreateInput) | (Without<...> & employeesCreateInput)'.
+  Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ON_LEAVE"; hire_d...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput> & employeesCreateInput'.
+    Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "ON_LEAVE"; hire_d...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+prisma/seed.ts(369,5): error TS2322: Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "INACTIVE"; hire_d...' is not assignable to type '(Without<employeesCreateInput, employeesUncheckedCreateInput> & employeesUncheckedCreateInput) | (Without<...> & employeesCreateInput)'.
+  Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "INACTIVE"; hire_d...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput> & employeesCreateInput'.
+    Type '{ company_id: string; employee_number: string; first_name: string; last_name: string; email: string; phone: string; aadhaar_number: string; pan_number: string; address: { street: string; city: string; state: string; zipCode: string; }; certifications: { ...; }; skills: string[]; employment_status: "INACTIVE"; hire_d...' is not assignable to type 'Without<employeesUncheckedCreateInput, employeesCreateInput>'.
+      Types of property 'company_id' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/assignments/assignments.service.ts(96,70): error TS2339: Property 'id' does not exist on type 'AssignmentWithRelations'.
+src/attendance/attendance-recording-accuracy.property.spec.ts(352,62): error TS2551: Property 'locationData' does not exist on type 'AttendanceWithRelations'. Did you mean 'location_data'?
+src/attendance/attendance-recording-accuracy.property.spec.ts(436,66): error TS2551: Property 'verificationData' does not exist on type 'AttendanceWithRelations'. Did you mean 'verification_data'?
+src/attendance/attendance.service.ts(64,67): error TS2552: Cannot find name 'Attendance'. Did you mean 'attendance'?
+src/attendance/attendance.service.ts(130,21): error TS2551: Property 'clockIn' does not exist on type 'AttendanceWithRelations'. Did you mean 'clock_in'?
+src/attendance/attendance.service.ts(227,21): error TS2551: Property 'clockIn' does not exist on type 'AttendanceWithRelations'. Did you mean 'clock_in'?
+src/attendance/attendance.service.ts(231,20): error TS2551: Property 'clockOut' does not exist on type 'AttendanceWithRelations'. Did you mean 'clock_out'?
+src/attendance/attendance.service.ts(259,62): error TS2551: Property 'clockIn' does not exist on type 'AttendanceWithRelations'. Did you mean 'clock_in'?
+src/attendance/attendance.service.ts(289,26): error TS2551: Property 'locationData' does not exist on type 'AttendanceWithRelations'. Did you mean 'location_data'?
+src/attendance/attendance.service.ts(293,26): error TS2551: Property 'verificationData' does not exist on type 'AttendanceWithRelations'. Did you mean 'verification_data'?
+src/attendance/attendance.service.ts(403,79): error TS2552: Cannot find name 'Attendance'. Did you mean 'attendance'?
+src/auth/rbac/examples/integration-test-example.spec.ts(157,16): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(161,16): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(165,16): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(169,16): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(170,19): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(171,21): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(172,17): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(178,9): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(182,9): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/auth/rbac/examples/integration-test-example.spec.ts(405,43): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'Permission[]'.
+  Type 'string' is not assignable to type 'Permission'.
+src/auth/rbac/examples/integration-test-example.spec.ts(406,42): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'Permission[]'.
+  Type 'string' is not assignable to type 'Permission'.
+src/auth/repositories/user.repository.ts(17,77): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/auth/repositories/user.repository.ts(75,83): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/auth/repositories/user.repository.ts(120,59): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/auth/repositories/user.repository.ts(135,13): error TS2559: Type '{ companyId: string; }' has no properties in common with type 'usersWhereInput'.
+src/auth/repositories/user.repository.ts(142,13): error TS2561: Object literal may only specify known properties, but 'firstName' does not exist in type 'usersWhereInput'. Did you mean to write 'first_name'?
+src/auth/repositories/user.repository.ts(143,13): error TS2561: Object literal may only specify known properties, but 'lastName' does not exist in type 'usersWhereInput'. Did you mean to write 'last_name'?
+src/auth/repositories/user.repository.ts(155,15): error TS2551: Property 'isActive' does not exist on type 'usersWhereInput'. Did you mean 'is_active'?
+src/auth/repositories/user.repository.ts(184,39): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/auth/repositories/user.repository.ts(206,45): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/auth/repositories/user.repository.ts(228,67): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/auth/repositories/user.repository.ts(265,67): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/auth/repositories/user.repository.ts(293,37): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/auth/services/client-user-management.service.ts(13,26): error TS2724: '"@prisma/client"' has no exported member named 'ClientUser'. Did you mean 'clients'?
+src/auth/services/user-management.service.ts(361,34): error TS2552: Cannot find name 'User'. Did you mean 'users'?
+src/billing/billing.service.ts(181,28): error TS2339: Property 'tenantContext' does not exist on type 'BillingService'.
+src/billing/services/invoice-calculation.service.ts(113,7): error TS2353: Object literal may only specify known properties, and 'contractId' does not exist in type 'BillingCalculationResult'.
+src/billing/services/invoice-pdf.service.ts(55,53): error TS2345: Argument of type '{ taxableAmount: number; gstRate: number; cgst: number; sgst: number; igst: number; utgst: number; totalGst: number; totalAmount: number; isInterState: boolean; hsnCode: string; }' is not assignable to parameter of type 'GstCalculationResult'.
+  Types of property 'taxableAmount' are incompatible.
+    Type 'number' is not assignable to type 'Decimal'.
+src/billing/services/invoice-pdf.service.ts(243,38): error TS2551: Property 'contract' does not exist on type 'InvoiceResponse'. Did you mean 'contractId'?
+src/billing/services/invoice-pdf.service.ts(244,30): error TS2551: Property 'contract' does not exist on type 'InvoiceResponse'. Did you mean 'contractId'?
+src/billing/services/invoice-pdf.service.ts(245,27): error TS2551: Property 'contract' does not exist on type 'InvoiceResponse'. Did you mean 'contractId'?
+src/billing/services/invoice-pdf.service.ts(246,30): error TS2551: Property 'contract' does not exist on type 'InvoiceResponse'. Did you mean 'contractId'?
+src/billing/services/invoice-pdf.service.ts(247,30): error TS2551: Property 'contract' does not exist on type 'InvoiceResponse'. Did you mean 'contractId'?
+src/billing/services/invoice.service.ts(36,24): error TS2339: Property 'clientId' does not exist on type 'CreateInvoiceDto'.
+src/billing/services/invoice.service.ts(58,32): error TS2339: Property 'clientId' does not exist on type 'CreateInvoiceDto'.
+src/billing/services/invoice.service.ts(66,91): error TS2339: Property 'clientId' does not exist on type 'CreateInvoiceDto'.
+src/billing/services/invoice.service.ts(71,7): error TS2353: Object literal may only specify known properties, and 'contract' does not exist in type 'invoicesCreateInput'.
+src/billing/services/invoice.service.ts(158,20): error TS2551: Property 'paidAt' does not exist on type 'invoicesUpdateInput'. Did you mean 'paid_at'?
+src/billing/services/invoice.service.ts(160,20): error TS2551: Property 'paidAt' does not exist on type 'invoicesUpdateInput'. Did you mean 'paid_at'?
+src/billing/services/invoice.service.ts(165,18): error TS2551: Property 'dueDate' does not exist on type 'invoicesUpdateInput'. Did you mean 'due_date'?
+src/billing/services/invoice.service.ts(314,7): error TS2353: Object literal may only specify known properties, and 'contract' does not exist in type 'invoicesWhereInput'.
+src/billing/services/invoice.service.ts(322,19): error TS2551: Property 'createdAt' does not exist on type 'invoicesWhereInput'. Did you mean 'created_at'?
+src/billing/services/invoice.service.ts(395,7): error TS2353: Object literal may only specify known properties, and 'contract' does not exist in type 'invoicesWhereInput'.
+src/billing/services/invoice.service.ts(403,19): error TS2339: Property 'contract' does not exist on type 'invoicesWhereInput'.
+src/billing/services/invoice.service.ts(416,19): error TS2551: Property 'invoiceNumber' does not exist on type 'invoicesWhereInput'. Did you mean 'invoice_number'?
+src/billing/services/invoice.service.ts(423,19): error TS2551: Property 'billingPeriodStart' does not exist on type 'invoicesWhereInput'. Did you mean 'billing_period_start'?
+src/billing/services/invoice.service.ts(425,21): error TS2551: Property 'billingPeriodStart' does not exist on type 'invoicesWhereInput'. Did you mean 'billing_period_start'?
+src/billing/services/invoice.service.ts(428,21): error TS2551: Property 'billingPeriodStart' does not exist on type 'invoicesWhereInput'. Did you mean 'billing_period_start'?
+src/billing/services/invoice.service.ts(433,19): error TS2551: Property 'dueDate' does not exist on type 'invoicesWhereInput'. Did you mean 'due_date'?
+src/billing/services/invoice.service.ts(435,21): error TS2551: Property 'dueDate' does not exist on type 'invoicesWhereInput'. Did you mean 'due_date'?
+src/billing/services/invoice.service.ts(438,21): error TS2551: Property 'dueDate' does not exist on type 'invoicesWhereInput'. Did you mean 'due_date'?
+src/client-portal/client-portal.service.ts(511,29): error TS2551: Property 'contract' does not exist on type 'InvoiceResponse'. Did you mean 'contractId'?
+src/clients/clients.controller.spec.ts(6,10): error TS2724: '"@prisma/client"' has no exported member named 'Client'. Did you mean 'clients'?
+src/clients/clients.controller.spec.ts(160,42): error TS2345: Argument of type '{ total: number; active: any; suspended: number; expired: number; terminated: number; expiringThisMonth: any; }' is not assignable to parameter of type '{ total: number; byOrganizationType: Record<string, number>; withActiveContracts: number; withExpiringContracts: number; withMultipleContracts: number; withClientUsers: number; } | Promise<...>'.
+  Type '{ total: number; active: any; suspended: number; expired: number; terminated: number; expiringThisMonth: any; }' is missing the following properties from type '{ total: number; byOrganizationType: Record<string, number>; withActiveContracts: number; withExpiringContracts: number; withMultipleContracts: number; withClientUsers: number; }': byOrganizationType, withActiveContracts, withExpiringContracts, withMultipleContracts, withClientUsers
+src/clients/clients.controller.ts(77,7): error TS2353: Object literal may only specify known properties, and 'companyId' does not exist in type 'ClientResponseDto'.
+src/clients/clients.controller.ts(270,7): error TS2353: Object literal may only specify known properties, and 'companyId' does not exist in type 'ClientResponseDto'.
+src/clients/clients.controller.ts(313,7): error TS2353: Object literal may only specify known properties, and 'companyId' does not exist in type 'ClientResponseDto'.
+src/clients/clients.controller.ts(348,7): error TS2353: Object literal may only specify known properties, and 'companyId' does not exist in type 'ClientResponseDto'.
+src/clients/clients.service.spec.ts(7,10): error TS2724: '"@prisma/client"' has no exported member named 'Client'. Did you mean 'clients'?
+src/clients/clients.service.spec.ts(82,7): error TS2353: Object literal may only specify known properties, and 'organizationType' does not exist in type 'CreateClientDto'.
+src/clients/clients.service.spec.ts(263,57): error TS2345: Argument of type '{ total: number; active: number; suspended: number; expired: number; terminated: number; expiringThisMonth: number; }' is not assignable to parameter of type '{ total: number; byOrganizationType: Record<string, number>; withActiveContracts: number; withExpiringContracts: number; withMultipleContracts: number; withClientUsers: number; } | Promise<...>'.
+  Type '{ total: number; active: number; suspended: number; expired: number; terminated: number; expiringThisMonth: number; }' is missing the following properties from type '{ total: number; byOrganizationType: Record<string, number>; withActiveContracts: number; withExpiringContracts: number; withMultipleContracts: number; withClientUsers: number; }': byOrganizationType, withActiveContracts, withExpiringContracts, withMultipleContracts, withClientUsers
+src/clients/clients.service.ts(11,10): error TS2724: '"@prisma/client"' has no exported member named 'Client'. Did you mean 'clients'?
+src/clients/enhanced-clients.spec.ts(104,22): error TS2339: Property 'paymentTimelinessScore' does not exist on type '{ serviceQualityScore: number; contractCompliance: number; satisfactionRating: number; activeContracts: number; totalSites: number; avgResponseTime: number; }'.
+src/clients/enhanced-clients.spec.ts(105,22): error TS2551: Property 'contractComplianceScore' does not exist on type '{ serviceQualityScore: number; contractCompliance: number; satisfactionRating: number; activeContracts: number; totalSites: number; avgResponseTime: number; }'. Did you mean 'contractCompliance'?
+src/clients/enhanced-clients.spec.ts(123,26): error TS2339: Property 'daysUntilExpiry' does not exist on type '{ contractsNearExpiry: { contractId: string; contractNumber: string; title: string; daysUntilExpiry: number; renewalStatus: string; }[]; totalContracts: number; renewalOpportunities: number; }'.
+src/clients/enhanced-clients.spec.ts(124,26): error TS2339: Property 'renewalStatus' does not exist on type '{ contractsNearExpiry: { contractId: string; contractNumber: string; title: string; daysUntilExpiry: number; renewalStatus: string; }[]; totalContracts: number; renewalOpportunities: number; }'.
+src/clients/enhanced-clients.spec.ts(125,26): error TS2339: Property 'renewalProbability' does not exist on type '{ contractsNearExpiry: { contractId: string; contractNumber: string; title: string; daysUntilExpiry: number; renewalStatus: string; }[]; totalContracts: number; renewalOpportunities: number; }'.
+src/common/multi-tenant-isolation.property.spec.ts(449,15): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(450,15): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(451,15): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(452,15): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(455,20): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(455,38): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(458,22): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(461,22): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(461,43): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(464,15): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(465,15): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(466,15): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(467,15): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(469,73): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(470,75): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(472,40): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(472,62): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(472,82): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(472,103): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(476,27): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(477,25): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(478,27): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(479,24): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(483,20): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(483,42): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(484,19): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(485,22): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(488,22): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(488,57): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(491,22): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(494,22): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(494,53): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/common/multi-tenant-isolation.property.spec.ts(628,12): error TS2393: Duplicate function implementation.
+src/common/multi-tenant-isolation.property.spec.ts(630,26): error TS2339: Property 'company' does not exist on type 'unknown'.
+src/common/multi-tenant-isolation.property.spec.ts(631,26): error TS2339: Property 'clients' does not exist on type 'unknown'.
+src/common/multi-tenant-isolation.property.spec.ts(632,28): error TS2339: Property 'employees' does not exist on type 'unknown'.
+src/common/multi-tenant-isolation.property.spec.ts(633,24): error TS2339: Property 'sites' does not exist on type 'unknown'.
+src/common/multi-tenant-isolation.property.spec.ts(639,26): error TS2339: Property 'company' does not exist on type 'unknown'.
+src/common/multi-tenant-isolation.property.spec.ts(640,26): error TS2339: Property 'clients' does not exist on type 'unknown'.
+src/common/multi-tenant-isolation.property.spec.ts(641,28): error TS2339: Property 'employees' does not exist on type 'unknown'.
+src/common/multi-tenant-isolation.property.spec.ts(642,24): error TS2339: Property 'sites' does not exist on type 'unknown'.
+src/common/multi-tenant-isolation.property.spec.ts(661,12): error TS2393: Duplicate function implementation.
+src/common/repositories/assignment.repository.ts(5,10): error TS2724: '"@prisma/client"' has no exported member named 'Assignment'. Did you mean 'assignments'?
+src/common/repositories/assignment.repository.ts(5,30): error TS2724: '"@prisma/client"' has no exported member named 'Employee'. Did you mean 'employees'?
+src/common/repositories/assignment.repository.ts(5,40): error TS2724: '"@prisma/client"' has no exported member named 'Site'. Did you mean 'sites'?
+src/common/repositories/assignment.repository.ts(265,43): error TS2345: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string | number'.
+  Type 'symbol' is not assignable to type 'string | number'.
+src/common/repositories/assignment.repository.ts(437,93): error TS2339: Property 'role' does not exist on type 'AssignmentWithRelations'.
+src/common/repositories/assignment.repository.ts(440,34): error TS2339: Property 'id' does not exist on type 'AssignmentWithRelations'.
+src/common/repositories/assignment.repository.ts(645,81): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AssignmentWhereInput'. Did you mean 'assignmentsWhereInput'?
+src/common/repositories/assignment.repository.ts(646,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AssignmentWhereInput'. Did you mean 'assignmentsWhereInput'?
+src/common/repositories/attendance.repository.ts(80,29): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceCreateInput'. Did you mean 'attendanceCreateInput'?
+src/common/repositories/attendance.repository.ts(80,61): error TS2552: Cannot find name 'Attendance'. Did you mean 'attendance'?
+src/common/repositories/attendance.repository.ts(153,41): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceUpdateInput'. Did you mean 'attendanceUpdateInput'?
+src/common/repositories/attendance.repository.ts(153,73): error TS2552: Cannot find name 'Attendance'. Did you mean 'attendance'?
+src/common/repositories/attendance.repository.ts(171,37): error TS2552: Cannot find name 'Attendance'. Did you mean 'attendance'?
+src/common/repositories/attendance.repository.ts(296,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceWhereInput'. Did you mean 'attendanceWhereInput'?
+src/common/repositories/attendance.repository.ts(432,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceWhereInput'. Did you mean 'attendanceWhereInput'?
+src/common/repositories/attendance.repository.ts(547,24): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceUpdateInput'. Did you mean 'attendanceUpdateInput'?
+src/common/repositories/attendance.repository.ts(570,40): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceInclude'. Did you mean 'attendanceInclude'?
+src/common/repositories/attendance.repository.ts(615,64): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceWhereInput'. Did you mean 'attendanceWhereInput'?
+src/common/repositories/attendance.repository.ts(616,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceWhereInput'. Did you mean 'attendanceWhereInput'?
+src/common/repositories/attendance.repository.ts(710,13): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceOrderByWithRelationInput'. Did you mean 'attendanceOrderByWithRelationInput'?
+src/common/repositories/client-user.repository.ts(5,10): error TS2724: '"@prisma/client"' has no exported member named 'ClientUser'. Did you mean 'clients'?
+src/common/repositories/client-user.repository.ts(82,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientUserCreateInput'. Did you mean 'clientsCreateInput'?
+src/common/repositories/client-user.repository.ts(148,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientUserWhereInput'. Did you mean 'clientsWhereInput'?
+src/common/repositories/client-user.repository.ts(192,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientUserUpdateInput'. Did you mean 'clientsUpdateInput'?
+src/common/repositories/client-user.repository.ts(255,43): error TS2345: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string | number'.
+  Type 'symbol' is not assignable to type 'string | number'.
+src/common/repositories/client-user.repository.ts(257,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientUserWhereInput'. Did you mean 'clientsWhereInput'?
+src/common/repositories/client-user.repository.ts(455,81): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientUserWhereInput'. Did you mean 'clientsWhereInput'?
+src/common/repositories/client-user.repository.ts(456,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientUserWhereInput'. Did you mean 'clientsWhereInput'?
+src/common/repositories/client.repository.ts(5,10): error TS2724: '"@prisma/client"' has no exported member named 'Client'. Did you mean 'clients'?
+src/common/repositories/client.repository.ts(5,18): error TS2724: '"@prisma/client"' has no exported member named 'Contract'. Did you mean 'contracts'?
+src/common/repositories/client.repository.ts(5,28): error TS2724: '"@prisma/client"' has no exported member named 'Site'. Did you mean 'sites'?
+src/common/repositories/client.repository.ts(59,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientCreateInput'. Did you mean 'clientsCreateInput'?
+src/common/repositories/client.repository.ts(168,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientUpdateInput'. Did you mean 'clientsUpdateInput'?
+src/common/repositories/client.repository.ts(255,43): error TS2345: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string | number'.
+  Type 'symbol' is not assignable to type 'string | number'.
+src/common/repositories/client.repository.ts(257,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientWhereInput'. Did you mean 'clientsWhereInput'?
+src/common/repositories/client.repository.ts(556,73): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientWhereInput'. Did you mean 'clientsWhereInput'?
+src/common/repositories/client.repository.ts(557,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ClientWhereInput'. Did you mean 'clientsWhereInput'?
+src/common/repositories/contract.repository.ts(5,10): error TS2724: '"@prisma/client"' has no exported member named 'Contract'. Did you mean 'contracts'?
+src/common/repositories/contract.repository.ts(5,20): error TS2724: '"@prisma/client"' has no exported member named 'Site'. Did you mean 'sites'?
+src/common/repositories/contract.repository.ts(5,26): error TS2724: '"@prisma/client"' has no exported member named 'Assignment'. Did you mean 'assignments'?
+src/common/repositories/contract.repository.ts(5,38): error TS2724: '"@prisma/client"' has no exported member named 'Invoice'. Did you mean 'invoices'?
+src/common/repositories/contract.repository.ts(74,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ContractCreateInput'. Did you mean 'contractsCreateInput'?
+src/common/repositories/contract.repository.ts(179,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ContractUpdateInput'. Did you mean 'contractsUpdateInput'?
+src/common/repositories/contract.repository.ts(279,43): error TS2345: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string | number'.
+  Type 'symbol' is not assignable to type 'string | number'.
+src/common/repositories/contract.repository.ts(281,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ContractWhereInput'. Did you mean 'contractsWhereInput'?
+src/common/repositories/contract.repository.ts(492,77): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ContractWhereInput'. Did you mean 'contractsWhereInput'?
+src/common/repositories/contract.repository.ts(493,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ContractWhereInput'. Did you mean 'contractsWhereInput'?
+src/common/repositories/employee.repository.ts(5,10): error TS2724: '"@prisma/client"' has no exported member named 'Employee'. Did you mean 'employees'?
+src/common/repositories/employee.repository.ts(183,43): error TS2345: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string | number'.
+  Type 'symbol' is not assignable to type 'string | number'.
+src/common/repositories/employee.repository.ts(185,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'EmployeeWhereInput'. Did you mean 'employeesWhereInput'?
+src/common/repositories/employee.repository.ts(440,77): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'EmployeeWhereInput'. Did you mean 'employeesWhereInput'?
+src/common/repositories/employee.repository.ts(441,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'EmployeeWhereInput'. Did you mean 'employeesWhereInput'?
+src/common/repositories/shift.repository.ts(6,3): error TS2724: '"@prisma/client"' has no exported member named 'Shift'. Did you mean 'shifts'?
+src/common/repositories/shift.repository.ts(66,34): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ShiftCreateInput'. Did you mean 'shiftsCreateInput'?
+src/common/repositories/shift.repository.ts(233,47): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ShiftUpdateInput'. Did you mean 'shiftsUpdateInput'?
+src/common/repositories/shift.repository.ts(325,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ShiftWhereInput'. Did you mean 'shiftsWhereInput'?
+src/common/repositories/shift.repository.ts(436,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ShiftWhereInput'. Did you mean 'shiftsWhereInput'?
+src/common/repositories/shift.repository.ts(566,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ShiftWhereInput'. Did you mean 'shiftsWhereInput'?
+src/common/repositories/site.repository.ts(5,10): error TS2724: '"@prisma/client"' has no exported member named 'Site'. Did you mean 'sites'?
+src/common/repositories/site.repository.ts(26,29): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'SiteCreateInput'. Did you mean 'sitesCreateInput'?
+src/common/repositories/site.repository.ts(93,41): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'SiteUpdateInput'. Did you mean 'sitesUpdateInput'?
+src/common/repositories/site.repository.ts(190,43): error TS2345: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string | number'.
+  Type 'symbol' is not assignable to type 'string | number'.
+src/common/repositories/site.repository.ts(192,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'SiteWhereInput'. Did you mean 'sitesWhereInput'?
+src/common/repositories/site.repository.ts(428,69): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'SiteWhereInput'. Did you mean 'sitesWhereInput'?
+src/common/repositories/site.repository.ts(429,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'SiteWhereInput'. Did you mean 'sitesWhereInput'?
+src/common/tenant-context-system.test.ts(439,54): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/common/tenant-context-system.test.ts(532,22): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/common/tenant-context-system.test.ts(614,66): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/contracts/contracts.service.ts(9,10): error TS2724: '"@prisma/client"' has no exported member named 'Contract'. Did you mean 'contracts'?
+src/contracts/contracts.service.ts(85,25): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ContractWhereInput'. Did you mean 'contractsWhereInput'?
+src/contracts/contracts.service.ts(190,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'ContractUpdateInput'. Did you mean 'contractsUpdateInput'?
+src/deployment/deployment.service.ts(1,10): error TS2300: Duplicate identifier 'Injectable'.
+src/deployment/deployment.service.ts(1,22): error TS2300: Duplicate identifier 'Logger'.
+src/deployment/deployment.service.ts(1,30): error TS2300: Duplicate identifier 'NotFoundException'.
+src/deployment/deployment.service.ts(5,10): error TS2300: Duplicate identifier 'Injectable'.
+src/deployment/deployment.service.ts(5,22): error TS2300: Duplicate identifier 'Logger'.
+src/deployment/deployment.service.ts(5,30): error TS2300: Duplicate identifier 'NotFoundException'.
+src/employees/employee-data-integrity-mock.property.spec.ts(135,89): error TS2339: Property 'getTime' does not exist on type 'string'.
+src/employees/employee-data-integrity-mock.property.spec.ts(240,60): error TS2345: Argument of type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is missing the following properties from type 'CreateEmployeeDto': aadhaarNumber, panNumber, accountNumber, ifscCode
+src/employees/employee-data-integrity-mock.property.spec.ts(243,64): error TS2345: Argument of type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is missing the following properties from type 'CreateEmployeeDto': aadhaarNumber, panNumber, accountNumber, ifscCode
+src/employees/employee-data-integrity-mock.property.spec.ts(273,60): error TS2345: Argument of type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is missing the following properties from type 'CreateEmployeeDto': aadhaarNumber, panNumber, accountNumber, ifscCode
+src/employees/employee-data-integrity-mock.property.spec.ts(316,61): error TS2345: Argument of type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is missing the following properties from type 'CreateEmployeeDto': aadhaarNumber, panNumber, accountNumber, ifscCode
+src/employees/employee-data-integrity-mock.property.spec.ts(320,70): error TS2345: Argument of type '{ firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; skills: { name: string; level: number; yearsExperience: number; certificationRef: string; }[]; ... 5 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'UpdateEmployeeDto'.
+  Types of property 'hireDate' are incompatible.
+    Type 'Date' is not assignable to type 'string'.
+src/employees/employee-data-integrity-mock.property.spec.ts(363,60): error TS2345: Argument of type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is missing the following properties from type 'CreateEmployeeDto': aadhaarNumber, panNumber, accountNumber, ifscCode
+src/employees/employee-data-integrity-mock.property.spec.ts(410,60): error TS2345: Argument of type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is missing the following properties from type 'CreateEmployeeDto': aadhaarNumber, panNumber, accountNumber, ifscCode
+src/employees/employee-data-integrity-mock.property.spec.ts(454,60): error TS2345: Argument of type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is missing the following properties from type 'CreateEmployeeDto': aadhaarNumber, panNumber, accountNumber, ifscCode
+src/employees/employee-data-integrity-mock.property.spec.ts(495,60): error TS2345: Argument of type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Type '{ employeeNumber: string; firstName: string; lastName: string; email: string; phone: string; hireDate: Date; employmentType: EmploymentType; department: string; jobTitle: string; ... 6 more ...; metadata: Record<...>; }' is missing the following properties from type 'CreateEmployeeDto': aadhaarNumber, panNumber, accountNumber, ifscCode
+src/employees/employee-data-integrity.property.spec.ts(266,58): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(273,34): error TS2339: Property 'companyId' does not exist on type 'EmployeeRoleResponse'.
+src/employees/employee-data-integrity.property.spec.ts(300,60): error TS2554: Expected 2-3 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(305,34): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(331,58): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(361,56): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(366,34): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(391,51): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(398,58): error TS2554: Expected 3-4 arguments, but got 2.
+src/employees/employee-data-integrity.property.spec.ts(412,34): error TS2339: Property 'companyId' does not exist on type 'EmployeeRoleResponse'.
+src/employees/employee-data-integrity.property.spec.ts(421,60): error TS2554: Expected 2-3 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(426,34): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(450,51): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(486,34): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(509,51): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(525,61): error TS2554: Expected 2 arguments, but got 1.
+src/employees/employee-data-integrity.property.spec.ts(543,60): error TS2554: Expected 2-3 arguments, but got 1.
+src/employees/employees.controller.spec.ts(78,9): error TS2322: Type 'Date' is not assignable to type 'string'.
+src/employees/employees.service.spec.ts(104,7): error TS2322: Type 'Date' is not assignable to type 'string'.
+src/employees/employees.service.spec.ts(156,35): error TS2345: Argument of type '{ hireDate: Date; employeeNumber: string; firstName: string; lastName: string; email?: string; phone: string; aadhaarNumber: string; panNumber: string; accountNumber: string; ifscCode: string; ... 11 more ...; metadata?: any; }' is not assignable to parameter of type 'CreateEmployeeDto'.
+  Types of property 'hireDate' are incompatible.
+    Type 'Date' is not assignable to type 'string'.
+src/employees/employees.service.ts(20,10): error TS2724: '"@prisma/client"' has no exported member named 'Employee'. Did you mean 'employees'?
+src/payroll/payroll-run-management.integration.test.ts(54,53): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(95,46): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(123,47): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(158,46): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(233,46): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(248,27): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(325,41): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(339,40): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(344,42): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(364,38): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(376,44): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(392,46): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(404,41): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(436,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(442,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(448,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(452,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(458,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(462,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(470,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(476,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll-run-management.integration.test.ts(480,25): error TS2341: Property 'prismaClient' is private and only accessible within class 'PrismaService'.
+src/payroll/payroll.integration.test.ts(58,18): error TS2551: Property 'payroll_items' does not exist on type 'PrismaService'. Did you mean 'payrollItems'?
+src/payroll/payroll.integration.test.ts(59,18): error TS2551: Property 'payroll_runs' does not exist on type 'PrismaService'. Did you mean 'payrollRuns'?
+src/payroll/payroll.integration.test.ts(212,39): error TS2551: Property 'payroll_runs' does not exist on type 'PrismaService'. Did you mean 'payrollRuns'?
+src/payroll/payroll.service.ts(8,3): error TS2724: '"@prisma/client"' has no exported member named 'PayrollRun'. Did you mean 'payroll_runs'?
+src/payroll/payroll.service.ts(9,3): error TS2724: '"@prisma/client"' has no exported member named 'PayrollItem'. Did you mean 'payroll_items'?
+src/payroll/payroll.service.ts(182,31): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'AttendanceWhereInput'. Did you mean 'attendanceWhereInput'?
+src/payroll/services/payroll-run-management.service.ts(15,3): error TS2724: '"@prisma/client"' has no exported member named 'PayrollRun'. Did you mean 'payroll_runs'?
+src/payroll/services/payroll-run-management.service.ts(17,3): error TS2724: '"@prisma/client"' has no exported member named 'PayrollItem'. Did you mean 'payroll_items'?
+src/payroll/services/payroll-run-management.service.ts(125,31): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'PayrollRunWhereInput'. Did you mean 'payroll_runsWhereInput'?
+src/payroll/services/payroll-run-management.service.ts(419,15): error TS2551: Property 'payrollRun' does not exist on type 'TransactionClient'. Did you mean 'payroll_runs'?
+src/payroll/services/payroll-validation.service.ts(3,10): error TS2724: '"@prisma/client"' has no exported member named 'Employee'. Did you mean 'employees'?
+src/payroll/services/payroll-validation.service.ts(3,20): error TS2724: '"@prisma/client"' has no exported member named 'PayrollRun'. Did you mean 'payroll_runs'?
+src/payroll/tests/payroll-dashboard-accuracy.property.spec.ts(602,25): error TS2345: Argument of type '{ id: string; runNumber: string; status: "COMPLETED"; totalAmount: Decimal; employeeCount: number; createdAt: Date; }' is not assignable to parameter of type '{ id: string; totalAmount: Decimal; createdAt: Date; runNumber: string; payPeriodStart: Date; payPeriodEnd: Date; status: "COMPLETED" | "DRAFT" | "PROCESSING"; employeeCount: number; }'.
+  Type '{ id: string; runNumber: string; status: "COMPLETED"; totalAmount: Decimal; employeeCount: number; createdAt: Date; }' is missing the following properties from type '{ id: string; totalAmount: Decimal; createdAt: Date; runNumber: string; payPeriodStart: Date; payPeriodEnd: Date; status: "COMPLETED" | "DRAFT" | "PROCESSING"; employeeCount: number; }': payPeriodStart, payPeriodEnd
+src/shifts/shifts.service.ts(19,3): error TS2724: '"@prisma/client"' has no exported member named 'Shift'. Did you mean 'shifts'?
+src/sites/site-information-preservation.property.spec.ts(9,10): error TS2724: '"@prisma/client"' has no exported member named 'Site'. Did you mean 'sites'?
+src/sites/site-information-preservation.property.spec.ts(87,34): error TS2339: Property 'contracts' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(96,34): error TS2339: Property 'clients' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(99,32): error TS2339: Property 'sites' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(110,11): error TS2353: Object literal may only specify known properties, and 'minStaffingLevel' does not exist in type 'CreateSiteDto'.
+src/sites/site-information-preservation.property.spec.ts(123,34): error TS2339: Property 'company' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(137,38): error TS2339: Property 'minStaffingLevel' does not exist on type 'CreateSiteDto'.
+src/sites/site-information-preservation.property.spec.ts(138,38): error TS2339: Property 'maxStaffingLevel' does not exist on type 'CreateSiteDto'.
+src/sites/site-information-preservation.property.spec.ts(208,36): error TS2339: Property 'contracts' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(209,32): error TS2339: Property 'sites' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(219,11): error TS2353: Object literal may only specify known properties, and 'minStaffingLevel' does not exist in type 'CreateSiteDto'.
+src/sites/site-information-preservation.property.spec.ts(227,42): error TS2339: Property 'company' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(270,36): error TS2339: Property 'contracts' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(271,32): error TS2339: Property 'sites' does not exist on type 'unknown'.
+src/sites/site-information-preservation.property.spec.ts(284,42): error TS2339: Property 'company' does not exist on type 'unknown'.
+src/sites/sites.service.spec.ts(132,9): error TS2353: Object literal may only specify known properties, and 'clientId' does not exist in type 'CreateSiteDto'.
+src/sites/sites.service.spec.ts(151,9): error TS2353: Object literal may only specify known properties, and 'clientId' does not exist in type 'CreateSiteDto'.
+src/sites/sites.service.ts(13,10): error TS2724: '"@prisma/client"' has no exported member named 'Site'. Did you mean 'sites'?
+src/sites/sites.service.ts(117,28): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'SiteCreateInput'. Did you mean 'sitesCreateInput'?
+src/sites/sites.service.ts(265,30): error TS2724: '"G:/Payroll System/backend/node_modules/.prisma/client/index".Prisma' has no exported member named 'SiteUpdateInput'. Did you mean 'sitesUpdateInput'?
+src/supervisor-portal/supervisor-operational-consistency.property.spec.ts(428,33): error TS2339: Property '_value' does not exist on type 'Arbitrary<string>'.
+src/test/helpers/property-test-setup.ts(65,79): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(78,95): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(115,49): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(124,51): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(132,49): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(940,65): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(955,69): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(1577,93): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(1578,65): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(1902,11): error TS2739: Type '{}' is missing the following properties from type 'Error': name, message
+src/test/helpers/property-test-setup.ts(1947,100): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(1996,53): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(2005,53): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(2018,49): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/property-test-setup.ts(2056,76): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/test-data-factory.ts(408,54): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/helpers/test-data-factory.ts(422,58): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(8,10): error TS2300: Duplicate identifier 'JwtAuthGuard'.
+src/test/property-tests/bug-condition-exploration.spec.ts(13,10): error TS2300: Duplicate identifier 'JwtAuthGuard'.
+src/test/property-tests/bug-condition-exploration.spec.ts(121,75): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(158,43): error TS2345: Argument of type '{ page: number; limit: number; search: string; clientId: string; operationalStatus: string; sortBy: string; sortOrder: string; }' is not assignable to parameter of type 'SiteQueryDto'.
+  Types of property 'operationalStatus' are incompatible.
+    Type 'string' is not assignable to type 'SiteOperationalStatus'.
+src/test/property-tests/bug-condition-exploration.spec.ts(162,78): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(187,28): error TS2554: Expected 2 arguments, but got 1.
+src/test/property-tests/bug-condition-exploration.spec.ts(190,79): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(226,34): error TS2345: Argument of type '{ page: number; limit: number; search: string; clientId: string; operationalStatus: string; sortBy: string; sortOrder: string; }' is not assignable to parameter of type 'SiteQueryDto'.
+  Types of property 'operationalStatus' are incompatible.
+    Type 'string' is not assignable to type 'SiteOperationalStatus'.
+src/test/property-tests/bug-condition-exploration.spec.ts(229,76): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(265,43): error TS2345: Argument of type '{ page: number; limit: number; search: string; clientId: string; operationalStatus: string; sortBy: string; sortOrder: string; }' is not assignable to parameter of type 'SiteQueryDto'.
+  Types of property 'operationalStatus' are incompatible.
+    Type 'string' is not assignable to type 'SiteOperationalStatus'.
+src/test/property-tests/bug-condition-exploration.spec.ts(268,80): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(303,72): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(345,72): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(424,74): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(466,75): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(521,83): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(556,73): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(634,64): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/bug-condition-exploration.spec.ts(636,81): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/test/property-tests/infrastructure-validation.spec.ts(228,42): error TS2339: Property 'hasContext' does not exist on type 'unknown'.
+src/test/property-tests/infrastructure-validation.spec.ts(229,35): error TS2339: Property 'hasContext' does not exist on type 'unknown'.
+src/test/property-tests/task-3-5-validation.spec.ts(316,7): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'PrismaService'.
+  Type '{}' is missing the following properties from type 'PrismaService': logger, prismaClient, $connect, $disconnect, and 51 more.
+src/test/property-tests/task-3-5-validation.spec.ts(333,56): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'PrismaService'.
+  Type '{}' is missing the following properties from type 'PrismaService': logger, prismaClient, $connect, $disconnect, and 51 more.
+src/test/setup.ts(32,7): error TS2561: Object literal may only specify known properties, but 'acquireTimeoutMillis' does not exist in type 'PoolConfig'. Did you mean to write 'idleTimeoutMillis'?
+src/tests/property-tests/attendance-monitoring-accuracy.spec.ts(211,83): error TS2304: Cannot find name 'createdAttendance'.
+src/tests/property-tests/attendance-monitoring-accuracy.spec.ts(246,47): error TS2304: Cannot find name 'createdAttendance'.
+src/tests/property-tests/attendance-monitoring-accuracy.spec.ts(258,64): error TS2304: Cannot find name 'createdAttendance'.
+src/tests/property-tests/client-architecture-correctness.property.spec.ts(590,27): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/tests/property-tests/client-data-capture.spec.ts(86,47): error TS2353: Object literal may only specify known properties, and 'maxLength' does not exist in type 'EmailAddressConstraints'.
+src/tests/property-tests/client-data-capture.spec.ts(92,63): error TS2353: Object literal may only specify known properties, and 'maxLength' does not exist in type 'EmailAddressConstraints'.
+src/tests/property-tests/client-data-capture.spec.ts(122,61): error TS2353: Object literal may only specify known properties, and 'maxLength' does not exist in type 'EmailAddressConstraints'.
+src/tests/property-tests/client-data-capture.spec.ts(383,45): error TS2353: Object literal may only specify known properties, and 'maxLength' does not exist in type 'EmailAddressConstraints'.
+src/tests/property-tests/client-data-capture.spec.ts(572,24): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(466,69): error TS2339: Property 'lateArrivals' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(467,69): error TS2339: Property 'earlyDepartures' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(468,69): error TS2339: Property 'missedShifts' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(470,52): error TS2339: Property 'lateArrivals' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(471,52): error TS2339: Property 'earlyDepartures' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(472,52): error TS2339: Property 'missedShifts' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(475,75): error TS2339: Property 'lateArrivals' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(476,74): error TS2339: Property 'earlyDepartures' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/client-portal-monitoring-accuracy.spec.ts(477,74): error TS2339: Property 'missedShifts' does not exist on type '{ totalShifts: number; presentGuards: number; absentGuards: number; lateGuards: number; attendanceRate: number; }'.
+src/tests/property-tests/deployment-assignment-correctness.spec.ts(415,23): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/tests/property-tests/drag-drop-assignment-validation.spec.ts(164,31): error TS2353: Object literal may only specify known properties, and 'max' does not exist in type 'ArrayConstraints'.
+src/tests/property-tests/employee-search-filtering.spec.ts(49,57): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/tests/property-tests/employee-search-filtering.spec.ts(72,30): error TS2353: Object literal may only specify known properties, and 'maxLength' does not exist in type 'EmailAddressConstraints'.
+src/tests/property-tests/employee-search-filtering.spec.ts(125,15): error TS2561: Object literal may only specify known properties, but 'employeeNumber' does not exist in type 'Partial<{ id: string; company_id: string; phone: string; email: string; skills: string[]; address: JsonValue; metadata: JsonValue; certifications: JsonValue; employee_number: string; ... 50 more ...; uan_number_tag: string; }>'. Did you mean to write 'employee_number'?
+src/tests/property-tests/shift-calendar-consistency.spec.ts(295,56): error TS2345: Argument of type '{ assignmentId: any; siteId: any; shiftDate: string; startTime: string; endTime: string; shiftType: "REGULAR"; priority: "NORMAL"; coverageRequired: number; isRecurring: boolean; }' is not assignable to parameter of type 'CreateShiftDto'.
+  Types of property 'shiftType' are incompatible.
+    Type '"REGULAR"' is not assignable to type 'ShiftType'.
+src/tests/property-tests/shift-calendar-consistency.spec.ts(401,56): error TS2345: Argument of type '{ assignmentId: any; siteId: any; shiftDate: string; startTime: string; endTime: string; shiftType: "REGULAR"; priority: "NORMAL"; coverageRequired: number; isRecurring: boolean; }' is not assignable to parameter of type 'CreateShiftDto'.
+  Types of property 'shiftType' are incompatible.
+    Type '"REGULAR"' is not assignable to type 'ShiftType'.
+src/tests/property-tests/shift-calendar-consistency.spec.ts(473,61): error TS2345: Argument of type '{ assignmentId: any; siteId: any; shiftDate: string; startTime: string; endTime: string; shiftType: "REGULAR"; priority: "NORMAL"; coverageRequired: number; isRecurring: boolean; }' is not assignable to parameter of type 'CreateShiftDto'.
+  Types of property 'shiftType' are incompatible.
+    Type '"REGULAR"' is not assignable to type 'ShiftType'.
+src/tests/property-tests/shift-calendar-consistency.spec.ts(493,44): error TS2345: Argument of type '{ assignmentId: any; siteId: any; shiftDate: string; startTime: string; endTime: string; shiftType: "REGULAR"; priority: "NORMAL"; coverageRequired: number; isRecurring: boolean; }' is not assignable to parameter of type 'CreateShiftDto'.
+  Types of property 'shiftType' are incompatible.
+    Type '"REGULAR"' is not assignable to type 'ShiftType'.
+src/tests/property-tests/shift-calendar-consistency.spec.ts(527,30): error TS2339: Property 'message' does not exist on type 'unknown'.
+src/tests/property-tests/shift-calendar-consistency.spec.ts(546,70): error TS2345: Argument of type '{ assignmentId: any; siteId: any; shiftDate: string; startTime: string; endTime: string; shiftType: "REGULAR"; priority: "NORMAL"; coverageRequired: number; isRecurring: boolean; }' is not assignable to parameter of type 'CreateShiftDto'.
+  Types of property 'shiftType' are incompatible.
+    Type '"REGULAR"' is not assignable to type 'ShiftType'.
+src/tests/property-tests/shift-calendar-consistency.spec.ts(592,56): error TS2345: Argument of type '{ assignmentId: any; siteId: any; shiftDate: string; startTime: string; endTime: string; shiftType: "REGULAR"; priority: "NORMAL"; coverageRequired: number; isRecurring: boolean; }' is not assignable to parameter of type 'CreateShiftDto'.
+  Types of property 'shiftType' are incompatible.
+    Type '"REGULAR"' is not assignable to type 'ShiftType'.
+src/tests/property-tests/shift-calendar-consistency.spec.ts(605,73): error TS2345: Argument of type '{ status: any; modificationReason: { action: string; reason: string; modifiedBy: string; }; }' is not assignable to parameter of type 'UpdateShiftDto'.
+  Types of property 'modificationReason' are incompatible.
+    Type '{ action: string; reason: string; modifiedBy: string; }' is missing the following properties from type '{ reason: string; changedBy: string; timestamp: string; previousValues?: any; }': changedBy, timestamp
+src/tests/property-tests/shift-calendar-consistency.spec.ts(688,60): error TS2345: Argument of type '{ assignmentId: any; siteId: any; shiftDate: string; startTime: string; endTime: string; shiftType: "REGULAR"; priority: "NORMAL"; coverageRequired: number; isRecurring: boolean; recurringPattern: { ...; }; }' is not assignable to parameter of type 'CreateShiftDto'.
+  Types of property 'shiftType' are incompatible.
+    Type '"REGULAR"' is not assignable to type 'ShiftType'.

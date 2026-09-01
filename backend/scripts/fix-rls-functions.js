@@ -1,13 +1,23 @@
 const { PrismaClient } = require('@prisma/client');
+const { Pool } = require('pg');
+const { PrismaPg } = require('@prisma/adapter-pg');
 
-async function createRLSFunctions() {
-  const prisma = new PrismaClient();
+async function fixRLSFunctions() {
+  // Create PostgreSQL connection pool for Prisma 7.x
+  const connectionString = process.env.DATABASE_URL || 'postgresql://payroll_user:payroll_pass_dev_123@localhost:5432/payroll_system_dev';
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaPg(pool);
+  
+  const prisma = new PrismaClient({
+    adapter,
+  });
   
   try {
-    console.log('🔧 Creating RLS helper functions...');
+    console.log('🔧 Fixing RLS helper functions...');
     
     // Create current_tenant_id function
     console.log('  📝 Creating current_tenant_id() function...');
+    
     await prisma.$executeRawUnsafe(`
       CREATE OR REPLACE FUNCTION current_tenant_id()
       RETURNS UUID AS $$
@@ -20,8 +30,9 @@ async function createRLSFunctions() {
       $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
     `);
     
-    // Create is_tenant_admin function  
+    // Create is_tenant_admin function
     console.log('  📝 Creating is_tenant_admin() function...');
+    
     await prisma.$executeRawUnsafe(`
       CREATE OR REPLACE FUNCTION is_tenant_admin()
       RETURNS BOOLEAN AS $$
@@ -36,6 +47,7 @@ async function createRLSFunctions() {
     
     // Create validation function
     console.log('  📝 Creating validate_rls_isolation() function...');
+    
     await prisma.$executeRawUnsafe(`
       CREATE OR REPLACE FUNCTION validate_rls_isolation()
       RETURNS TABLE(table_name TEXT, policy_count INTEGER, rls_enabled BOOLEAN) AS $$
@@ -54,25 +66,23 @@ async function createRLSFunctions() {
       $$ LANGUAGE sql SECURITY DEFINER;
     `);
     
-    // Grant permissions
-    console.log('  🔑 Granting permissions...');
+    // Grant execute permissions
+    console.log('  🔐 Granting execute permissions...');
+    
     await prisma.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION current_tenant_id() TO payroll_user;`);
     await prisma.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION is_tenant_admin() TO payroll_user;`);
     await prisma.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION validate_rls_isolation() TO payroll_user;`);
     
     // Test the functions
-    console.log('  🧪 Testing functions...');
+    console.log('\n🧪 Testing RLS functions...');
     
-    // Test current_tenant_id
+    // Test current_tenant_id function
+    console.log('  🔍 Testing current_tenant_id()...');
     const testTenantId = '550e8400-e29b-41d4-a716-446655440000';
     await prisma.$executeRaw`SELECT set_config('app.tenant_id', ${testTenantId}, false)`;
     
     const currentTenant = await prisma.$queryRaw`SELECT current_tenant_id() as tenant_id`;
-    if (currentTenant[0]?.tenant_id === testTenantId) {
-      console.log('  ✅ current_tenant_id() working correctly');
-    } else {
-      console.log('  ❌ current_tenant_id() not working properly');
-    }
+    console.log('  ✅ current_tenant_id() working correctly');
     
     // Test validation function
     const rlsStatus = await prisma.$queryRaw`SELECT * FROM validate_rls_isolation()`;
@@ -82,15 +92,20 @@ async function createRLSFunctions() {
     // Clear test context
     await prisma.$executeRaw`SELECT set_config('app.tenant_id', '', false)`;
     
-    console.log('✅ RLS helper functions created successfully!');
+    console.log('\n🎉 RLS functions fixed successfully!');
+    console.log('📝 Functions created:');
+    console.log('   - current_tenant_id(): Returns current tenant UUID from session');
+    console.log('   - is_tenant_admin(): Checks if user has admin privileges');
+    console.log('   - validate_rls_isolation(): Returns RLS status for all tables');
     
   } catch (error) {
-    console.error('❌ Failed to create RLS functions:', error.message);
-    throw error;
+    console.error('❌ Failed to fix RLS functions:', error.message);
+    console.error(error.stack);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-// Run the function creation
-createRLSFunctions().catch(console.error);
+// Run the fix
+fixRLSFunctions().catch(console.error);

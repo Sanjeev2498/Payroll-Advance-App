@@ -8,7 +8,8 @@ import {
 import { ClientRepository, ClientSearchFilters } from '../common/repositories/client.repository';
 import { TenantContextService } from '../common/tenant-context.service';
 import { CreateClientDto, UpdateClientDto, ClientQueryDto, ContractStatus } from './dto';
-import { Client } from '@prisma/client';
+import { clients as Client } from '@prisma/client';
+import { clients } from '@prisma/client';
 import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
 
 
@@ -57,21 +58,27 @@ export class ClientsService {
       industry: queryDto.industry,
     };
 
-    // Validate and map sortBy field to valid Client fields
-    const validSortFields: Array<keyof Client> = [
-      'name', 'createdAt', 'updatedAt', 'contactEmail', 'organizationType', 'industry', 'companySize'
-    ];
+    // Map camelCase sortBy fields to snake_case database fields
+    const sortFieldMap = {
+      'name': 'name',
+      'contactEmail': 'contact_email',
+      'createdAt': 'created_at',
+      'updatedAt': 'updated_at',
+      'organizationType': 'organization_type',
+      'industry': 'industry',
+      'companySize': 'company_size'
+    };
     
-    const sortBy = queryDto.sortBy && validSortFields.includes(queryDto.sortBy as keyof Client) 
-      ? (queryDto.sortBy as keyof Client)
-      : 'createdAt';
+    const sortBy = queryDto.sortBy && sortFieldMap[queryDto.sortBy] 
+      ? sortFieldMap[queryDto.sortBy]
+      : 'created_at';
 
     try {
       const result = await this.clientRepository.findMany(
         filters,
         queryDto.page,
         queryDto.limit,
-        sortBy,
+        sortBy as keyof clients,
         queryDto.sortOrder,
       );
 
@@ -153,7 +160,7 @@ export class ClientsService {
     this.logger.log('Fetching client statistics');
 
     try {
-      const stats = await this.clientRepository.getClientStats();
+      const stats = await this.clientRepository.getclientsStats();
       this.logger.log('Successfully fetched client statistics', stats);
       return stats;
     } catch (error) {
@@ -200,7 +207,7 @@ export class ClientsService {
   /**
    * Client onboarding workflow
    */
-  private async initiateOnboardingWorkflow(client: Client): Promise<void> {
+  private async initiateOnboardingWorkflow(client: clients): Promise<void> {
     this.logger.log(`Initiating onboarding workflow for client: ${client.id}`);
 
     try {
@@ -310,9 +317,9 @@ export class ClientsService {
   /**
    * Send onboarding welcome email
    */
-  private async sendOnboardingWelcomeEmail(client: Client): Promise<void> {
+  private async sendOnboardingWelcomeEmail(client: clients): Promise<void> {
     // TODO: Implement email service integration
-    this.logger.log(`Sending welcome email to ${client.contactEmail}`);
+    this.logger.log(`Sending welcome email to ${client.contact_email}`);
     // Email would contain:
     // - Welcome message
     // - Contract documents for signature
@@ -324,7 +331,7 @@ export class ClientsService {
   /**
    * Schedule initial setup call
    */
-  private async scheduleInitialSetupCall(client: Client): Promise<void> {
+  private async scheduleInitialSetupCall(client: clients): Promise<void> {
     // TODO: Implement calendar integration
     this.logger.log(`Scheduling setup call for client: ${client.id}`);
     // Would integrate with calendar system to:
@@ -337,7 +344,7 @@ export class ClientsService {
   /**
    * Create initial client interaction record
    */
-  private async createInitialInteraction(client: Client): Promise<void> {
+  private async createInitialInteraction(client: clients): Promise<void> {
     // TODO: Implement interaction creation
     this.logger.log(`Creating initial interaction record for client: ${client.id}`);
     // Would create interaction record for:
@@ -350,7 +357,7 @@ export class ClientsService {
   /**
    * Handle client termination workflow
    */
-  private async handleClientTermination(client: Client): Promise<void> {
+  private async handleClientTermination(client: clients): Promise<void> {
     this.logger.log(`Handling termination workflow for client: ${client.id}`);
 
     try {
@@ -384,7 +391,7 @@ export class ClientsService {
     this.logger.log(`Fetching performance metrics for client: ${clientId}`);
 
     try {
-      const metrics = await this.clientRepository.getClientPerformanceMetrics(clientId);
+      const metrics = await this.clientRepository.getclientsPerformanceMetrics(clientId);
       this.logger.log(`Successfully fetched performance metrics for client: ${clientId}`);
       return metrics;
     } catch (error) {

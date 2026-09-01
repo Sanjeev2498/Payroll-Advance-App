@@ -1,6 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Decimal } from 'decimal.js';
 import { InvoiceResponse, InvoicePdfResponse } from '../dto';
 import { GstCalculationService } from './gst-calculation.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getErrorMessage, getErrorStack, formatError } from '../../common/utils/error.util';
@@ -10,6 +12,7 @@ import { getErrorMessage, getErrorStack, formatError } from '../../common/utils/
 export class InvoicePdfService {
   constructor(
     private gstCalculationService: GstCalculationService,
+    private prisma: PrismaService,
   ) {}
 
   /**
@@ -17,6 +20,18 @@ export class InvoicePdfService {
    */
   async generateInvoicePdf(invoice: InvoiceResponse): Promise<InvoicePdfResponse> {
     try {
+      // Fetch contract with client details for PDF generation
+      const contract = await this.prisma.contracts.findFirst({
+        where: { id: invoice.contractId },
+        include: { 
+          client: true 
+        }
+      });
+      
+      if (!contract) {
+        throw new NotFoundException('Contract not found for invoice');
+      }
+
       // For Phase 1, we'll create a simple HTML-based invoice
       // In production, this could use libraries like Puppeteer, PDFKit, or similar
       const htmlContent = this.generateInvoiceHtml(invoice);
@@ -52,7 +67,18 @@ export class InvoicePdfService {
    */
   private generateInvoiceHtml(invoice: InvoiceResponse): string {
     const gstBreakdown = invoice.gstDetails ? 
-      this.gstCalculationService.formatGstBreakdown(invoice.gstDetails) : null;
+      this.gstCalculationService.formatGstBreakdown({
+        taxableAmount: new Decimal(invoice.gstDetails.taxableAmount),
+        gstRate: invoice.gstDetails.gstRate,
+        cgst: new Decimal(invoice.gstDetails.cgst),
+        sgst: new Decimal(invoice.gstDetails.sgst),
+        igst: new Decimal(invoice.gstDetails.igst),
+        utgst: new Decimal(invoice.gstDetails.utgst),
+        totalGst: new Decimal(invoice.gstDetails.totalGst),
+        totalAmount: new Decimal(invoice.gstDetails.totalAmount),
+        isInterState: invoice.gstDetails.isInterState,
+        hsnCode: invoice.gstDetails.hsnCode,
+      }) : null;
 
     return `
 <!DOCTYPE html>
@@ -240,11 +266,11 @@ export class InvoicePdfService {
             
             <div class="client-info">
                 <h3>Bill To</h3>
-                <p><strong>${invoice.contract.client.name}</strong></p>
-                <p>${invoice.contract.client.contactEmail}</p>
-                ${invoice.contract.client.contactInfo ? `
-                <p>${invoice.contract.client.contactInfo.address || ''}</p>
-                <p>${invoice.contract.client.contactInfo.phone || ''}</p>
+                <p><strong>${invoice.client.name}</strong></p>
+                <p>${invoice.client.contactEmail}</p>
+                ${invoice.client.contactInfo ? `
+                <p>${invoice.client.contactInfo.address || ''}</p>
+                <p>${invoice.client.contactInfo.phone || ''}</p>
                 ` : ''}
             </div>
         </div>

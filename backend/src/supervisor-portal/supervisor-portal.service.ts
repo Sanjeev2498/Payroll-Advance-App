@@ -199,7 +199,7 @@ export class SupervisorPortalService {
         requiredGuards,
         currentGuards,
         staffingStatus: this.getStaffingStatus(currentGuards, requiredGuards),
-        todayShifts: site._count.shifts,
+        todayShifts: site._count?.shifts || 0,
         assignments: site.assignments,
       };
     });
@@ -287,12 +287,12 @@ export class SupervisorPortalService {
           id: assignment.id,
           employee: assignment.employee,
           role: assignment.role,
-          todayShifts: assignment.shifts.map(shift => ({
+          todayShifts: (assignment.shifts || []).map(shift => ({
             id: shift.id,
             startTime: shift.startTime,
             endTime: shift.endTime,
             status: shift.status,
-            attendance: shift.attendance[0] || null,
+            attendance: (shift.attendance && shift.attendance[0]) || null,
           }))
         }))
       };
@@ -439,15 +439,15 @@ export class SupervisorPortalService {
       type: 'ATTENDANCE_CORRECTION',
       id: attendance.id,
       employee: attendance.employee,
-      site: attendance.shift.assignment.site.name,
-      date: attendance.shift.shiftDate,
+      site: attendance.shift?.assignment?.site?.name || 'Unknown Site',
+      date: attendance.shift?.shiftDate || new Date(),
       details: {
         originalClockIn: attendance.clockIn,
         originalClockOut: attendance.clockOut,
         correctionReason: (attendance.verificationData as any)?.correctionReason,
       },
       submittedAt: attendance.updatedAt,
-      priority: this.determinePriority(attendance.shift.shiftDate),
+      priority: this.determinePriority(attendance.shift?.shiftDate),
     }));
   }
 
@@ -830,8 +830,8 @@ export class SupervisorPortalService {
         siteId: site.id,
         siteName: site.name,
         employees: site.assignments.map(assignment => {
-          const todayShift = assignment.shifts[0];
-          const attendance = todayShift?.attendance[0];
+          const todayShift = assignment.shifts?.[0];
+          const attendance = todayShift?.attendance?.[0];
 
           return {
             employeeId: assignment.employee.id,
@@ -888,7 +888,9 @@ export class SupervisorPortalService {
     return 'OVERSTAFFED';
   }
 
-  private determinePriority(shiftDate: Date): string {
+  private determinePriority(shiftDate: Date | null | undefined): string {
+    if (!shiftDate) return 'MEDIUM'; // Default priority for invalid dates
+    
     const daysDifference = Math.ceil((shiftDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     if (daysDifference < 0) return 'OVERDUE';
     if (daysDifference === 0) return 'URGENT';

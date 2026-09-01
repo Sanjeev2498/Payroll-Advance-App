@@ -101,7 +101,7 @@ describe('EmployeesService', () => {
       lastName: 'Doe',
       email: 'john.doe@example.com',
       phone: '+91 98765-43210', // Indian format
-      hireDate: new Date('2024-01-01'),
+      hireDate: '2024-01-01',
       employmentType: EmploymentType.FULL_TIME,
       department: 'Security',
       jobTitle: 'Security Guard',
@@ -110,6 +110,10 @@ describe('EmployeesService', () => {
         { name: 'patrol', level: 7, yearsExperience: 3 }
       ],
       hourlyRate: 25.50,
+      aadhaarNumber: '123456789012',
+      panNumber: 'ABCDE1234F',
+      accountNumber: '1234567890',
+      ifscCode: 'HDFC0001234'
     };
 
     it('should create employee successfully', async () => {
@@ -153,7 +157,7 @@ describe('EmployeesService', () => {
         hireDate: futureDate,
       };
 
-      await expect(service.create(invalidDto, 'ADMIN')).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto as any, 'ADMIN')).rejects.toThrow(BadRequestException);
       expect(prismaService.employee.create).not.toHaveBeenCalled();
     });
 

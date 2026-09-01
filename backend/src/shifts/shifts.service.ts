@@ -5,9 +5,11 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { ShiftRepository } from '../common/repositories/shift.repository';
 import { TenantContextService } from '../common/tenant-context.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { shifts as Shift } from '@prisma/client';
 import { 
   CreateShiftDto,
   UpdateShiftDto,
@@ -16,7 +18,7 @@ import {
   ShiftNotificationResponseDto as ShiftNotificationDto,
 } from './dto';
 import { 
-  Shift, 
+  shifts, 
   ShiftStatus, 
   ShiftType, 
   ShiftPriority,
@@ -77,6 +79,9 @@ export class ShiftsService {
 
     try {
       const shiftData = {
+        id: crypto.randomUUID(),
+        created_at: new Date(),
+        updated_at: new Date(),
         assignment: createShiftDto.assignmentId ? {
           connect: { id: createShiftDto.assignmentId }
         } : undefined,
@@ -86,28 +91,28 @@ export class ShiftsService {
         template: createShiftDto.templateId ? {
           connect: { id: createShiftDto.templateId }
         } : undefined,
-        shiftDate: new Date(createShiftDto.shiftDate),
-        startTime: createShiftDto.startTime,
-        endTime: createShiftDto.endTime,
-        shiftType: createShiftDto.shiftType || ShiftType.REGULAR,
+        shift_date: new Date(createShiftDto.shiftDate),
+        start_time: new Date(`1970-01-01T${createShiftDto.startTime}:00Z`),
+        end_time: new Date(`1970-01-01T${createShiftDto.endTime}:00Z`),
+        shift_type: createShiftDto.shiftType || ShiftType.REGULAR,
         status: ShiftStatus.SCHEDULED,
         priority: createShiftDto.priority || DtoShiftPriority.NORMAL,
-        isRecurring: createShiftDto.isRecurring || false,
-        recurringPattern: createShiftDto.recurringPattern as any,
-        coverageRequired: createShiftDto.coverageRequired || 1,
-        coverageAssigned: createShiftDto.assignmentId ? 1 : 0,
-        skillRequirements: createShiftDto.skillRequirements as any,
-        shiftRequirements: createShiftDto.shiftRequirements as any,
-        breakSchedule: createShiftDto.breakSchedule as any,
+        is_recurring: createShiftDto.isRecurring || false,
+        recurring_pattern: createShiftDto.recurringPattern as any,
+        coverage_required: createShiftDto.coverageRequired || 1,
+        coverage_assigned: createShiftDto.assignmentId ? 1 : 0,
+        skill_requirements: createShiftDto.skillRequirements as any,
+        shift_requirements: createShiftDto.shiftRequirements as any,
+        break_schedule: createShiftDto.breakSchedule as any,
         notes: createShiftDto.notes as any,
-        modificationLog: [{
+        modification_log: [{
           timestamp: new Date().toISOString(),
           action: 'CREATED',
           createdBy: this.tenantContext.getUserId() || 'system',
         }] as any,
       };
 
-      const shift = await this.shiftRepository.create(shiftData);
+      const shift = await this.shiftRepository.create(shiftData as any);
       this.logger.log(`Successfully created shift: ${shift.id}`);
 
       // Handle recurring shift creation
@@ -209,7 +214,7 @@ export class ShiftsService {
       siteId: queryDto.siteId,
       status: queryDto.status,
       shiftType: queryDto.shiftType,
-      priority: queryDto.priority,
+      priority: queryDto.priority as any,
       dateFrom: queryDto.dateFrom ? new Date(queryDto.dateFrom) : undefined,
       dateTo: queryDto.dateTo ? new Date(queryDto.dateTo) : undefined,
       isRecurring: queryDto.isRecurring,
@@ -275,11 +280,11 @@ export class ShiftsService {
     // Check for conflicts if assignment or time is being changed
     if (updateShiftDto.assignmentId || updateShiftDto.startTime || updateShiftDto.endTime) {
       await this.checkShiftConflicts({
-        assignmentId: updateShiftDto.assignmentId || currentShift.assignmentId || undefined,
-        siteId: currentShift.siteId,
-        shiftDate: currentShift.shiftDate.toISOString().split('T')[0],
-        startTime: updateShiftDto.startTime || currentShift.startTime,
-        endTime: updateShiftDto.endTime || currentShift.endTime,
+        assignmentId: updateShiftDto.assignmentId || currentShift.assignment_id || undefined,
+        siteId: currentShift.site_id,
+        shiftDate: currentShift.shift_date.toISOString().split('T')[0],
+        startTime: updateShiftDto.startTime || currentShift.start_time,
+        endTime: updateShiftDto.endTime || currentShift.end_time,
       } as CreateShiftDto, id);
     }
 
@@ -297,10 +302,10 @@ export class ShiftsService {
       if (updateShiftDto.assignmentId !== undefined) {
         if (updateShiftDto.assignmentId) {
           updateData.assignment = { connect: { id: updateShiftDto.assignmentId } };
-          updateData.coverageAssigned = (currentShift.coverageAssigned || 0) + 1;
+          updateData.coverage_assigned = (currentShift.coverage_assigned || 0) + 1;
         } else {
           updateData.assignment = { disconnect: true };
-          updateData.coverageAssigned = Math.max((currentShift.coverageAssigned || 1) - 1, 0);
+          updateData.coverage_assigned = Math.max((currentShift.coverage_assigned || 1) - 1, 0);
         }
         delete updateData.assignmentId;
       }
@@ -312,8 +317,8 @@ export class ShiftsService {
           timestamp: new Date().toISOString(),
         };
 
-        const currentLog = Array.isArray(currentShift.modificationLog) 
-          ? currentShift.modificationLog 
+        const currentLog = Array.isArray(currentShift.modification_log) 
+          ? currentShift.modification_log 
           : [];
         
         updateData.modificationLog = [...currentLog, modificationEntry];
@@ -349,7 +354,7 @@ export class ShiftsService {
     try {
       const cancelledShift = await this.shiftRepository.update(id, {
         status: ShiftStatus.CANCELLED,
-        modificationLog: [{
+        modification_log: [{
           timestamp: new Date().toISOString(),
           action: 'CANCELLED',
           reason: reason || 'Shift cancelled',
@@ -437,7 +442,7 @@ export class ShiftsService {
       // Update shift status to needs coverage
       await this.shiftRepository.update(coverageRequest.shiftId, {
         status: ShiftStatus.NEEDS_COVERAGE,
-        modificationLog: [{
+        modification_log: [{
           timestamp: new Date().toISOString(),
           action: 'COVERAGE_REQUESTED',
           reason: coverageRequest.reason || 'Coverage requested',
@@ -566,7 +571,7 @@ export class ShiftsService {
       const assignment = await this.prisma.assignment.findFirst({
         where: {
           id: updateDto.assignmentId,
-          siteId: currentShift.siteId,
+          siteId: currentShift.site_id,
           employee: {
             companyId: this.tenantContext.getTenantId(),
           },
@@ -613,7 +618,7 @@ export class ShiftsService {
     this.logger.log(`Creating recurring shifts for pattern: ${pattern.type}`);
 
     const recurringShifts: Shift[] = [];
-    const startDate = new Date(baseShift.shiftDate);
+    const startDate = new Date(baseShift.shift_date);
     const maxOccurrences = options?.occurrences || pattern.occurrences || 52; // Default 1 year
     const endDate = options?.endDate || (pattern.endDate ? new Date(pattern.endDate) : null);
 
@@ -662,30 +667,33 @@ export class ShiftsService {
       try {
         // Create shift for this occurrence
         const recurringShiftData = {
-          assignment: baseShift.assignmentId ? {
-            connect: { id: baseShift.assignmentId }
+          id: crypto.randomUUID(),
+          created_at: new Date(),
+          updated_at: new Date(),
+          assignment: baseShift.assignment_id ? {
+            connect: { id: baseShift.assignment_id }
           } : undefined,
           site: {
-            connect: { id: baseShift.siteId }
+            connect: { id: baseShift.site_id }
           },
-          template: baseShift.templateId ? {
-            connect: { id: baseShift.templateId }
+          template: baseShift.template_id ? {
+            connect: { id: baseShift.template_id }
           } : undefined,
-          shiftDate: new Date(currentDate),
-          startTime: baseShift.startTime,
-          endTime: baseShift.endTime,
-          shiftType: baseShift.shiftType,
+          shift_date: new Date(currentDate),
+          start_time: baseShift.start_time,
+          end_time: baseShift.end_time,
+          shift_type: baseShift.shift_type,
           status: ShiftStatus.SCHEDULED,
           priority: baseShift.priority,
-          isRecurring: true,
-          recurringPattern: pattern as any,
-          coverageRequired: baseShift.coverageRequired,
-          coverageAssigned: baseShift.assignmentId ? 1 : 0,
-          skillRequirements: baseShift.skillRequirements,
-          shiftRequirements: baseShift.shiftRequirements,
-          breakSchedule: baseShift.breakSchedule,
+          is_recurring: true,
+          recurring_pattern: pattern as any,
+          coverage_required: baseShift.coverage_required,
+          coverage_assigned: baseShift.assignment_id ? 1 : 0,
+          skillRequirements: baseShift.skill_requirements,
+          shiftRequirements: baseShift.shift_requirements,
+          breakSchedule: baseShift.break_schedule,
           notes: baseShift.notes,
-          modificationLog: [{
+          modification_log: [{
             timestamp: new Date().toISOString(),
             action: 'CREATED_FROM_RECURRENCE',
             parentShiftId: baseShift.id,
@@ -693,7 +701,7 @@ export class ShiftsService {
           }] as any,
         };
 
-        const recurringShift = await this.shiftRepository.create(recurringShiftData);
+        const recurringShift = await this.shiftRepository.create(recurringShiftData as any);
         recurringShifts.push(recurringShift);
         occurrenceCount++;
       } catch (error) {
@@ -770,11 +778,11 @@ export class ShiftsService {
     const completedShifts = shifts.filter(s => s.status === ShiftStatus.COMPLETED).length;
     const cancelledShifts = shifts.filter(s => s.status === ShiftStatus.CANCELLED).length;
     const shiftsNeedingCoverage = shifts.filter(s => 
-      s.status === ShiftStatus.NEEDS_COVERAGE || s.coverageAssigned < s.coverageRequired
+      s.status === ShiftStatus.NEEDS_COVERAGE || s.coverage_assigned < s.coverage_required
     ).length;
 
-    const totalCoverageRequired = shifts.reduce((sum, s) => sum + s.coverageRequired, 0);
-    const totalCoverageAssigned = shifts.reduce((sum, s) => sum + s.coverageAssigned, 0);
+    const totalCoverageRequired = shifts.reduce((sum, s) => sum + s.coverage_required, 0);
+    const totalCoverageAssigned = shifts.reduce((sum, s) => sum + s.coverage_assigned, 0);
     const coveragePercentage = totalCoverageRequired > 0 
       ? Math.round((totalCoverageAssigned / totalCoverageRequired) * 100)
       : 100;

@@ -136,7 +136,7 @@ describe('Task 3.5 - Property Test Infrastructure Fixes', () => {
       prisma,
       async (systemPrisma) => {
         expect(systemPrisma).toBeDefined();
-        expect(systemPrisma.company).toBeDefined();
+        expect(systemPrisma.companies).toBeDefined();
         expect(systemPrisma.client).toBeDefined();
         return { systemContextUsed: true };
       }
@@ -218,7 +218,7 @@ describe('Task 3.5 - Property Test Infrastructure Fixes', () => {
 
     // Verify data exists before cleanup
     const beforeCleanup = await prisma.withSystemContext(async (systemPrisma) => {
-      const company = await systemPrisma.company.findUnique({ where: { id: testTenantId } });
+      const company = await systemPrisma.companies.findUnique({ where: { id: testTenantId } });
       return company;
     });
     expect(beforeCleanup).toBeDefined();
@@ -228,7 +228,7 @@ describe('Task 3.5 - Property Test Infrastructure Fixes', () => {
 
     // Verify data is cleaned up (reverse dependency order)
     const afterCleanup = await prisma.withSystemContext(async (systemPrisma) => {
-      const company = await systemPrisma.company.findUnique({ where: { id: testTenantId } });
+      const company = await systemPrisma.companies.findUnique({ where: { id: testTenantId } });
       return company;
     });
     expect(afterCleanup).toBeNull();
@@ -313,7 +313,7 @@ describe('Task 3.5 - Property Test Infrastructure Fixes', () => {
 
     // 3. Create hierarchical data with system context
     const hierarchy = await PropertyTestSetup.createCompleteHierarchy(
-      services.prisma,
+      services.prisma as PrismaService,
       testTenantId,
       {
         clientCount: 1,
@@ -330,7 +330,7 @@ describe('Task 3.5 - Property Test Infrastructure Fixes', () => {
     expect(hierarchy.employees[0].companyId).toBe(testTenantId);
 
     // 5. Test cleanup with proper isolation
-    await PropertyTestSetup.performTestCleanup(module, services.prisma, testTenantId);
+    await PropertyTestSetup.performTestCleanup(module, services.prisma as PrismaService, testTenantId);
 
     console.log('✅ INTEGRATION SUCCESS: All Task 3.5 infrastructure fixes work together correctly');
   });

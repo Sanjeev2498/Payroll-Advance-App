@@ -16,7 +16,7 @@ import {
   ConflictDetectionRequestDto,
   SkillMatchingRequestDto,
 } from './dto';
-import { Assignment } from '@prisma/client';
+import { assignments } from '@prisma/client';
 import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
 
 
@@ -92,7 +92,7 @@ export class AssignmentsService {
         } as any,
       };
 
-      const assignment = await this.assignmentRepository.create(assignmentData);
+      const assignment = await this.assignmentRepository.create(assignmentData) as any;
       this.logger.log(`Successfully created assignment: ${assignment.id}`);
 
       // Trigger assignment workflow
@@ -644,6 +644,18 @@ export class AssignmentsService {
     
     try {
       const employee = await this.employeesService.findOne(employeeId, 'ADMIN');
+      
+      // Add null checks to prevent undefined errors
+      if (!employee) {
+        conflicts.push({
+          type: 'EMPLOYEE_NOT_FOUND',
+          severity: 'CRITICAL',
+          description: `Employee with ID ${employeeId} not found`,
+          suggestions: ['Verify the employee ID is correct'],
+        });
+        return conflicts;
+      }
+      
       const employeeSkills = employee.skills || [];
       
       const missingSkills = requiredSkills.filter(skill => 

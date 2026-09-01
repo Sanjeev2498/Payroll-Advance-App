@@ -1,5 +1,6 @@
 import { PrismaClient, UserRole, ContractStatus, EmploymentStatus, ClientOrganizationType } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -16,17 +17,18 @@ async function main() {
   console.log('🌱 Starting database seeding...');
 
   // Clear existing data first (for clean seeding)
-  await prisma.employee.deleteMany({});
-  await prisma.user.deleteMany({});
-  await prisma.site.deleteMany({});
-  await prisma.client.deleteMany({});
-  await prisma.company.deleteMany({});
+  await prisma.employees.deleteMany({});
+  await prisma.users.deleteMany({});
+  await prisma.sites.deleteMany({});
+  await prisma.clients.deleteMany({});
+  await prisma.companies.deleteMany({});
 
   console.log('✅ Cleared existing data');
 
   // Create a demo company
-  const company = await prisma.company.create({
+  const company = await prisma.companies.create({
     data: {
+      id: crypto.randomUUID(),
       name: 'Demo Security Services',
       slug: 'demo-security',
       settings: {
@@ -38,7 +40,9 @@ async function main() {
         primaryColor: '#1E40AF',
         logo: null,
         companyAddress: '123 Security Tower, MG Road, Bangalore, Karnataka 560001'
-      }
+      },
+      created_at: new Date(),
+      updated_at: new Date(),
     }
   });
 
@@ -46,100 +50,113 @@ async function main() {
 
   // Create admin user
   const hashedPassword = await bcrypt.hash('admin123', 12);
-  const adminUser = await prisma.user.create({
+  const adminUser = await prisma.users.create({
     data: {
-      companyId: company.id,
+      id: crypto.randomUUID(),
+      company_id: company.id,
       email: 'admin@demosecurity.co.in',
-      firstName: 'System',
-      lastName: 'Administrator',
-      passwordHash: hashedPassword,
+      first_name: 'System',
+      last_name: 'Administrator',
+      password_hash: hashedPassword,
       role: UserRole.COMPANY_ADMIN,
-      isActive: true
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
   console.log(`✅ Created admin user: ${adminUser.email}`);
 
   // Create supervisor user
-  const supervisorUser = await prisma.user.create({
+  const supervisorUser = await prisma.users.create({
     data: {
-      companyId: company.id,
+      id: crypto.randomUUID(),
+      company_id: company.id,
       email: 'supervisor@demosecurity.co.in',
-      firstName: 'Rahul',
-      lastName: 'Sharma',
-      passwordHash: hashedPassword, // Same password for demo: admin123
+      first_name: 'Rahul',
+      last_name: 'Sharma',
+      password_hash: hashedPassword, // Same password for demo: admin123
       role: UserRole.SUPERVISOR,
-      isActive: true
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
   console.log(`✅ Created supervisor user: ${supervisorUser.email}`);
 
   // Create employee user 1
-  const employeeUser1 = await prisma.user.create({
+  const employeeUser1 = await prisma.users.create({
     data: {
-      companyId: company.id,
+      id: crypto.randomUUID(),
+      company_id: company.id,
       email: 'arjun.singh@demosecurity.co.in',
-      firstName: 'Arjun',
-      lastName: 'Singh',
-      passwordHash: hashedPassword, // Same password for demo: admin123
+      first_name: 'Arjun',
+      last_name: 'Singh',
+      password_hash: hashedPassword, // Same password for demo: admin123
       role: UserRole.EMPLOYEE,
-      isActive: true
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
   // Create employee user 2
-  const employeeUser2 = await prisma.user.create({
+  const employeeUser2 = await prisma.users.create({
     data: {
-      companyId: company.id,
+      id: crypto.randomUUID(),
+      company_id: company.id,
       email: 'priya.reddy@demosecurity.co.in',
-      firstName: 'Priya',
-      lastName: 'Reddy',
-      passwordHash: hashedPassword, // Same password for demo: admin123
+      first_name: 'Priya',
+      last_name: 'Reddy',
+      password_hash: hashedPassword, // Same password for demo: admin123
       role: UserRole.EMPLOYEE,
-      isActive: true
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
   console.log(`✅ Created employee users: ${employeeUser1.email}, ${employeeUser2.email}`);
 
   // Create a demo client
-  const client = await prisma.client.create({
+  const client = await prisma.clients.create({
     data: {
-      companyId: company.id,
+      id: crypto.randomUUID(),
+      company_id: company.id,
       name: 'Phoenix MarketCity Mall',
-      contactEmail: 'security@phoenixmarketcity.com',
-      contactInfo: {
+      contact_email: 'security@phoenixmarketcity.com',
+      contact_info: {
         primaryContact: 'Priya Sharma',
         phone: '+91 80456-78901',
         address: '142, City Square, Whitefield Road, Bangalore, Karnataka 560066'
       },
-      organizationType: 'SHOPPING_MALL' as ClientOrganizationType,
+      organization_type: 'SHOPPING_MALL' as ClientOrganizationType,
       industry: 'Retail',
-      companySize: 'Large'
+      company_size: 'Large',
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
   console.log(`✅ Created client: ${client.name}`);
 
   // Create demo contract for the client
-  const contract = await prisma.contract.create({
+  const contract = await prisma.contracts.create({
     data: {
-      client: {
-        connect: { id: client.id }
-      },
-      contractNumber: 'CON-2024-001',
+      client_id: client.id,
+      contract_number: 'CON-2024-001',
       title: 'Annual Security Services Contract',
       description: 'Comprehensive security services for mall operations',
       status: 'ACTIVE',
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
-      contractValue: 1200000,
-      billingPreferences: {
+      start_date: new Date(),
+      end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      contract_value: 1200000,
+      billing_preferences: {
         billingFrequency: 'MONTHLY',
         serviceLevel: 'STANDARD'
       },
-      serviceDefinitions: {
+      service_definitions: {
         guardCount: 15,
         shifts: 3,
         coverage: '24x7'
@@ -150,9 +167,11 @@ async function main() {
   console.log(`✅ Created contract: ${contract.title}`);
 
   // Create demo sites for the client
-  const site1 = await prisma.site.create({
+  const site1 = await prisma.sites.create({
     data: {
-      contractId: contract.id,
+      id: crypto.randomUUID(),
+      client_id: client.id,
+      contract_id: contract.id,
       name: 'Main Mall Entrance',
       address: {
         street: '142, City Square, Whitefield Road',
@@ -161,26 +180,30 @@ async function main() {
         zipCode: '560066',
         building: 'Phoenix MarketCity'
       },
-      accessRequirements: {
+      access_requirements: {
         securityClearance: 'Basic',
         uniformRequired: true,
         equipmentProvided: ['radio', 'flashlight']
       },
-      safetyProtocols: {
+      safety_protocols: {
         emergencyContacts: ['+91 80100-08080'],
         evacuationPlan: 'Plan A',
         hazardTypes: ['crowd_control']
       },
-      contactInfo: {
+      contact_info: {
         siteManager: 'Rajesh Kumar',
         phone: '+91 80456-78902'
-      }
+      },
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
-  const site2 = await prisma.site.create({
+  const site2 = await prisma.sites.create({
     data: {
-      contractId: contract.id,
+      id: crypto.randomUUID(),
+      client_id: client.id,
+      contract_id: contract.id,
       name: 'Parking Area',
       address: {
         street: '142, City Square, Whitefield Road',
@@ -189,36 +212,39 @@ async function main() {
         zipCode: '560066',
         building: 'Parking Complex'
       },
-      accessRequirements: {
+      access_requirements: {
         securityClearance: 'Basic',
         uniformRequired: true,
         equipmentProvided: ['radio', 'flashlight', 'vehicle']
       },
-      safetyProtocols: {
+      safety_protocols: {
         emergencyContacts: ['+91 80100-08080'],
         evacuationPlan: 'Plan B',
         hazardTypes: ['vehicle_traffic']
       },
-      contactInfo: {
+      contact_info: {
         siteManager: 'Sunita Patel',
         phone: '+91 80456-78903'
-      }
+      },
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
   console.log(`✅ Created sites: ${site1.name}, ${site2.name}`);
 
   // Create demo employees
-  const employee1 = await prisma.employee.create({
+  const employee1 = await prisma.employees.create({
     data: {
-      companyId: company.id,
-      employeeNumber: 'EMP001',
-      firstName: 'Arjun',
-      lastName: 'Singh',
+      id: crypto.randomUUID(),
+      company_id: company.id,
+      employee_number: 'EMP001',
+      first_name: 'Arjun',
+      last_name: 'Singh',
       email: 'arjun.singh@demosecurity.co.in',
       phone: '+91 98765-43210',
-      aadhaarNumber: '123456789012', // Valid 12-digit Aadhaar
-      panNumber: 'ABCDE1234F',       // Valid PAN format
+      aadhaar_number: '123456789012', // Valid 12-digit Aadhaar
+      pan_number: 'ABCDE1234F',       // Valid PAN format
       address: {
         street: '45, MG Road',
         city: 'Bangalore',
@@ -238,21 +264,24 @@ async function main() {
         }
       },
       skills: ['crowd_control', 'emergency_response', 'customer_service'],
-      employmentStatus: EmploymentStatus.ACTIVE,
-      hireDate: new Date('2023-06-15')
+      employment_status: EmploymentStatus.ACTIVE,
+      hire_date: new Date('2023-06-15'),
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
-  const employee2 = await prisma.employee.create({
+  const employee2 = await prisma.employees.create({
     data: {
-      companyId: company.id,
-      employeeNumber: 'EMP002',
-      firstName: 'Priya',
-      lastName: 'Reddy',
+      id: crypto.randomUUID(),
+      company_id: company.id,
+      employee_number: 'EMP002',
+      first_name: 'Priya',
+      last_name: 'Reddy',
       email: 'priya.reddy@demosecurity.co.in',
       phone: '+91 87654-32109',
-      aadhaarNumber: '987654321098', // Valid 12-digit Aadhaar  
-      panNumber: 'FGHIJ5678K',       // Valid PAN format
+      aadhaar_number: '987654321098', // Valid 12-digit Aadhaar  
+      pan_number: 'FGHIJ5678K',       // Valid PAN format
       address: {
         street: '78, Brigade Road',
         city: 'Bangalore',
@@ -267,22 +296,25 @@ async function main() {
         }
       },
       skills: ['patrol', 'report_writing', 'customer_service'],
-      employmentStatus: EmploymentStatus.ACTIVE,
-      hireDate: new Date('2023-08-01')
+      employment_status: EmploymentStatus.ACTIVE,
+      hire_date: new Date('2023-08-01'),
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
   // Create additional employees for more realistic data
-  const employee3 = await prisma.employee.create({
+  const employee3 = await prisma.employees.create({
     data: {
-      companyId: company.id,
-      employeeNumber: 'EMP003',
-      firstName: 'Rajesh',
-      lastName: 'Kumar',
+      id: crypto.randomUUID(),
+      company_id: company.id,
+      employee_number: 'EMP003',
+      first_name: 'Rajesh',
+      last_name: 'Kumar',
       email: 'rajesh.kumar@demosecurity.co.in',
       phone: '+91 76543-21098',
-      aadhaarNumber: '456789012345',
-      panNumber: 'LMNOP9876Q',
+      aadhaar_number: '456789012345',
+      pan_number: 'LMNOP9876Q',
       address: {
         street: '22, Commercial Street',
         city: 'Bangalore',
@@ -297,21 +329,24 @@ async function main() {
         }
       },
       skills: ['patrol', 'emergency_response', 'access_control'],
-      employmentStatus: EmploymentStatus.ACTIVE,
-      hireDate: new Date('2023-09-15')
+      employment_status: EmploymentStatus.ACTIVE,
+      hire_date: new Date('2023-09-15'),
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
-  const employee4 = await prisma.employee.create({
+  const employee4 = await prisma.employees.create({
     data: {
-      companyId: company.id,
-      employeeNumber: 'EMP004',
-      firstName: 'Sneha',
-      lastName: 'Patel',
+      id: crypto.randomUUID(),
+      company_id: company.id,
+      employee_number: 'EMP004',
+      first_name: 'Sneha',
+      last_name: 'Patel',
       email: 'sneha.patel@demosecurity.co.in',
       phone: '+91 65432-10987',
-      aadhaarNumber: '567890123456',
-      panNumber: 'RSTUV5432W',
+      aadhaar_number: '567890123456',
+      pan_number: 'RSTUV5432W',
       address: {
         street: '88, Indiranagar',
         city: 'Bangalore',
@@ -331,21 +366,24 @@ async function main() {
         }
       },
       skills: ['supervision', 'team_leadership', 'incident_management', 'training'],
-      employmentStatus: EmploymentStatus.ACTIVE,
-      hireDate: new Date('2023-05-01')
+      employment_status: EmploymentStatus.ACTIVE,
+      hire_date: new Date('2023-05-01'),
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
-  const employee5 = await prisma.employee.create({
+  const employee5 = await prisma.employees.create({
     data: {
-      companyId: company.id,
-      employeeNumber: 'EMP005',
-      firstName: 'Vikash',
-      lastName: 'Singh',
+      id: crypto.randomUUID(),
+      company_id: company.id,
+      employee_number: 'EMP005',
+      first_name: 'Vikash',
+      last_name: 'Singh',
       email: 'vikash.singh@demosecurity.co.in',
       phone: '+91 54321-09876',
-      aadhaarNumber: '678901234567',
-      panNumber: 'WXYZ4321X',
+      aadhaar_number: '678901234567',
+      pan_number: 'WXYZ4321X',
       address: {
         street: '12, Koramangala',
         city: 'Bangalore',
@@ -360,21 +398,24 @@ async function main() {
         }
       },
       skills: ['vehicle_patrol', 'parking_management', 'cctv_monitoring'],
-      employmentStatus: EmploymentStatus.ON_LEAVE,
-      hireDate: new Date('2023-07-01')
+      employment_status: EmploymentStatus.ON_LEAVE,
+      hire_date: new Date('2023-07-01'),
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
-  const employee6 = await prisma.employee.create({
+  const employee6 = await prisma.employees.create({
     data: {
-      companyId: company.id,
-      employeeNumber: 'EMP006',
-      firstName: 'Anjali',
-      lastName: 'Reddy',
+      id: crypto.randomUUID(),
+      company_id: company.id,
+      employee_number: 'EMP006',
+      first_name: 'Anjali',
+      last_name: 'Reddy',
       email: 'anjali.reddy@demosecurity.co.in',
       phone: '+91 43210-98765',
-      aadhaarNumber: '789012345678',
-      panNumber: 'ABCD6789Y',
+      aadhaar_number: '789012345678',
+      pan_number: 'ABCD6789Y',
       address: {
         street: '67, HSR Layout',
         city: 'Bangalore',
@@ -389,12 +430,14 @@ async function main() {
         }
       },
       skills: ['reception_security', 'visitor_management', 'customer_service'],
-      employmentStatus: EmploymentStatus.INACTIVE,
-      hireDate: new Date('2023-10-01')
+      employment_status: EmploymentStatus.INACTIVE,
+      hire_date: new Date('2023-10-01'),
+      created_at: new Date(),
+      updated_at: new Date()
     }
   });
 
-  console.log(`✅ Created employees: ${employee1.firstName} ${employee1.lastName}, ${employee2.firstName} ${employee2.lastName}, ${employee3.firstName} ${employee3.lastName}, ${employee4.firstName} ${employee4.lastName}, ${employee5.firstName} ${employee5.lastName}, ${employee6.firstName} ${employee6.lastName}`);
+  console.log(`✅ Created employees: ${employee1.first_name} ${employee1.last_name}, ${employee2.first_name} ${employee2.last_name}, ${employee3.first_name} ${employee3.last_name}, ${employee4.first_name} ${employee4.last_name}, ${employee5.first_name} ${employee5.last_name}, ${employee6.first_name} ${employee6.last_name}`);
 
   console.log('🇮🇳 Database seeding completed successfully with Indian localization!');
 }

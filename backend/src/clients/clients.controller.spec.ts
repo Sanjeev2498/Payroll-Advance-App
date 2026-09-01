@@ -3,7 +3,7 @@ import { HttpStatus } from '@nestjs/common';
 import { ClientsController } from './clients.controller';
 import { ClientsService } from './clients.service';
 import { CreateClientDto, UpdateClientDto, ContractStatus } from './dto';
-import { Client, ClientOrganizationType } from '@prisma/client';
+import { clients, ClientOrganizationType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../common/tenant.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -12,22 +12,26 @@ describe('ClientsController', () => {
   let controller: ClientsController;
   let service: jest.Mocked<ClientsService>;
 
-  const mockClient: Client = {
+  const mockClient: clients = {
     id: 'client-1',
-    companyId: 'company-1',
-    name: 'Test Client',
-    contactEmail: 'test@client.com',
-    contactInfo: null,
-    // Using the embedded contract fields from the simplified schema
-    contractStatus: 'ACTIVE' as any, // Using string instead of enum for now
-    contractStart: null,
-    contractEnd: null,
-    billingPreferences: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    company_id: 'company-1',
+    name: 'Test clients',
+    contact_email: 'test@client.com',
+    contact_info: null,
+    // Updated to match current schema structure
+    organization_type: 'CORPORATE_OFFICE' as any,
+    industry: null,
+    company_size: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+    contract_status: 'ACTIVE' as any,
+    contract_start: new Date(),
+    contract_end: null,
+    billing_preferences: null,
+    tags: [],
   };
 
-  const mockClientService = {
+  const mockClientsService = {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
@@ -49,7 +53,7 @@ describe('ClientsController', () => {
       providers: [
         {
           provide: ClientsService,
-          useValue: mockClientService,
+          useValue: mockClientsService,
         },
       ],
     })
@@ -72,7 +76,7 @@ describe('ClientsController', () => {
   describe('create', () => {
     it('should create a client successfully', async () => {
       const createDto: CreateClientDto = {
-        name: 'Test Client',
+        name: 'Test clients',
         contactEmail: 'test@client.com',
         contractStatus: ContractStatus.PENDING,
       };
@@ -85,9 +89,9 @@ describe('ClientsController', () => {
       expect(result).toMatchObject({
         id: mockClient.id,
         name: mockClient.name,
-        contactEmail: mockClient.contactEmail,
-        contactInfo: mockClient.contactInfo,
-        organizationType: mockClient.organizationType,
+        contact_email: mockClient.contact_email,
+        contact_info: mockClient.contact_info,
+        organizationType: mockClient.organization_type,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });
@@ -123,16 +127,15 @@ describe('ClientsController', () => {
         clients: [
           {
             id: mockClient.id,
+            companyId: mockClient.company_id,
             name: mockClient.name,
-            contactEmail: mockClient.contactEmail,
-            contactInfo: mockClient.contactInfo,
-            organizationType: mockClient.organizationType,
+            contact_email: mockClient.contact_email,
+            contact_info: mockClient.contact_info,
+            organizationType: mockClient.organization_type,
             industry: mockClient.industry,
-            companySize: mockClient.companySize,
-            tags: mockClient.tags,
-            accountManagerId: mockClient.accountManagerId,
-            createdAt: mockClient.createdAt,
-            updatedAt: mockClient.updatedAt,
+            company_size: mockClient.company_size,
+            createdAt: mockClient.created_at,
+            updatedAt: mockClient.updated_at,
             _count: { 
               sites: 0,
               clientUsers: undefined,
@@ -152,11 +155,11 @@ describe('ClientsController', () => {
     it('should return client statistics', async () => {
       const mockStats = {
         total: 10,
-        active: undefined,
-        suspended: 0,
-        expired: 0,
-        terminated: 0,
-        expiringThisMonth: undefined,
+        byOrganizationType: { 'CORPORATE_OFFICE': 8, 'STARTUP': 2 },
+        withActiveContracts: 8,
+        withExpiringContracts: 2,
+        withMultipleContracts: 1,
+        withclientsUsers: 5,
       };
 
       service.getStats.mockResolvedValue(mockStats);
@@ -170,8 +173,8 @@ describe('ClientsController', () => {
 
   describe('findExpiringContracts', () => {
     it('should return expiring contracts with default days', async () => {
-      const expiringClients = [mockClient];
-      service.findExpiringContracts.mockResolvedValue(expiringClients);
+      const expiringclientss = [mockClient];
+      service.findExpiringContracts.mockResolvedValue(expiringclientss);
 
       const result = await controller.findExpiringContracts();
 
@@ -179,21 +182,22 @@ describe('ClientsController', () => {
       expect(result).toEqual([
         {
           id: mockClient.id,
+          companyId: mockClient.company_id,
           name: mockClient.name,
-          contactEmail: mockClient.contactEmail,
-          contactInfo: mockClient.contactInfo,
-          organizationType: mockClient.organizationType,
+          contact_email: mockClient.contact_email,
+          contact_info: mockClient.contact_info,
+          organizationType: mockClient.organization_type,
           industry: mockClient.industry,
-          companySize: mockClient.companySize,
-          createdAt: mockClient.createdAt,
-          updatedAt: mockClient.updatedAt,
+          company_size: mockClient.company_size,
+          createdAt: mockClient.created_at,
+          updatedAt: mockClient.updated_at,
         },
       ]);
     });
 
     it('should return expiring contracts with custom days', async () => {
-      const expiringClients = [mockClient];
-      service.findExpiringContracts.mockResolvedValue(expiringClients);
+      const expiringclientss = [mockClient];
+      service.findExpiringContracts.mockResolvedValue(expiringclientss);
 
       const result = await controller.findExpiringContracts(60);
 
@@ -201,14 +205,15 @@ describe('ClientsController', () => {
       expect(result).toEqual([
         {
           id: mockClient.id,
+          companyId: mockClient.company_id,
           name: mockClient.name,
-          contactEmail: mockClient.contactEmail,
-          contactInfo: mockClient.contactInfo,
-          organizationType: mockClient.organizationType,
+          contact_email: mockClient.contact_email,
+          contact_info: mockClient.contact_info,
+          organizationType: mockClient.organization_type,
           industry: mockClient.industry,
-          companySize: mockClient.companySize,
-          createdAt: mockClient.createdAt,
-          updatedAt: mockClient.updatedAt,
+          company_size: mockClient.company_size,
+          createdAt: mockClient.created_at,
+          updatedAt: mockClient.updated_at,
         },
       ]);
     });
@@ -216,8 +221,8 @@ describe('ClientsController', () => {
 
   describe('findByStatus', () => {
     it('should return clients by contract status', async () => {
-      const activeClients = [mockClient];
-      service.findByOrganizationType.mockResolvedValue(activeClients);
+      const activeclientss = [mockClient];
+      service.findByOrganizationType.mockResolvedValue(activeclientss);
 
       const result = await controller.findByStatus(ClientOrganizationType.CORPORATE_OFFICE);
 
@@ -225,16 +230,15 @@ describe('ClientsController', () => {
       expect(result).toEqual([
         {
           id: mockClient.id,
+          companyId: mockClient.company_id,
           name: mockClient.name,
-          contactEmail: mockClient.contactEmail,
-          contactInfo: mockClient.contactInfo,
-          organizationType: mockClient.organizationType,
+          contact_email: mockClient.contact_email,
+          contact_info: mockClient.contact_info,
+          organizationType: mockClient.organization_type,
           industry: mockClient.industry,
-          companySize: mockClient.companySize,
-          accountManagerId: mockClient.accountManagerId,
-          tags: mockClient.tags,
-          createdAt: mockClient.createdAt,
-          updatedAt: mockClient.updatedAt,
+          company_size: mockClient.company_size,
+          createdAt: mockClient.created_at,
+          updatedAt: mockClient.updated_at,
         },
       ]);
     });
@@ -247,36 +251,69 @@ describe('ClientsController', () => {
       const result = await controller.findOne('client-1');
 
       expect(service.findOne).toHaveBeenCalledWith('client-1');
-      expect(result).toEqual(mockClient);
+      expect(result).toEqual({
+        id: 'client-1',
+        companyId: 'company-1',
+        name: 'Test clients',
+        contactEmail: 'test@client.com',
+        contact_info: null,
+        organizationType: 'CORPORATE_OFFICE',
+        industry: null,
+        company_size: null,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      });
     });
   });
 
   describe('update', () => {
     it('should update a client successfully', async () => {
       const updateDto: UpdateClientDto = {
-        name: 'Updated Client',
+        name: 'Updated clients',
         contactEmail: 'updated@client.com',
       };
-      const updatedClient = { ...mockClient, ...updateDto };
+      const updatedclients = { ...mockClient, ...updateDto };
 
-      service.update.mockResolvedValue(updatedClient as any);
+      service.update.mockResolvedValue(updatedclients as any);
 
       const result = await controller.update('client-1', updateDto);
 
       expect(service.update).toHaveBeenCalledWith('client-1', updateDto);
-      expect(result).toEqual(updatedClient);
+      expect(result).toEqual({
+        id: 'client-1',
+        companyId: 'company-1',
+        name: 'Updated clients',
+        contactEmail: 'updated@client.com',
+        contact_info: null,
+        organizationType: 'CORPORATE_OFFICE',
+        industry: null,
+        company_size: null,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      });
     });
   });
 
   describe('remove', () => {
     it('should soft delete a client successfully', async () => {
-      const deletedClient = { ...mockClient };
-      service.remove.mockResolvedValue(deletedClient);
+      const deletedclients = { ...mockClient };
+      service.remove.mockResolvedValue(deletedclients);
 
       const result = await controller.remove('client-1');
 
       expect(service.remove).toHaveBeenCalledWith('client-1');
-      expect(result).toEqual(deletedClient);
+      expect(result).toEqual({
+        id: 'client-1',
+        companyId: 'company-1',
+        name: 'Test clients',
+        contactEmail: 'test@client.com',
+        contact_info: null,
+        organizationType: 'CORPORATE_OFFICE',
+        industry: null,
+        company_size: null,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      });
     });
   });
 });

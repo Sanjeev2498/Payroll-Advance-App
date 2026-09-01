@@ -3,15 +3,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { TenantContextService } from '../tenant-context.service';
 import { 
-  Shift, 
+  shifts, 
   ShiftType,
   ShiftStatus,
   Prisma,
   PrismaClient
 } from '@prisma/client';
 
-// Define ShiftPriority enum manually since it's not being exported correctly
-export enum ShiftPriority {
+// Define shiftsPriority enum manually since it's not being exported correctly
+export enum shiftsPriority {
   LOW = 'LOW',
   NORMAL = 'NORMAL', 
   HIGH = 'HIGH',
@@ -24,7 +24,7 @@ export interface ShiftFilters {
   siteId?: string;
   status?: ShiftStatus;
   shiftType?: ShiftType;
-  priority?: ShiftPriority;
+  priority?: shiftsPriority;
   dateFrom?: Date;
   dateTo?: Date;
   isRecurring?: boolean;
@@ -47,8 +47,8 @@ export interface ShiftStats {
     coveragePercentage: number;
     shiftsNeedingCoverage: number;
   };
-  upcomingShifts: number;
-  recurringShifts: number;
+  upcomingshiftss: number;
+  recurringshiftss: number;
 }
 
 @Injectable()
@@ -63,7 +63,7 @@ export class ShiftRepository extends TenantAwareRepository {
   /**
    * Create a new shift with tenant isolation
    */
-  async create(shiftData: Prisma.ShiftCreateInput): Promise<any> {
+  async create(shiftData: Prisma.shiftsCreateInput): Promise<any> {
     this.logger.log('Creating shift');
 
     return this.writeWithTenant(() =>
@@ -230,7 +230,7 @@ export class ShiftRepository extends TenantAwareRepository {
   /**
    * Update shift information
    */
-  async update(id: string, updateData: Prisma.ShiftUpdateInput): Promise<any> {
+  async update(id: string, updateData: Prisma.shiftsUpdateInput): Promise<any> {
     this.logger.log(`Updating shift: ${id}`);
 
     return this.writeWithTenant(() =>
@@ -322,21 +322,21 @@ export class ShiftRepository extends TenantAwareRepository {
   async findBySiteId(siteId: string, dateFrom?: Date, dateTo?: Date): Promise<any[]> {
     this.logger.log(`Finding shifts for site: ${siteId}`);
 
-    const where: Prisma.ShiftWhereInput = {
-      siteId,
-      site: {
-        contract: {
-          client: {
-            companyId: this.tenantContext.getTenantId(),
+    const where: Prisma.shiftsWhereInput = {
+      site_id: siteId,
+      sites: {
+        contracts: {
+          clients: {
+            company_id: this.tenantContext.getTenantId(),
           },
         },
       },
     };
 
     if (dateFrom || dateTo) {
-      where.shiftDate = {};
-      if (dateFrom) where.shiftDate.gte = dateFrom;
-      if (dateTo) where.shiftDate.lte = dateTo;
+      where.shift_date = {};
+      if (dateFrom) where.shift_date.gte = dateFrom;
+      if (dateTo) where.shift_date.lte = dateTo;
     }
 
     return this.findWithTenant(() =>
@@ -433,30 +433,30 @@ export class ShiftRepository extends TenantAwareRepository {
   async getShiftStats(dateFrom?: Date, dateTo?: Date): Promise<ShiftStats> {
     this.logger.log('Calculating shift statistics');
 
-    const where: Prisma.ShiftWhereInput = {
-      site: {
-        contract: {
-          client: {
-            companyId: this.tenantContext.getTenantId(),
+    const where: Prisma.shiftsWhereInput = {
+      sites: {
+        contracts: {
+          clients: {
+            company_id: this.tenantContext.getTenantId(),
           },
         },
       },
     };
 
     if (dateFrom || dateTo) {
-      where.shiftDate = {};
-      if (dateFrom) where.shiftDate.gte = dateFrom;
-      if (dateTo) where.shiftDate.lte = dateTo;
+      where.shift_date = {};
+      if (dateFrom) where.shift_date.gte = dateFrom;
+      if (dateTo) where.shift_date.lte = dateTo;
     }
 
     return this.findWithTenant(async () => {
       const [
-        totalShifts,
+        totalshiftss,
         shiftsByStatus,
         shiftsByType,
         coverageAggregates,
-        upcomingShifts,
-        recurringShifts,
+        upcomingshiftss,
+        recurringshiftss,
       ] = await Promise.all([
         this.prisma.shift.count({ where }),
         
@@ -536,7 +536,7 @@ export class ShiftRepository extends TenantAwareRepository {
       });
 
       return {
-        totalShifts,
+        totalShifts: totalshiftss,
         shiftsByStatus: statusCounts,
         shiftsByType: typeCounts,
         coverageStats: {
@@ -545,8 +545,8 @@ export class ShiftRepository extends TenantAwareRepository {
           coveragePercentage,
           shiftsNeedingCoverage,
         },
-        upcomingShifts,
-        recurringShifts,
+        upcomingshiftss: upcomingshiftss,
+        recurringshiftss: recurringshiftss,
       };
     });
   }
@@ -559,17 +559,17 @@ export class ShiftRepository extends TenantAwareRepository {
     shiftDate: Date,
     startTime: string,
     endTime: string,
-    excludeShiftId?: string,
+    excludeshiftsId?: string,
   ): Promise<any[]> {
     this.logger.log('Detecting shift conflicts', { assignmentId, shiftDate });
 
-    const where: Prisma.ShiftWhereInput = {
-      assignmentId,
-      shiftDate,
-      site: {
-        contract: {
-          client: {
-            companyId: this.tenantContext.getTenantId(),
+    const where: Prisma.shiftsWhereInput = {
+      assignment_id: assignmentId,
+      shift_date: shiftDate,
+      sites: {
+        contracts: {
+          clients: {
+            company_id: this.tenantContext.getTenantId(),
           },
         },
       },
@@ -579,27 +579,27 @@ export class ShiftRepository extends TenantAwareRepository {
       OR: [
         {
           AND: [
-            { startTime: { lte: startTime } },
-            { endTime: { gt: startTime } },
+            { start_time: { lte: startTime } },
+            { end_time: { gt: startTime } },
           ],
         },
         {
           AND: [
-            { startTime: { lt: endTime } },
-            { endTime: { gte: endTime } },
+            { start_time: { lt: endTime } },
+            { end_time: { gte: endTime } },
           ],
         },
         {
           AND: [
-            { startTime: { gte: startTime } },
-            { endTime: { lte: endTime } },
+            { start_time: { gte: startTime } },
+            { end_time: { lte: endTime } },
           ],
         },
       ],
     };
 
-    if (excludeShiftId) {
-      where.id = { not: excludeShiftId };
+    if (excludeshiftsId) {
+      where.id = { not: excludeshiftsId };
     }
 
     return this.findWithTenant(() =>

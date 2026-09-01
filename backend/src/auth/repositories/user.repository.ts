@@ -1,5 +1,5 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
-import { User, UserRole, Prisma } from '@prisma/client';
+import { users, UserRole, Prisma } from '@prisma/client';
 import { TenantAwareRepository } from '../../common/tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
@@ -14,24 +14,32 @@ export class UserRepository extends TenantAwareRepository {
     super(prisma, tenantContext);
   }
 
-  async create(createUserDto: CreateUserDto, passwordHash: string): Promise<User> {
-    this.logOperation('CREATE', 'User');
+  /**
+   * Override getTenantFilter to use snake_case field name for users table
+   */
+  protected getTenantFilter(): any {
+    const tenantId = this.tenantContext.getTenantId();
+    return { company_id: tenantId };
+  }
+
+  async create(createusersDto: CreateUserDto, passwordHash: string): Promise<users> {
+    this.logOperation('CREATE', 'users');
 
     return this.writeWithTenant(async () => {
       // Use the provided companyId or get from tenant context
-      const companyId = createUserDto.companyId || this.tenantContext.getTenantId();
+      const companyId = createusersDto.companyId || this.tenantContext.getTenantId();
 
       // Check if user with this email already exists
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: createUserDto.email },
+      const existingusers = await this.prisma.user.findUnique({
+        where: { email: createusersDto.email },
       });
 
-      if (existingUser) {
-        throw new ConflictException('User with this email already exists');
+      if (existingusers) {
+        throw new ConflictException('users with this email already exists');
       }
 
       // Verify company exists and user has permission to create users for this company
-      const company = await this.prisma.company.findUnique({
+      const company = await this.prisma.companies.findUnique({
         where: { id: companyId },
       });
 
@@ -51,13 +59,13 @@ export class UserRepository extends TenantAwareRepository {
 
       return this.prisma.user.create({
         data: {
-          email: createUserDto.email,
-          firstName: createUserDto.firstName,
-          lastName: createUserDto.lastName,
+          email: createusersDto.email,
+          firstName: createusersDto.firstName,
+          lastName: createusersDto.lastName,
           passwordHash,
-          role: createUserDto.role,
+          role: createusersDto.role,
           companyId,
-          isActive: true,
+          is_active: true,
         },
         include: {
           company: {
@@ -72,22 +80,22 @@ export class UserRepository extends TenantAwareRepository {
     });
   }
 
-  async register(registerUserDto: RegisterUserDto, passwordHash: string): Promise<User> {
-    this.logOperation('REGISTER', 'User');
+  async register(registerusersDto: RegisterUserDto, passwordHash: string): Promise<users> {
+    this.logOperation('REGISTER', 'users');
 
     return this.executeWithSystemContext(async () => {
       // Check if user with this email already exists
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: registerUserDto.email },
+      const existingusers = await this.prisma.user.findUnique({
+        where: { email: registerusersDto.email },
       });
 
-      if (existingUser) {
-        throw new ConflictException('User with this email already exists');
+      if (existingusers) {
+        throw new ConflictException('users with this email already exists');
       }
 
       // Verify company exists
-      const company = await this.prisma.company.findUnique({
-        where: { id: registerUserDto.companyId },
+      const company = await this.prisma.companies.findUnique({
+        where: { id: registerusersDto.companyId },
       });
 
       if (!company) {
@@ -96,13 +104,13 @@ export class UserRepository extends TenantAwareRepository {
 
       return this.prisma.user.create({
         data: {
-          email: registerUserDto.email,
-          firstName: registerUserDto.firstName,
-          lastName: registerUserDto.lastName,
+          email: registerusersDto.email,
+          firstName: registerusersDto.firstName,
+          lastName: registerusersDto.lastName,
           passwordHash,
           role: UserRole.EMPLOYEE, // Default role for self-registration
-          companyId: registerUserDto.companyId,
-          isActive: true,
+          companyId: registerusersDto.companyId,
+          is_active: true,
         },
         include: {
           company: {
@@ -117,8 +125,8 @@ export class UserRepository extends TenantAwareRepository {
     });
   }
 
-  async findAll(filters: UserFilterDto): Promise<{ users: User[]; total: number }> {
-    this.logOperation('FIND_ALL', 'User');
+  async findAll(filters: UserFilterDto): Promise<{ users: users[]; total: number }> {
+    this.logOperation('FIND_ALL', 'users');
 
     return this.findWithTenant(async () => {
       const {
@@ -132,15 +140,15 @@ export class UserRepository extends TenantAwareRepository {
       } = filters;
 
       // Build where clause
-      const where: Prisma.UserWhereInput = {
+      const where: Prisma.usersWhereInput = {
         ...this.getTenantFilter(),
       };
 
       // Add search filter
       if (search) {
         where.OR = [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
+          { first_name: { contains: search, mode: 'insensitive' } },
+          { last_name: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
         ];
       }
@@ -152,7 +160,7 @@ export class UserRepository extends TenantAwareRepository {
 
       // Add active status filter
       if (typeof isActive === 'boolean') {
-        where.isActive = isActive;
+        where.is_active = isActive;
       }
 
       const { skip, take } = this.getPaginationParams(page, limit);
@@ -181,8 +189,8 @@ export class UserRepository extends TenantAwareRepository {
     });
   }
 
-  async findById(id: string): Promise<User | null> {
-    this.logOperation('FIND_BY_ID', 'User', id);
+  async findById(id: string): Promise<users | null> {
+    this.logOperation('FIND_BY_ID', 'users', id);
 
     return this.findWithTenant(async () => {
       return this.prisma.user.findFirst({
@@ -203,8 +211,8 @@ export class UserRepository extends TenantAwareRepository {
     });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    this.logOperation('FIND_BY_EMAIL', 'User');
+  async findByEmail(email: string): Promise<users | null> {
+    this.logOperation('FIND_BY_EMAIL', 'users');
 
     return this.findWithTenant(async () => {
       return this.prisma.user.findFirst({
@@ -225,20 +233,20 @@ export class UserRepository extends TenantAwareRepository {
     });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    this.logOperation('UPDATE', 'User', id);
+  async update(id: string, updateusersDto: UpdateUserDto): Promise<users> {
+    this.logOperation('UPDATE', 'users', id);
 
     return this.writeWithTenant(async () => {
       // First check if user exists and belongs to tenant
-      const existingUser = await this.findById(id);
-      if (!existingUser) {
-        throw new NotFoundException('User not found');
+      const existingusers = await this.findById(id);
+      if (!existingusers) {
+        throw new NotFoundException('users not found');
       }
 
       // Check email uniqueness if email is being updated
-      if (updateUserDto.email && updateUserDto.email !== existingUser.email) {
+      if (updateusersDto.email && updateusersDto.email !== existingusers.email) {
         const emailExists = await this.prisma.user.findUnique({
-          where: { email: updateUserDto.email },
+          where: { email: updateusersDto.email },
         });
 
         if (emailExists) {
@@ -248,7 +256,7 @@ export class UserRepository extends TenantAwareRepository {
 
       return this.prisma.user.update({
         where: { id },
-        data: updateUserDto,
+        data: updateusersDto,
         include: {
           company: {
             select: {
@@ -262,14 +270,14 @@ export class UserRepository extends TenantAwareRepository {
     });
   }
 
-  async updatePassword(id: string, passwordHash: string): Promise<User> {
-    this.logOperation('UPDATE_PASSWORD', 'User', id);
+  async updatePassword(id: string, passwordHash: string): Promise<users> {
+    this.logOperation('UPDATE_PASSWORD', 'users', id);
 
     return this.writeWithTenant(async () => {
       // First check if user exists and belongs to tenant
-      const existingUser = await this.findById(id);
-      if (!existingUser) {
-        throw new NotFoundException('User not found');
+      const existingusers = await this.findById(id);
+      if (!existingusers) {
+        throw new NotFoundException('users not found');
       }
 
       return this.prisma.user.update({
@@ -280,7 +288,7 @@ export class UserRepository extends TenantAwareRepository {
   }
 
   async updateLastLogin(id: string): Promise<void> {
-    this.logOperation('UPDATE_LAST_LOGIN', 'User', id);
+    this.logOperation('UPDATE_LAST_LOGIN', 'users', id);
 
     await this.writeWithTenant(async () => {
       await this.prisma.user.update({
@@ -290,14 +298,14 @@ export class UserRepository extends TenantAwareRepository {
     });
   }
 
-  async delete(id: string): Promise<User> {
-    this.logOperation('DELETE', 'User', id);
+  async delete(id: string): Promise<users> {
+    this.logOperation('DELETE', 'users', id);
 
     return this.writeWithTenant(async () => {
       // First check if user exists and belongs to tenant
-      const existingUser = await this.findById(id);
-      if (!existingUser) {
-        throw new NotFoundException('User not found');
+      const existingusers = await this.findById(id);
+      if (!existingusers) {
+        throw new NotFoundException('users not found');
       }
 
       // Soft delete by deactivating the user
@@ -309,7 +317,7 @@ export class UserRepository extends TenantAwareRepository {
   }
 
   async getStats(): Promise<UserStatsDto> {
-    this.logOperation('GET_STATS', 'User');
+    this.logOperation('GET_STATS', 'users');
 
     return this.findWithTenant(async () => {
       const tenantFilter = this.getTenantFilter();
@@ -323,7 +331,7 @@ export class UserRepository extends TenantAwareRepository {
         this.prisma.user.count({
           where: {
             ...tenantFilter,
-            isActive: true,
+            is_active: true,
           },
         }),
         this.prisma.user.groupBy({
@@ -357,7 +365,7 @@ export class UserRepository extends TenantAwareRepository {
   }
 
   async exists(id: string): Promise<boolean> {
-    this.logOperation('EXISTS', 'User', id);
+    this.logOperation('EXISTS', 'users', id);
 
     return this.findWithTenant(async () => {
       const user = await this.prisma.user.findFirst({

@@ -132,7 +132,7 @@ describe('Employee Data Integrity Property Tests (Mock)', () => {
       stored.employeeNumber === original.employeeNumber &&
       stored.firstName === original.firstName &&
       stored.lastName === original.lastName &&
-      (isValidDate(original.hireDate) ? stored.hireDate.getTime() === original.hireDate.getTime() : true)
+      (isValidDate(original.hireDate) ? stored.hireDate.getTime() === new Date(original.hireDate).getTime() : true)
     );
 
     // Validate optional fields are preserved when provided
@@ -237,10 +237,10 @@ describe('Employee Data Integrity Property Tests (Mock)', () => {
       employeeGenerator().filter(emp => !isNaN(emp.hireDate.getTime())), // Filter out invalid dates
       (employeeData) => {
         // Act: Transform employee data as the service would
-        const storedEmployee = transformEmployeeForStorage(employeeData);
+        const storedEmployee = transformEmployeeForStorage(employeeData as any);
 
         // Assert: Data integrity is maintained
-        const isIntegrityValid = validateEmployeeDataIntegrity(employeeData, storedEmployee);
+        const isIntegrityValid = validateEmployeeDataIntegrity(employeeData as any, storedEmployee);
         expect(isIntegrityValid).toBe(true);
 
         // Assert: Required system fields are set
@@ -270,7 +270,7 @@ describe('Employee Data Integrity Property Tests (Mock)', () => {
       employeeGenerator().filter(emp => emp.skills && emp.skills.length > 0),
       (employeeData) => {
         // Act: Store employee with skills and certifications
-        const storedEmployee = transformEmployeeForStorage(employeeData);
+        const storedEmployee = transformEmployeeForStorage(employeeData as any);
 
         // Assert: Skills are properly stored in both formats
         const skillNames = employeeData.skills!.map(skill => skill.name);
@@ -313,11 +313,11 @@ describe('Employee Data Integrity Property Tests (Mock)', () => {
       employeeGenerator(),
       (initialData, updateData) => {
         // Setup: Create initial employee
-        const initialEmployee = transformEmployeeForStorage(initialData);
+        const initialEmployee = transformEmployeeForStorage(initialData as any);
 
         // Act: Apply update (excluding employeeNumber to avoid conflicts)
         const { employeeNumber: _, ...updateFields } = updateData;
-        const updatedEmployee = mergeEmployeeUpdate(initialEmployee, updateFields);
+        const updatedEmployee = mergeEmployeeUpdate(initialEmployee, updateFields as any);
 
         // Assert: Updated fields are correctly applied
         if (updateFields.firstName) {
@@ -360,7 +360,7 @@ describe('Employee Data Integrity Property Tests (Mock)', () => {
       employeeGenerator().filter(emp => emp.complianceStatus !== undefined && emp.complianceStatus !== null),
       (employeeData) => {
         // Act: Store employee with compliance data
-        const storedEmployee = transformEmployeeForStorage(employeeData);
+        const storedEmployee = transformEmployeeForStorage(employeeData as any);
 
         // Assert: Compliance status is accurately stored
         const storedCompliance = storedEmployee.metadata.complianceStatus;
@@ -407,7 +407,7 @@ describe('Employee Data Integrity Property Tests (Mock)', () => {
       employeeGenerator(),
       (employeeData) => {
         // Setup: Create active employee
-        const activeEmployee = transformEmployeeForStorage(employeeData);
+        const activeEmployee = transformEmployeeForStorage(employeeData as any);
 
         // Act: Simulate termination
         const terminatedEmployee = {
@@ -451,7 +451,7 @@ describe('Employee Data Integrity Property Tests (Mock)', () => {
       employeeGenerator().filter(emp => emp.performanceMetrics !== undefined && emp.performanceMetrics !== null),
       (employeeData) => {
         // Act: Store employee with performance metrics
-        const storedEmployee = transformEmployeeForStorage(employeeData);
+        const storedEmployee = transformEmployeeForStorage(employeeData as any);
 
         // Assert: Performance metrics are accurately stored
         const storedMetrics = storedEmployee.metadata.performanceMetrics;
@@ -492,7 +492,7 @@ describe('Employee Data Integrity Property Tests (Mock)', () => {
       employeeGenerator().filter(emp => emp.availability !== undefined && emp.availability !== null),
       (employeeData) => {
         // Act: Store employee with availability data
-        const storedEmployee = transformEmployeeForStorage(employeeData);
+        const storedEmployee = transformEmployeeForStorage(employeeData as any);
 
         // Assert: Availability data is accurately stored
         const storedAvailability = storedEmployee.metadata.availability;

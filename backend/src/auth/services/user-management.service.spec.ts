@@ -19,16 +19,16 @@ describe('UserManagementService', () => {
   const mockUserId = 'user-123';
   const mockUser = {
     id: mockUserId,
-    companyId: mockTenantId,
+    company_id: mockTenantId,
     email: 'test@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    passwordHash: 'hashed-password',
+    first_name: 'John',
+    last_name: 'Doe',
+    password_hash: 'hashed-password',
     role: UserRole.EMPLOYEE,
-    isActive: true,
-    lastLoginAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    is_active: true,
+    last_login_at: new Date(),
+    created_at: new Date(),
+    updated_at: new Date(),
   };
 
   beforeEach(async () => {
@@ -95,10 +95,10 @@ describe('UserManagementService', () => {
         expect.objectContaining({
           id: mockUser.id,
           email: mockUser.email,
-          firstName: mockUser.firstName,
-          lastName: mockUser.lastName,
+          firstName: mockUser.first_name,
+          lastName: mockUser.last_name,
           role: mockUser.role,
-          companyId: mockUser.companyId,
+          companyId: mockUser.company_id,
         }),
       );
     });

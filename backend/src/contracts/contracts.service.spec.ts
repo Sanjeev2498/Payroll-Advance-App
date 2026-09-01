@@ -80,10 +80,10 @@ describe('ContractsService', () => {
         {
           provide: PrismaService,
           useValue: {
-            client: {
+            clients: {
               findFirst: jest.fn(),
             },
-            contract: {
+            contracts: {
               create: jest.fn(),
               findMany: jest.fn(),
               findFirst: jest.fn(),
@@ -91,7 +91,7 @@ describe('ContractsService', () => {
               update: jest.fn(),
               count: jest.fn(),
             },
-            site: {
+            sites: {
               count: jest.fn(),
             },
           },
@@ -117,11 +117,11 @@ describe('ContractsService', () => {
   describe('create', () => {
     it('should create a new contract successfully', async () => {
       // Arrange
-      jest.spyOn(prismaService.client, 'findFirst').mockResolvedValue(mockClient as any);
-      jest.spyOn(prismaService.contract, 'count').mockResolvedValue(0);
-      jest.spyOn(prismaService.contract, 'create').mockResolvedValue({
+      jest.spyOn(prismaService.clients, 'findFirst').mockResolvedValue(mockClient as any);
+      jest.spyOn(prismaService.contracts, 'count').mockResolvedValue(0);
+      jest.spyOn(prismaService.contracts, 'create').mockResolvedValue({
         ...mockContract,
-        client: mockClient,
+        clients: mockClient,
       } as any);
 
       // Act
@@ -130,18 +130,18 @@ describe('ContractsService', () => {
       // Assert
       expect(result).toBeDefined();
       expect(result.title).toBe(mockCreateContractDto.title);
-      expect(prismaService.client.findFirst).toHaveBeenCalledWith({
+      expect(prismaService.clients.findFirst).toHaveBeenCalledWith({
         where: {
           id: mockClientId,
-          companyId: mockTenantId,
+          company_id: mockTenantId,
         },
       });
-      expect(prismaService.contract.create).toHaveBeenCalled();
+      expect(prismaService.contracts.create).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when client does not exist', async () => {
       // Arrange
-      jest.spyOn(prismaService.client, 'findFirst').mockResolvedValue(null);
+      jest.spyOn(prismaService.clients, 'findFirst').mockResolvedValue(null);
 
       // Act & Assert
       await expect(service.create(mockCreateContractDto as any)).rejects.toThrow(
@@ -155,7 +155,7 @@ describe('ContractsService', () => {
         ...mockClient,
         companyId: 'different-tenant-id',
       };
-      jest.spyOn(prismaService.client, 'findFirst').mockResolvedValue(null);
+      jest.spyOn(prismaService.clients, 'findFirst').mockResolvedValue(null);
 
       // Act & Assert
       await expect(service.create(mockCreateContractDto as any)).rejects.toThrow(
@@ -170,13 +170,12 @@ describe('ContractsService', () => {
       const mockContracts = [
         {
           ...mockContract,
-          client: mockClient,
+          clients: mockClient,
           sites: [],
-          _count: { sites: 0, invoices: 0 },
         },
       ];
-      jest.spyOn(prismaService.contract, 'findMany').mockResolvedValue(mockContracts as any);
-      jest.spyOn(prismaService.contract, 'count').mockResolvedValue(1);
+      jest.spyOn(prismaService.contracts, 'findMany').mockResolvedValue(mockContracts as any);
+      jest.spyOn(prismaService.contracts, 'count').mockResolvedValue(1);
 
       // Act
       const result = await service.findAll(1, 10);
@@ -185,55 +184,49 @@ describe('ContractsService', () => {
       expect(result).toBeDefined();
       expect(result.contracts).toHaveLength(1);
       expect(result.pagination.total).toBe(1);
-      expect(prismaService.contract.findMany).toHaveBeenCalledWith({
+      expect(prismaService.contracts.findMany).toHaveBeenCalledWith({
         where: {
-          client: {
-            companyId: mockTenantId,
+          clients: {
+            company_id: mockTenantId,
           },
         },
         include: {
-          client: {
+          clients: {
             select: {
               id: true,
               name: true,
-              contactEmail: true,
+              contact_email: true,
             },
           },
           sites: {
             select: {
               id: true,
               name: true,
-              operationalStatus: true,
-            },
-          },
-          _count: {
-            select: {
-              sites: true,
-              invoices: true,
+              operational_status: true,
             },
           },
         },
         skip: 0,
         take: 10,
         orderBy: {
-          createdAt: 'desc',
+          created_at: 'desc',
         },
       });
     });
 
     it('should filter contracts by status', async () => {
       // Arrange
-      jest.spyOn(prismaService.contract, 'findMany').mockResolvedValue([]);
-      jest.spyOn(prismaService.contract, 'count').mockResolvedValue(0);
+      jest.spyOn(prismaService.contracts, 'findMany').mockResolvedValue([]);
+      jest.spyOn(prismaService.contracts, 'count').mockResolvedValue(0);
 
       // Act
       await service.findAll(1, 10, ContractStatus.ACTIVE);
 
       // Assert
-      expect(prismaService.contract.findMany).toHaveBeenCalledWith({
+      expect(prismaService.contracts.findMany).toHaveBeenCalledWith({
         where: {
-          client: {
-            companyId: mockTenantId,
+          clients: {
+            company_id: mockTenantId,
           },
           status: ContractStatus.ACTIVE,
         },
@@ -241,32 +234,32 @@ describe('ContractsService', () => {
         skip: 0,
         take: 10,
         orderBy: {
-          createdAt: 'desc',
+          created_at: 'desc',
         },
       });
     });
 
     it('should filter contracts by client ID', async () => {
       // Arrange
-      jest.spyOn(prismaService.contract, 'findMany').mockResolvedValue([]);
-      jest.spyOn(prismaService.contract, 'count').mockResolvedValue(0);
+      jest.spyOn(prismaService.contracts, 'findMany').mockResolvedValue([]);
+      jest.spyOn(prismaService.contracts, 'count').mockResolvedValue(0);
 
       // Act
       await service.findAll(1, 10, undefined, mockClientId);
 
       // Assert
-      expect(prismaService.contract.findMany).toHaveBeenCalledWith({
+      expect(prismaService.contracts.findMany).toHaveBeenCalledWith({
         where: {
-          client: {
-            companyId: mockTenantId,
+          clients: {
+            company_id: mockTenantId,
           },
-          clientId: mockClientId,
+          client_id: mockClientId,
         },
         include: expect.any(Object),
         skip: 0,
         take: 10,
         orderBy: {
-          createdAt: 'desc',
+          created_at: 'desc',
         },
       });
     });
@@ -277,12 +270,11 @@ describe('ContractsService', () => {
       // Arrange
       const mockContractWithRelations = {
         ...mockContract,
-        client: mockClient,
+        clients: mockClient,
         sites: [],
-        invoices: [],
       };
       jest
-        .spyOn(prismaService.contract, 'findFirst')
+        .spyOn(prismaService.contracts, 'findFirst')
         .mockResolvedValue(mockContractWithRelations as any);
 
       // Act
@@ -291,11 +283,11 @@ describe('ContractsService', () => {
       // Assert
       expect(result).toBeDefined();
       expect(result.id).toBe(mockContractId);
-      expect(prismaService.contract.findFirst).toHaveBeenCalledWith({
+      expect(prismaService.contracts.findFirst).toHaveBeenCalledWith({
         where: {
           id: mockContractId,
-          client: {
-            companyId: mockTenantId,
+          clients: {
+            company_id: mockTenantId,
           },
         },
         include: expect.any(Object),
@@ -304,7 +296,7 @@ describe('ContractsService', () => {
 
     it('should throw NotFoundException when contract does not exist', async () => {
       // Arrange
-      jest.spyOn(prismaService.contract, 'findFirst').mockResolvedValue(null);
+      jest.spyOn(prismaService.contracts, 'findFirst').mockResolvedValue(null);
 
       // Act & Assert
       await expect(service.findOne(mockContractId)).rejects.toThrow(NotFoundException);
@@ -321,14 +313,12 @@ describe('ContractsService', () => {
       
       const existingContract = {
         ...mockContract,
-        client: mockClient,
+        clients: mockClient,
         sites: [],
-        invoices: [],
-        contractHistory: {},
       };
 
       jest.spyOn(service, 'findOne').mockResolvedValue(existingContract as any);
-      jest.spyOn(prismaService.contract, 'update').mockResolvedValue({
+      jest.spyOn(prismaService.contracts, 'update').mockResolvedValue({
         ...existingContract,
         ...updateDto,
       } as any);
@@ -339,19 +329,19 @@ describe('ContractsService', () => {
       // Assert
       expect(result).toBeDefined();
       expect(result.title).toBe(updateDto.title);
-      expect(prismaService.contract.update).toHaveBeenCalledWith({
+      expect(prismaService.contracts.update).toHaveBeenCalledWith({
         where: { id: mockContractId },
         data: expect.objectContaining({
           title: updateDto.title,
           status: updateDto.status,
-          contractHistory: expect.any(Object),
+          updated_at: expect.any(Date),
         }),
         include: {
-          client: {
+          clients: {
             select: {
               id: true,
               name: true,
-              contactEmail: true,
+              contact_email: true,
             },
           },
         },
@@ -373,24 +363,24 @@ describe('ContractsService', () => {
     it('should soft delete a contract with no active sites', async () => {
       // Arrange
       jest.spyOn(service, 'findOne').mockResolvedValue(mockContract as any);
-      jest.spyOn(prismaService.site, 'count').mockResolvedValue(0);
-      jest.spyOn(prismaService.contract, 'update').mockResolvedValue(mockContract as any);
+      jest.spyOn(prismaService.sites, 'count').mockResolvedValue(0);
+      jest.spyOn(prismaService.contracts, 'update').mockResolvedValue(mockContract as any);
 
       // Act
       await service.remove(mockContractId);
 
       // Assert
-      expect(prismaService.site.count).toHaveBeenCalledWith({
+      expect(prismaService.sites.count).toHaveBeenCalledWith({
         where: {
-          contractId: mockContractId,
-          operationalStatus: 'ACTIVE',
+          contract_id: mockContractId,
+          operational_status: 'ACTIVE',
         },
       });
-      expect(prismaService.contract.update).toHaveBeenCalledWith({
+      expect(prismaService.contracts.update).toHaveBeenCalledWith({
         where: { id: mockContractId },
         data: {
           status: ContractStatus.TERMINATED,
-          endDate: expect.any(Date),
+          end_date: expect.any(Date),
         },
       });
     });
@@ -398,7 +388,7 @@ describe('ContractsService', () => {
     it('should throw BadRequestException when contract has active sites', async () => {
       // Arrange
       jest.spyOn(service, 'findOne').mockResolvedValue(mockContract as any);
-      jest.spyOn(prismaService.site, 'count').mockResolvedValue(2);
+      jest.spyOn(prismaService.sites, 'count').mockResolvedValue(2);
 
       // Act & Assert
       await expect(service.remove(mockContractId)).rejects.toThrow(BadRequestException);
@@ -416,19 +406,19 @@ describe('ContractsService', () => {
   describe('contract number generation', () => {
     it('should generate unique contract numbers', async () => {
       // Arrange
-      jest.spyOn(prismaService.client, 'findFirst').mockResolvedValue(mockClient as any);
-      jest.spyOn(prismaService.contract, 'count').mockResolvedValue(5);
-      jest.spyOn(prismaService.contract, 'create').mockResolvedValue({
+      jest.spyOn(prismaService.clients, 'findFirst').mockResolvedValue(mockClient as any);
+      jest.spyOn(prismaService.contracts, 'count').mockResolvedValue(5);
+      jest.spyOn(prismaService.contracts, 'create').mockResolvedValue({
         ...mockContract,
-        contractNumber: 'CNT-2024-0006',
-        client: mockClient,
+        contract_number: 'CNT-2024-0006',
+        clients: mockClient,
       } as any);
 
       // Act
       const result = await service.create(mockCreateContractDto as any);
 
       // Assert
-      expect(result.contractNumber).toMatch(/^CNT-\d{4}-\d{4}$/);
+      expect(result.contract_number).toMatch(/^CNT-\d{4}-\d{4}$/);
     });
   });
 });

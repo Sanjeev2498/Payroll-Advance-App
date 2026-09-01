@@ -17,7 +17,7 @@ import {
   EmploymentStatus 
 } from './dto';
 import { EmployeeRoleResponse } from '../common/dto/encrypted-field.dto';
-import { Employee } from '@prisma/client';
+import { employees } from '@prisma/client';
 import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
 
 
@@ -47,10 +47,10 @@ export class EmployeesService {
       this.logger.warn('No tenant context found, using demo mode');
       // In demo mode, try to find or create a company
       try {
-        let company = await this.prisma.company.findFirst();
+        let company = await this.prisma.companies.findFirst();
         if (!company) {
           // Create a demo company if none exists
-          company = await this.prisma.company.create({
+          company = await this.prisma.companies.create({
             data: {
               name: 'Demo Security Company',
               code: 'DEMO001',
@@ -75,7 +75,7 @@ export class EmployeesService {
     }
 
     // Check for duplicate employee number within tenant
-    await this.validateUniqueEmployeeNumber(createEmployeeDto.employeeNumber);
+    await this.validateUniqueemployeesNumber(createEmployeeDto.employeeNumber);
 
     try {
       // Encrypt sensitive data before storing
@@ -141,7 +141,7 @@ export class EmployeesService {
         return this.dataTransform.transformEmployeeForRole(mockEmployee, userRole, false);
       }
 
-      const employee = await this.prisma.employee.create({
+      const employee = await this.prisma.employees.create({
         data: employeeData,
       });
 
@@ -170,7 +170,7 @@ export class EmployeesService {
     } catch (error) {
       this.logger.warn('No tenant context found, using demo mode');
       // In demo mode, use the first available company
-      const company = await this.prisma.company.findFirst();
+      const company = await this.prisma.companies.findFirst();
       if (!company) {
         throw new BadRequestException('No company found in demo mode');
       }
@@ -268,7 +268,7 @@ export class EmployeesService {
     });
 
     if (!employee) {
-      throw new NotFoundException(`Employee with ID ${id} not found`);
+      throw new NotFoundException(`employees with ID ${id} not found`);
     }
 
     const isOwnData = requestingUserId === employee.id;
@@ -280,7 +280,7 @@ export class EmployeesService {
    */
   async update(
     id: string, 
-    updateEmployeeDto: UpdateEmployeeDto, 
+    updateemployeesDto: UpdateEmployeeDto, 
     userRole: string,
     requestingUserId?: string
   ): Promise<EmployeeRoleResponse> {
@@ -294,7 +294,7 @@ export class EmployeesService {
     } catch (error) {
       this.logger.warn('No tenant context found, using demo mode');
       // In demo mode, use the first available company
-      const company = await this.prisma.company.findFirst();
+      const company = await this.prisma.companies.findFirst();
       if (!company) {
         throw new BadRequestException('No company found in demo mode');
       }
@@ -302,50 +302,50 @@ export class EmployeesService {
     }
 
     // Validate hire date if being updated
-    if (updateEmployeeDto.hireDate && new Date(updateEmployeeDto.hireDate) > new Date()) {
+    if (updateemployeesDto.hireDate && new Date(updateemployeesDto.hireDate) > new Date()) {
       throw new BadRequestException('Hire date cannot be in the future');
     }
 
     // Check for duplicate employee number if being updated
-    if (updateEmployeeDto.employeeNumber) {
-      await this.validateUniqueEmployeeNumber(updateEmployeeDto.employeeNumber, id);
+    if (updateemployeesDto.employeeNumber) {
+      await this.validateUniqueemployeesNumber(updateemployeesDto.employeeNumber, id);
     }
 
     try {
       // Get current employee first
-      const currentEmployee = await this.prisma.employee.findFirst({
+      const currentemployees = await this.prisma.employee.findFirst({
         where: { id, companyId: tenantId },
       });
 
-      if (!currentEmployee) {
-        throw new NotFoundException(`Employee with ID ${id} not found`);
+      if (!currentemployees) {
+        throw new NotFoundException(`employees with ID ${id} not found`);
       }
 
       // Encrypt sensitive data in the update
-      const encryptedUpdateData = this.dataTransform.encryptEmployeeData(updateEmployeeDto);
+      const encryptedUpdateData = this.dataTransform.encryptEmployeeData(updateemployeesDto);
 
       // Prepare update data
       const updateData: any = {
-        ...updateEmployeeDto,
+        ...updateemployeesDto,
         ...encryptedUpdateData,
       };
 
       // Handle metadata updates
-      if (updateEmployeeDto.employmentType || updateEmployeeDto.department || 
-          updateEmployeeDto.jobTitle || updateEmployeeDto.metadata) {
+      if (updateemployeesDto.employmentType || updateemployeesDto.department || 
+          updateemployeesDto.jobTitle || updateemployeesDto.metadata) {
         
-        const currentMetadata = (currentEmployee.metadata as any) || {};
+        const currentMetadata = (currentemployees.metadata as any) || {};
         
         updateData.metadata = {
           ...currentMetadata,
-          ...(updateEmployeeDto.employmentType && { employmentType: updateEmployeeDto.employmentType }),
-          ...(updateEmployeeDto.department && { department: updateEmployeeDto.department }),
-          ...(updateEmployeeDto.jobTitle && { jobTitle: updateEmployeeDto.jobTitle }),
-          ...updateEmployeeDto.metadata,
+          ...(updateemployeesDto.employmentType && { employmentType: updateemployeesDto.employmentType }),
+          ...(updateemployeesDto.department && { department: updateemployeesDto.department }),
+          ...(updateemployeesDto.jobTitle && { jobTitle: updateemployeesDto.jobTitle }),
+          ...updateemployeesDto.metadata,
         };
       }
 
-      const updatedEmployee = await this.prisma.employee.update({
+      const updatedemployees = await this.prisma.employee.update({
         where: { id },
         data: updateData,
       });
@@ -353,12 +353,12 @@ export class EmployeesService {
       this.logger.log(`Successfully updated employee: ${id}`);
 
       // Handle employment status changes
-      if (updateEmployeeDto.employmentStatus) {
-        await this.handleEmploymentStatusChange(updatedEmployee, updateEmployeeDto.employmentStatus);
+      if (updateemployeesDto.employmentStatus) {
+        await this.handleEmploymentStatusChange(updatedemployees, updateemployeesDto.employmentStatus);
       }
 
-      const isOwnData = requestingUserId === updatedEmployee.id;
-      return this.dataTransform.transformEmployeeForRole(updatedEmployee, userRole, isOwnData);
+      const isOwnData = requestingUserId === updatedemployees.id;
+      return this.dataTransform.transformEmployeeForRole(updatedemployees, userRole, isOwnData);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -382,7 +382,7 @@ export class EmployeesService {
     } catch (error) {
       this.logger.warn('No tenant context found, using demo mode');
       // In demo mode, use the first available company
-      const company = await this.prisma.company.findFirst();
+      const company = await this.prisma.companies.findFirst();
       if (!company) {
         throw new BadRequestException('No company found in demo mode');
       }
@@ -390,7 +390,7 @@ export class EmployeesService {
     }
 
     try {
-      const deletedEmployee = await this.prisma.employee.update({
+      const deletedemployees = await this.prisma.employee.update({
         where: { 
           id,
           companyId: tenantId,
@@ -404,9 +404,9 @@ export class EmployeesService {
       this.logger.log(`Successfully soft deleted employee: ${id}`);
 
       // Handle termination workflow
-      await this.handleEmployeeTermination(deletedEmployee);
+      await this.handleemployeesTermination(deletedemployees);
 
-      return this.dataTransform.transformEmployeeForRole(deletedEmployee, userRole, false);
+      return this.dataTransform.transformEmployeeForRole(deletedemployees, userRole, false);
     } catch (error) {
       const errorInfo = formatError(error);
       this.logger.error(`${errorInfo.message}`, errorInfo.stack);
@@ -558,7 +558,7 @@ export class EmployeesService {
     } catch (error) {
       this.logger.warn('No tenant context found, using demo mode');
       // In demo mode, use the first available company
-      const company = await this.prisma.company.findFirst();
+      const company = await this.prisma.companies.findFirst();
       if (!company) {
         throw new BadRequestException('No company found in demo mode');
       }
@@ -669,9 +669,9 @@ export class EmployeesService {
   }
 
   /**
-   * Employee onboarding workflow
+   * employees onboarding workflow
    */
-  private async initiateEmployeeOnboarding(employee: Employee): Promise<void> {
+  private async initiateemployeesOnboarding(employee: employees): Promise<void> {
     this.logger.log(`Initiating onboarding workflow for employee: ${employee.id}`);
 
     try {
@@ -694,7 +694,7 @@ export class EmployeesService {
    * Handle employment status changes
    */
   private async handleEmploymentStatusChange(
-    employee: Employee,
+    employee: employees,
     newStatus: EmploymentStatus,
   ): Promise<void> {
     this.logger.log(`Handling status change for employee ${employee.id}: ${newStatus}`);
@@ -723,7 +723,7 @@ export class EmployeesService {
   /**
    * Handle employee termination workflow
    */
-  private async handleEmployeeTermination(employee: Employee): Promise<void> {
+  private async handleemployeesTermination(employee: employees): Promise<void> {
     this.logger.log(`Handling termination workflow for employee: ${employee.id}`);
 
     try {
@@ -745,7 +745,7 @@ export class EmployeesService {
   /**
    * Validate employee number uniqueness within tenant
    */
-  private async validateUniqueEmployeeNumber(employeeNumber: string, excludeId?: string): Promise<void> {
+  private async validateUniqueemployeesNumber(employeeNumber: string, excludeId?: string): Promise<void> {
     let tenantId: string;
     
     try {
@@ -768,10 +768,15 @@ export class EmployeesService {
     try {
       const existing = await this.prisma.employee.findFirst({ where });
       if (existing) {
-        throw new ConflictException(`Employee number ${employeeNumber} already exists`);
+        throw new ConflictException(`employees number ${employeeNumber} already exists`);
       }
     } catch (dbError) {
-      // If database is not available, skip validation for demo mode
+      // Re-throw ConflictExceptions - they are business logic errors, not database connectivity errors
+      if (dbError instanceof ConflictException) {
+        throw dbError;
+      }
+      
+      // Only catch database connectivity errors and skip validation for demo mode
       this.logger.warn('Database not available for validation, skipping in demo mode');
       return;
     }

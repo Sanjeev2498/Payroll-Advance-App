@@ -5,9 +5,9 @@ const prisma = new PrismaClient();
 async function seedEmployees() {
   try {
     // First, get or create a company
-    let company = await prisma.company.findFirst();
+    let company = await prisma.companies.findFirst();
     if (!company) {
-      company = await prisma.company.create({
+      company = await prisma.companies.create({
         data: {
           name: 'Demo Security Services',
           slug: 'demo-security',
@@ -21,15 +21,15 @@ async function seedEmployees() {
     // Create real employee data
     const employees = [
       {
-        companyId: company.id,
-        employeeNumber: 'EMP001',
-        firstName: 'Arjun',
-        lastName: 'Singh',
+        company_id: company.id,
+        employee_number: 'EMP001',
+        first_name: 'Arjun',
+        last_name: 'Singh',
         email: 'arjun.singh@demosecurity.co.in',
         phone: '+91 98765-43210',
-        hireDate: new Date('2023-01-15'),
+        hire_date: new Date('2023-01-15'),
         skills: ['Security Guard', 'First Aid', 'Fire Safety'],
-        employmentStatus: 'ACTIVE',
+        employment_status: 'ACTIVE',
         certifications: [
           {
             name: 'Security License',
@@ -82,15 +82,15 @@ async function seedEmployees() {
         }
       },
       {
-        companyId: company.id,
-        employeeNumber: 'EMP002',
-        firstName: 'Priya',
-        lastName: 'Sharma',
+        company_id: company.id,
+        employee_number: 'EMP002',
+        first_name: 'Priya',
+        last_name: 'Sharma',
         email: 'priya.sharma@demosecurity.co.in',
         phone: '+91 98765-43211',
-        hireDate: new Date('2023-02-01'),
+        hire_date: new Date('2023-02-01'),
         skills: ['Security Guard', 'CCTV Monitoring', 'Access Control'],
-        employmentStatus: 'ACTIVE',
+        employment_status: 'ACTIVE',
         certifications: [
           {
             name: 'Security License',
@@ -136,15 +136,15 @@ async function seedEmployees() {
         }
       },
       {
-        companyId: company.id,
-        employeeNumber: 'EMP003',
-        firstName: 'Rajesh',
-        lastName: 'Kumar',
+        company_id: company.id,
+        employee_number: 'EMP003',
+        first_name: 'Rajesh',
+        last_name: 'Kumar',
         email: 'rajesh.kumar@demosecurity.co.in',
         phone: '+91 98765-43212',
-        hireDate: new Date('2023-03-01'),
+        hire_date: new Date('2023-03-01'),
         skills: ['Security Guard', 'Patrol', 'Report Writing'],
-        employmentStatus: 'ACTIVE',
+        employment_status: 'ACTIVE',
         certifications: [
           {
             name: 'Security License',
@@ -190,15 +190,15 @@ async function seedEmployees() {
         }
       },
       {
-        companyId: company.id,
-        employeeNumber: 'EMP004',
-        firstName: 'Sneha',
-        lastName: 'Patel',
+        company_id: company.id,
+        employee_number: 'EMP004',
+        first_name: 'Sneha',
+        last_name: 'Patel',
         email: 'sneha.patel@demosecurity.co.in',
         phone: '+91 98765-43213',
-        hireDate: new Date('2023-04-01'),
+        hire_date: new Date('2023-04-01'),
         skills: ['Security Supervisor', 'Team Management', 'Incident Response'],
-        employmentStatus: 'ACTIVE',
+        employment_status: 'ACTIVE',
         certifications: [
           {
             name: 'Security Supervisor License',
@@ -251,15 +251,15 @@ async function seedEmployees() {
         }
       },
       {
-        companyId: company.id,
-        employeeNumber: 'EMP005',
-        firstName: 'Vikash',
-        lastName: 'Singh',
+        company_id: company.id,
+        employee_number: 'EMP005',
+        first_name: 'Vikash',
+        last_name: 'Singh',
         email: 'vikash.singh@demosecurity.co.in',
         phone: '+91 98765-43214',
-        hireDate: new Date('2023-05-01'),
+        hire_date: new Date('2023-05-01'),
         skills: ['Security Guard', 'Vehicle Security', 'Parking Management'],
-        employmentStatus: 'ON_LEAVE',
+        employment_status: 'ON_LEAVE',
         certifications: [
           {
             name: 'Security License',
@@ -305,15 +305,15 @@ async function seedEmployees() {
         }
       },
       {
-        companyId: company.id,
-        employeeNumber: 'EMP006',
-        firstName: 'Anjali',
-        lastName: 'Reddy',
+        company_id: company.id,
+        employee_number: 'EMP006',
+        first_name: 'Anjali',
+        last_name: 'Reddy',
         email: 'anjali.reddy@demosecurity.co.in',
         phone: '+91 98765-43215',
-        hireDate: new Date('2023-06-01'),
+        hire_date: new Date('2023-06-01'),
         skills: ['Security Guard', 'Customer Service', 'Reception Duties'],
-        employmentStatus: 'INACTIVE',
+        employment_status: 'INACTIVE',
         certifications: [
           {
             name: 'Security License',
@@ -361,32 +361,32 @@ async function seedEmployees() {
     ];
 
     // Clear existing employees and create new ones
-    await prisma.employee.deleteMany({
+    await prisma.employees.deleteMany({
       where: {
-        companyId: company.id
+        company_id: company.id
       }
     });
 
     for (const employee of employees) {
-      const created = await prisma.employee.create({
+      const created = await prisma.employees.create({
         data: employee
       });
-      console.log(`Created employee: ${created.firstName} ${created.lastName} (${created.employeeNumber})`);
+      console.log(`Created employee: ${created.first_name} ${created.last_name} (${created.employee_number})`);
     }
 
     console.log('\n✅ Employee seeding completed successfully!');
     console.log(`📊 Created ${employees.length} employees for company: ${company.name}`);
     
     // Show summary
-    const employeeStats = await prisma.employee.groupBy({
-      by: ['employmentStatus'],
-      where: { companyId: company.id },
+    const employeeStats = await prisma.employees.groupBy({
+      by: ['employment_status'],
+      where: { company_id: company.id },
       _count: true
     });
     
     console.log('\n📈 Employee Statistics:');
     employeeStats.forEach(stat => {
-      console.log(`  ${stat.employmentStatus}: ${stat._count}`);
+      console.log(`  ${stat.employment_status}: ${stat._count}`);
     });
 
   } catch (error) {

@@ -8,6 +8,7 @@ import { CommonModule } from '../common/common.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TenantContextService } from '../common/tenant-context.service';
 import { PayrollStatus, AttendanceStatus, EmploymentStatus, AssignmentStatus, ShiftStatus } from '@prisma/client';
+import { TestDataUtil } from '../test/utils/test-data.util';
 import { Decimal } from 'decimal.js';
 
 describe('Payroll Integration Tests', () => {
@@ -47,68 +48,72 @@ describe('Payroll Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean up database
+    // Clean up database using correct model names
     await prisma.attendance.deleteMany();
-    await prisma.shift.deleteMany();
-    await prisma.assignment.deleteMany();
-    await prisma.employee.deleteMany();
-    await prisma.site.deleteMany();
-    await prisma.client.deleteMany();
-    await prisma.payrollItem.deleteMany();
-    await prisma.payrollRun.deleteMany();
-    await prisma.company.deleteMany();
+    await prisma.shifts.deleteMany();
+    await prisma.assignments.deleteMany();
+    await prisma.employees.deleteMany();
+    await prisma.sites.deleteMany();
+    await prisma.clients.deleteMany();
+    await prisma.payrollItems.deleteMany();
+    await prisma.payrollRuns.deleteMany();
+    await prisma.companies.deleteMany();
 
     // Create test data
-    const company = await prisma.company.create({
-      data: {
-        name: 'Test Security Company',
-        slug: 'test-security-co',
-        settings: {},
-        branding: {},
-      },
+    const company = await prisma.companies.create({
+      data: TestDataUtil.createTestCompanyData(),
     });
     companyId = company.id;
 
-    const client = await prisma.client.create({
+    const client = await prisma.clients.create({
       data: {
-        companyId,
+        id: TestDataUtil.generateTestId(),
+        company_id: companyId,
         name: 'Test Client Corp',
-        contactEmail: 'client@testcorp.com',
-        // FIXED: Removed contractStatus - this belongs to Contract entity
-        organizationType: 'CORPORATE_OFFICE',
+        contact_email: 'client@testcorp.com',
+        organization_type: 'CORPORATE_OFFICE',
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
     clientId = client.id;
 
     // FIXED: Create separate Contract entity
-    const contract = await prisma.contract.create({
+    const contract = await prisma.contracts.create({
       data: {
-        clientId: client.id,
-        contractNumber: 'CNT-TEST-001',
+        client_id: client.id,
+        contract_number: 'CNT-TEST-001',
         title: 'Test Payroll Contract',
         status: 'ACTIVE',
-        startDate: new Date(),
-        serviceDefinitions: { services: ['payroll'] },
-        billingPreferences: { cycle: 'monthly' },
+        start_date: new Date(),
+        service_definitions: { services: ['payroll'] },
+        billing_preferences: { cycle: 'monthly' },
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
 
-    const site = await prisma.site.create({
+    const site = await prisma.sites.create({
       data: {
-        contractId: contract.id, // FIXED: Link to contract instead of client
+        id: TestDataUtil.generateTestId(),
+        client_id: client.id, // Required field
+        contract_id: contract.id, // FIXED: Link to contract instead of client
         name: 'Main Office Building',
         address: { street: '123 Business Ave', city: 'Mumbai', state: 'Maharashtra' },
-        operationalStatus: 'ACTIVE',
+        operational_status: 'ACTIVE',
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
     siteId = site.id;
 
-    const employee = await prisma.employee.create({
+    const employee = await prisma.employees.create({
       data: {
-        companyId,
-        employeeNumber: 'EMP-001',
-        firstName: 'Rajesh',
-        lastName: 'Kumar',
+        id: TestDataUtil.generateTestId(),
+        company_id: companyId,
+        employee_number: 'EMP-001',
+        first_name: 'Rajesh',
+        last_name: 'Kumar',
         email: 'rajesh.kumar@company.com',
         phone: '+91-9876543210',
         address: {
@@ -119,33 +124,43 @@ describe('Payroll Integration Tests', () => {
           country: 'India'
         },
         skills: ['security', 'surveillance'],
-        employmentStatus: EmploymentStatus.ACTIVE,
-        hireDate: new Date('2024-01-01'),
+        employment_status: EmploymentStatus.ACTIVE,
+        hire_date: new Date('2024-01-01'),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
     employeeId = employee.id;
 
-    const assignment = await prisma.assignment.create({
+    const assignment = await prisma.assignments.create({
       data: {
-        employeeId,
-        siteId,
+        id: TestDataUtil.generateTestId(),
+        employee_id: employeeId,
+        site_id: siteId,
         role: 'Security Guard',
-        hourlyRate: 30.00, // Decimal field
+        hourly_rate: '30.00', // Encrypted string field
+        hourly_rate_iv: 'test_iv_12345678901234567890123', // 32 chars max
+        hourly_rate_tag: 'test_tag_1234567890123456789012', // 32 chars max  
         status: AssignmentStatus.ACTIVE,
-        startDate: new Date('2024-01-01'),
+        start_date: new Date('2024-01-01'),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
     assignmentId = assignment.id;
 
-    const shift = await prisma.shift.create({
+    const shift = await prisma.shifts.create({
       data: {
-        assignmentId,
-        siteId,
-        shiftDate: new Date('2024-01-15'),
-        startTime: new Date('2024-01-15T09:00:00Z'),
-        endTime: new Date('2024-01-15T17:00:00Z'),
-        shiftType: 'REGULAR',
+        id: TestDataUtil.generateTestId(),
+        assignment_id: assignmentId,
+        site_id: siteId, // Required field
+        shift_date: new Date('2024-01-15'),
+        start_time: new Date('2024-01-15T09:00:00Z'),
+        end_time: new Date('2024-01-15T17:00:00Z'),
+        shift_type: 'REGULAR',
         status: ShiftStatus.COMPLETED,
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
     shiftId = shift.id;
@@ -153,11 +168,14 @@ describe('Payroll Integration Tests', () => {
     // Create attendance record
     await prisma.attendance.create({
       data: {
-        employeeId,
-        shiftId,
-        clockIn: new Date('2024-01-15T09:00:00Z'),
-        clockOut: new Date('2024-01-15T17:00:00Z'), // 8 hours
+        id: TestDataUtil.generateTestId(),
+        employee_id: employeeId,
+        shift_id: shiftId,
+        clock_in: new Date('2024-01-15T09:00:00Z'),
+        clock_out: new Date('2024-01-15T17:00:00Z'), // 8 hours
         status: AttendanceStatus.PRESENT,
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
   });
@@ -191,38 +209,39 @@ describe('Payroll Integration Tests', () => {
       expect(parseFloat(employeeResult.basicPay)).toBe(240.00); // 8 hours × ₹30
 
       // Verify payroll run was created in database
-      const payrollRun = await prisma.payrollRun.findFirst({
-        where: { companyId },
-        include: { payrollItems: true },
+      const payrollRun = await prisma.payrollRuns.findFirst({
+        where: { company_id: companyId },
+        include: { payroll_items: true },
       });
 
       expect(payrollRun).toBeTruthy();
       expect(payrollRun!.status).toBe(PayrollStatus.COMPLETED);
-      expect(payrollRun!.payrollItems.length).toBeGreaterThan(0);
+      expect(payrollRun!.payroll_items.length).toBeGreaterThan(0);
     });
 
     it('should handle overtime correctly', async () => {
       // Create additional shift with overtime
-      await prisma.shift.create({
+      await prisma.shifts.create({
         data: {
-          assignmentId,
-          siteId,
-          shiftDate: new Date('2024-01-16'),
-          startTime: new Date('2024-01-16T09:00:00Z'),
-          endTime: new Date('2024-01-16T19:00:00Z'), // 10 hours
-          shiftType: 'OVERTIME',
+          id: TestDataUtil.generateTestId(),
+          assignment_id: assignmentId,
+          shift_date: new Date('2024-01-16'),
+          start_time: new Date('2024-01-16T09:00:00Z'),
+          end_time: new Date('2024-01-16T19:00:00Z'), // 10 hours
+          shift_type: 'OVERTIME',
           status: ShiftStatus.COMPLETED,
         },
       });
 
       await prisma.attendance.create({
         data: {
-          employeeId,
-          shiftId: (await prisma.shift.findFirst({ 
-            where: { shiftDate: new Date('2024-01-16') }
+          id: TestDataUtil.generateTestId(),
+          employee_id: employeeId,
+          shift_id: (await prisma.shifts.findFirst({ 
+            where: { shift_date: new Date('2024-01-16') }
           }))!.id,
-          clockIn: new Date('2024-01-16T09:00:00Z'),
-          clockOut: new Date('2024-01-16T19:00:00Z'), // 10 hours total
+          clock_in: new Date('2024-01-16T09:00:00Z'),
+          clock_out: new Date('2024-01-16T19:00:00Z'), // 10 hours total
           status: AttendanceStatus.PRESENT,
         },
       });

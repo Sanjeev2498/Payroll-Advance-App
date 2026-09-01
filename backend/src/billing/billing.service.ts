@@ -14,6 +14,7 @@ import {
   BillingCalculationResult,
 } from './dto';
 import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+import { TenantContextService } from '../common/tenant-context.service';
 
 
 @Injectable()
@@ -24,6 +25,7 @@ export class BillingService {
     private gstCalculationService: GstCalculationService,
     private invoicePdfService: InvoicePdfService,
     private billingValidationService: BillingValidationService,
+    private tenantContext: TenantContextService,
   ) {}
 
   /**

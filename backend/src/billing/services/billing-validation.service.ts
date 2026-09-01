@@ -98,14 +98,14 @@ export class BillingValidationService {
     startDate: Date,
     endDate: Date,
   ): Promise<void> {
-    const existingInvoice = await this.prisma.invoice.findFirst({
+    const existingInvoice = await this.prisma.invoices.findFirst({
       where: {
-        clientId,
+        client_id: clientId,
         status: { not: InvoiceStatus.CANCELLED },
         OR: [
           {
-            billingPeriodStart: { lte: endDate },
-            billingPeriodEnd: { gte: startDate },
+            billing_period_start: { lte: endDate },
+            billing_period_end: { gte: startDate },
           },
         ],
       },
@@ -113,7 +113,7 @@ export class BillingValidationService {
 
     if (existingInvoice) {
       throw new ConflictException(
-        `Billing period overlaps with existing invoice ${existingInvoice.invoiceNumber}`
+        `Billing period overlaps with existing invoice ${existingInvoice.invoice_number}`
       );
     }
   }
@@ -130,17 +130,17 @@ export class BillingValidationService {
     
     const deploymentCount = await this.prisma.attendance.count({
       where: {
-        employee: { companyId },
-        shift: {
-          site: { clientId },
-          shiftDate: {
+        employees: { company_id: companyId },
+        shifts: {
+          sites: { client_id: clientId },
+          shift_date: {
             gte: startDate,
             lte: endDate,
           },
         },
         status: 'PRESENT',
-        clockIn: { not: null },
-        clockOut: { not: null },
+        clock_in: { not: null },
+        clock_out: { not: null },
       },
     });
 
@@ -235,15 +235,15 @@ export class BillingValidationService {
   async validateContractBillingPermissions(contractId: string): Promise<void> {
     const companyId = this.tenantContext.getTenantId();
     
-    const contract = await this.prisma.contract.findFirst({
+    const contract = await this.prisma.contracts.findFirst({
       where: {
         id: contractId,
-        client: {
-          companyId,
+        clients: {
+          company_id: companyId,
         },
       },
       include: {
-        client: true,
+        clients: true,
       },
     });
 
@@ -267,10 +267,10 @@ export class BillingValidationService {
   async validateClientBillingPermissions(clientId: string): Promise<void> {
     const companyId = this.tenantContext.getTenantId();
     
-    const client = await this.prisma.client.findFirst({
+    const client = await this.prisma.clients.findFirst({
       where: {
         id: clientId,
-        companyId,
+        company_id: companyId,
       },
     });
 
@@ -283,8 +283,8 @@ export class BillingValidationService {
    * Validate invoice number uniqueness
    */
   async validateInvoiceNumberUniqueness(invoiceNumber: string): Promise<void> {
-    const existingInvoice = await this.prisma.invoice.findFirst({
-      where: { invoiceNumber },
+    const existingInvoice = await this.prisma.invoices.findFirst({
+      where: { invoice_number: invoiceNumber },
     });
 
     if (existingInvoice) {
@@ -326,21 +326,21 @@ export class BillingValidationService {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const monthlyTotal = await this.prisma.invoice.aggregate({
+    const monthlyTotal = await this.prisma.invoices.aggregate({
       where: {
-        clientId,
+        client_id: clientId,
         status: { not: InvoiceStatus.CANCELLED },
-        createdAt: {
+        created_at: {
           gte: monthStart,
           lte: monthEnd,
         },
       },
       _sum: {
-        totalAmount: true,
+        total_amount: true,
       },
     });
 
-    const currentMonthlyTotal = monthlyTotal._sum.totalAmount?.toNumber() || 0;
+    const currentMonthlyTotal = monthlyTotal._sum.total_amount?.toNumber() || 0;
     
     // Example business rule: No client should have more than ₹10,00,000 per month
     const maxMonthlyAmount = 1000000; // ₹10 lakhs

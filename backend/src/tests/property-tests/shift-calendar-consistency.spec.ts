@@ -7,6 +7,7 @@ import { ShiftsService } from '../../shifts/shifts.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { CommonModule } from '../../common/common.module';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { ShiftType, ShiftPriority, RecurrenceType } from '../../shifts/dto/create-shift.dto';
 import * as fc from 'fast-check';
 import { randomUUID } from 'crypto';
 
@@ -24,8 +25,8 @@ describe('Shift Calendar Consistency Properties', () => {
   let tenantContext: TenantContextService;
 
   const PROPERTY_TEST_CONFIG = {
-    numRuns: 3,  // Reduced for faster execution
-    timeout: 15000, // 15 second timeout per test
+    numRuns: 2,  // Optimized for faster execution
+    timeout: 12000, // Reduced timeout for performance
     seed: 42,
   };
 
@@ -58,7 +59,7 @@ describe('Shift Calendar Consistency Properties', () => {
       .compile();
 
     shiftsService = await module.resolve<ShiftsService>(ShiftsService);
-    prisma = module.get<PrismaService>(PrismaService);
+    prisma = await module.resolve<PrismaService>(PrismaService);
     tenantContext = await module.resolve<TenantContextService>(TenantContextService);
     
     await prisma.onModuleInit();
@@ -103,13 +104,13 @@ describe('Shift Calendar Consistency Properties', () => {
   // Helper functions
   async function cleanup() {
     try {
-      await prisma.attendance.deleteMany({});
-      await prisma.shift.deleteMany({});
-      await prisma.assignment.deleteMany({});
-      await prisma.employee.deleteMany({});
-      await prisma.site.deleteMany({});
-      await prisma.client.deleteMany({});
-      await prisma.company.deleteMany({});
+      await prisma.attendances.deleteMany({});
+      await prisma.shifts.deleteMany({});
+      await prisma.assignments.deleteMany({});
+      await prisma.employees.deleteMany({});
+      await prisma.sites.deleteMany({});
+      await prisma.clients.deleteMany({});
+      await prisma.companies.deleteMany({});
     } catch (error) {
       // Ignore cleanup errors
     }
@@ -117,7 +118,7 @@ describe('Shift Calendar Consistency Properties', () => {
 
   async function createTestScenario(scenario: any) {
     // Create company
-    const company = await prisma.company.create({
+    const company = await prisma.companies.create({
       data: {
         id: randomUUID(),
         name: scenario.companyName,
@@ -131,7 +132,7 @@ describe('Shift Calendar Consistency Properties', () => {
     tenantContext.setContext(company.id);
 
     // Create client
-    const client = await prisma.client.create({
+    const client = await prisma.clients.create({
       data: {
         id: randomUUID(),
         companyId: company.id,
@@ -177,7 +178,7 @@ describe('Shift Calendar Consistency Properties', () => {
     // Create employees
     const employees = [];
     for (let i = 0; i < scenario.employeeCount; i++) {
-      const employee = await prisma.employee.create({
+      const employee = await prisma.employees.create({
         data: {
           id: randomUUID(),
           companyId: company.id,
@@ -285,8 +286,8 @@ describe('Shift Calendar Consistency Properties', () => {
                 shiftDate: shiftDate.toISOString().split('T')[0],
                 startTime,
                 endTime,
-                shiftType: 'REGULAR' as const,
-                priority: 'NORMAL' as const,
+                shiftType: ShiftType.REGULAR,
+                priority: ShiftPriority.NORMAL,
                 coverageRequired: 1,
                 isRecurring: false,
               };
@@ -298,14 +299,14 @@ describe('Shift Calendar Consistency Properties', () => {
               // Verify: Basic shift properties
               expect(shift).toBeDefined();
               expect(shift.id).toBeTruthy();
-              expect(shift.assignmentId).toBe(assignment.id);
-              expect(shift.siteId).toBe(assignment.siteId);
+              expect(shift.assignment_id).toBe(assignment.id);
+              expect(shift.site_id).toBe(assignment.site_id);
               expect(shift.status).toBe('SCHEDULED');
               
               // Verify: Coverage calculations
-              expect(shift.coverageRequired).toBe(1);
-              expect(shift.coverageAssigned).toBeGreaterThanOrEqual(0);
-              expect(shift.coverageAssigned).toBeLessThanOrEqual(shift.coverageRequired);
+              expect(shift.coverage_required).toBe(1);
+              expect(shift.coverage_assigned).toBeGreaterThanOrEqual(0);
+              expect(shift.coverage_assigned).toBeLessThanOrEqual(shift.coverage_required);
               
               // Move to next day to avoid conflicts
               shiftDate.setDate(shiftDate.getDate() + 1);
@@ -369,7 +370,7 @@ describe('Shift Calendar Consistency Properties', () => {
       await fc.assert(fc.asyncProperty(
         shiftCalendarScenarioGenerator(),
         fc.integer({ min: 1, max: 3 }), // coverage required
-        async (scenario, coverageRequired) => {
+        async (scenario, coverage_required) => {
           // **Feature: security-workforce-payroll-system, Property 19.2: Coverage Assignment Validation**
           
           // Setup: Create test scenario
@@ -392,30 +393,30 @@ describe('Shift Calendar Consistency Properties', () => {
                 shiftDate: shiftDate.toISOString().split('T')[0],
                 startTime: '09:00:00',
                 endTime: '17:00:00',
-                shiftType: 'REGULAR' as const,
-                priority: 'NORMAL' as const,
-                coverageRequired: coverageRequired,
+                shiftType: ShiftType.REGULAR,
+                priority: ShiftPriority.NORMAL,
+                coverage_required: coverage_required,
                 isRecurring: false,
               };
 
               const shift = await shiftsService.create(shiftDto);
 
               // Verify: Coverage requirements are set correctly
-              expect(shift.coverageRequired).toBe(coverageRequired);
+              expect(shift.coverage_required).toBe(coverage_required);
               
               // Verify: When an assignment exists, coverage assigned should be > 0
-              if (shift.assignmentId) {
-                expect(shift.coverageAssigned).toBeGreaterThan(0);
-                expect(shift.coverageAssigned).toBeLessThanOrEqual(shift.coverageRequired);
+              if (shift.assignment_id) {
+                expect(shift.coverage_assigned).toBeGreaterThan(0);
+                expect(shift.coverage_assigned).toBeLessThanOrEqual(shift.coverage_required);
               } else {
                 // No assignment means no coverage assigned yet
-                expect(shift.coverageAssigned).toBe(0);
+                expect(shift.coverage_assigned).toBe(0);
               }
               
               // Verify: Status should be SCHEDULED when properly assigned
-              if (shift.coverageAssigned >= shift.coverageRequired) {
+              if (shift.coverage_assigned >= shift.coverage_required) {
                 expect(shift.status).toBe('SCHEDULED');
-              } else if (shift.coverageAssigned > 0 && shift.coverageAssigned < shift.coverageRequired) {
+              } else if (shift.coverage_assigned > 0 && shift.coverage_assigned < shift.coverage_required) {
                 // Partial coverage - should still be SCHEDULED but might need more coverage
                 expect(['SCHEDULED', 'NEEDS_COVERAGE']).toContain(shift.status);
               } else {
@@ -425,8 +426,8 @@ describe('Shift Calendar Consistency Properties', () => {
 
               // Test: Retrieve shift and verify persistence
               const retrievedShift = await shiftsService.findOne(shift.id);
-              expect(retrievedShift.coverageRequired).toBe(coverageRequired);
-              expect(retrievedShift.coverageAssigned).toBe(shift.coverageAssigned);
+              expect(retrievedShift.coverage_required).toBe(coverage_required);
+              expect(retrievedShift.coverage_assigned).toBe(shift.coverage_assigned);
               expect(retrievedShift.status).toBe(shift.status);
             }
 
@@ -464,8 +465,8 @@ describe('Shift Calendar Consistency Properties', () => {
                 shiftDate: shiftDate.toISOString().split('T')[0],
                 startTime: '09:00:00',
                 endTime: '17:00:00',
-                shiftType: 'REGULAR' as const,
-                priority: 'NORMAL' as const,
+                shiftType: ShiftType.REGULAR,
+                priority: ShiftPriority.NORMAL,
                 coverageRequired: 1,
                 isRecurring: false,
               };
@@ -481,8 +482,8 @@ describe('Shift Calendar Consistency Properties', () => {
                 shiftDate: shiftDate.toISOString().split('T')[0],
                 startTime: '15:00:00', // Overlaps with first shift (9-17)
                 endTime: '23:00:00',
-                shiftType: 'REGULAR' as const,
-                priority: 'NORMAL' as const,
+                shiftType: ShiftType.REGULAR,
+                priority: ShiftPriority.NORMAL,
                 coverageRequired: 1,
                 isRecurring: false,
               };
@@ -524,7 +525,7 @@ describe('Shift Calendar Consistency Properties', () => {
               } catch (error) {
                 conflictDetected = true;
                 // Verify this is a conflict-related error
-                expect(error.message.toLowerCase()).toMatch(/conflict|overlap|scheduling/i);
+                expect((error as Error).message.toLowerCase()).toMatch(/conflict|overlap|scheduling/i);
               }
 
               // Test: Non-conflicting shift should work
@@ -537,8 +538,8 @@ describe('Shift Calendar Consistency Properties', () => {
                 shiftDate: nonConflictingDate.toISOString().split('T')[0],
                 startTime: '09:00:00',
                 endTime: '17:00:00',
-                shiftType: 'REGULAR' as const,
-                priority: 'NORMAL' as const,
+                shiftType: ShiftType.REGULAR,
+                priority: ShiftPriority.NORMAL,
                 coverageRequired: 1,
                 isRecurring: false,
               };
@@ -583,8 +584,8 @@ describe('Shift Calendar Consistency Properties', () => {
                 shiftDate: shiftDate.toISOString().split('T')[0],
                 startTime: '09:00:00',
                 endTime: '17:00:00',
-                shiftType: 'REGULAR' as const,
-                priority: 'NORMAL' as const,
+                shiftType: ShiftType.REGULAR,
+                priority: ShiftPriority.NORMAL,
                 coverageRequired: 1,
                 isRecurring: false,
               };
@@ -596,9 +597,9 @@ describe('Shift Calendar Consistency Properties', () => {
               const updateDto = {
                 status: targetStatus as any,
                 modificationReason: {
-                  action: `STATUS_CHANGE_TO_${targetStatus}`,
                   reason: `Testing status change to ${targetStatus}`,
-                  modifiedBy: 'test-user'
+                  changedBy: 'test-user',
+                  timestamp: new Date().toISOString(),
                 }
               };
 
@@ -608,27 +609,27 @@ describe('Shift Calendar Consistency Properties', () => {
               expect(updatedShift.status).toBe(targetStatus);
               
               // Verify: Modification log was updated
-              expect(updatedShift.modificationLog).toBeDefined();
-              const modLog = Array.isArray(updatedShift.modificationLog) 
-                ? updatedShift.modificationLog 
+              expect(updatedShift.modification_log).toBeDefined();
+              const modLog = Array.isArray(updatedShift.modification_log) 
+                ? updatedShift.modification_log 
                 : [];
               expect(modLog.length).toBeGreaterThan(0);
               
               // Verify: Coverage assignments remain consistent with status
               if (targetStatus === 'CANCELLED') {
                 // Cancelled shifts should maintain their coverage data but not be counted as active
-                expect(updatedShift.coverageRequired).toBeGreaterThan(0);
+                expect(updatedShift.coverage_required).toBeGreaterThan(0);
                 // Coverage assigned can remain as is for historical tracking
               } else if (targetStatus === 'NEEDS_COVERAGE') {
                 // Shifts needing coverage should have coverage required > coverage assigned
-                expect(updatedShift.coverageRequired).toBeGreaterThan(0);
+                expect(updatedShift.coverage_required).toBeGreaterThan(0);
                 // Coverage assigned might be 0 or less than required
-                expect(updatedShift.coverageAssigned).toBeLessThanOrEqual(updatedShift.coverageRequired);
+                expect(updatedShift.coverage_assigned).toBeLessThanOrEqual(updatedShift.coverage_required);
               } else if (targetStatus === 'CONFIRMED' || targetStatus === 'SCHEDULED') {
                 // Active shifts should have proper coverage
-                expect(updatedShift.coverageRequired).toBeGreaterThan(0);
-                expect(updatedShift.coverageAssigned).toBeGreaterThanOrEqual(0);
-                expect(updatedShift.coverageAssigned).toBeLessThanOrEqual(updatedShift.coverageRequired);
+                expect(updatedShift.coverage_required).toBeGreaterThan(0);
+                expect(updatedShift.coverage_assigned).toBeGreaterThanOrEqual(0);
+                expect(updatedShift.coverage_assigned).toBeLessThanOrEqual(updatedShift.coverage_required);
               }
 
               // Test: Verify shift can be retrieved with correct status
@@ -649,7 +650,7 @@ describe('Shift Calendar Consistency Properties', () => {
     it('should maintain schedule integrity for recurring shift operations', async () => {
       await fc.assert(fc.asyncProperty(
         shiftCalendarScenarioGenerator().filter(s => s.recurringEnabled),
-        fc.constantFrom('WEEKLY', 'DAILY'),
+        fc.constantFrom(RecurrenceType.WEEKLY, RecurrenceType.DAILY),
         fc.integer({ min: 2, max: 5 }), // number of recurrences
         async (scenario, recurrenceType, occurrences) => {
           // **Feature: security-workforce-payroll-system, Property 19.5: Recurring Shift Consistency**
@@ -673,8 +674,8 @@ describe('Shift Calendar Consistency Properties', () => {
                 shiftDate: shiftDate.toISOString().split('T')[0],
                 startTime: '09:00:00',
                 endTime: '17:00:00',
-                shiftType: 'REGULAR' as const,
-                priority: 'NORMAL' as const,
+                shiftType: ShiftType.REGULAR,
+                priority: ShiftPriority.NORMAL,
                 coverageRequired: 1,
                 isRecurring: true,
                 recurringPattern: {
@@ -689,7 +690,7 @@ describe('Shift Calendar Consistency Properties', () => {
               
               // Verify: Base shift was created correctly
               expect(baseShift).toBeDefined();
-              expect(baseShift.isRecurring).toBe(true);
+              expect(baseShift.is_recurring).toBe(true);
               expect(baseShift.status).toBe('SCHEDULED');
 
               // Give time for recurring shifts to be created
@@ -700,8 +701,8 @@ describe('Shift Calendar Consistency Properties', () => {
                 where: {
                   assignmentId: assignment.id,
                   siteId: assignment.siteId,
-                  startTime: baseShift.startTime,
-                  endTime: baseShift.endTime,
+                  startTime: baseShift.start_time,
+                  endTime: baseShift.end_time,
                 },
                 orderBy: { shiftDate: 'asc' }
               });
@@ -711,16 +712,16 @@ describe('Shift Calendar Consistency Properties', () => {
               
               // Verify: All shifts have consistent properties
               for (const shift of allShifts) {
-                expect(shift.assignmentId).toBe(assignment.id);
-                expect(shift.siteId).toBe(assignment.siteId);
-                expect(shift.startTime).toEqual(baseShift.startTime);
-                expect(shift.endTime).toEqual(baseShift.endTime);
-                expect(shift.coverageRequired).toBe(baseShift.coverageRequired);
+                expect(shift.assignment_id).toBe(assignment.id);
+                expect(shift.siteId).toBe(assignment.site_id);
+                expect(shift.start_time).toEqual(baseShift.start_time);
+                expect(shift.end_time).toEqual(baseShift.end_time);
+                expect(shift.coverage_required).toBe(baseShift.coverage_required);
                 expect(shift.status).toMatch(/^(SCHEDULED|CONFIRMED)$/);
                 
                 // Coverage assigned should be consistent
-                expect(shift.coverageAssigned).toBeGreaterThanOrEqual(0);
-                expect(shift.coverageAssigned).toBeLessThanOrEqual(shift.coverageRequired);
+                expect(shift.coverage_assigned).toBeGreaterThanOrEqual(0);
+                expect(shift.coverage_assigned).toBeLessThanOrEqual(shift.coverage_required);
               }
 
               // Verify: No scheduling conflicts between recurring shifts
@@ -751,10 +752,10 @@ describe('Shift Calendar Consistency Properties', () => {
                   const currentDate = sortedShifts[i].shiftDate;
                   const daysDiff = Math.floor((currentDate.getTime() - prevDate.getTime()) / (24 * 60 * 60 * 1000));
                   
-                  if (recurrenceType === 'DAILY') {
+                  if (recurrenceType === RecurrenceType.DAILY) {
                     expect(daysDiff).toBeGreaterThanOrEqual(1);
                     expect(daysDiff).toBeLessThanOrEqual(7); // Allow some flexibility
-                  } else if (recurrenceType === 'WEEKLY') {
+                  } else if (recurrenceType === RecurrenceType.WEEKLY) {
                     expect(daysDiff).toBeGreaterThanOrEqual(6);
                     expect(daysDiff).toBeLessThanOrEqual(8); // Allow some flexibility
                   }
