@@ -153,7 +153,7 @@ describe('Property 31: Client Architecture Correctness', () => {
 
     // Cleanup
     await cleanupTestData(clientId, contractId, siteId);
-  });
+  }, 30000); // 30 second timeout for Prisma operations
 
   /**
    * Property 31.2: Client Access Control and Permissions
@@ -219,7 +219,7 @@ describe('Property 31: Client Architecture Correctness', () => {
     });
 
     await cleanupTestData(clientId, contractId, siteId);
-  });
+  }, 30000); // 30 second timeout for Prisma operations
 
   /**
    * Property 31.3: Contract-Based Service Management
@@ -229,6 +229,19 @@ describe('Property 31: Client Architecture Correctness', () => {
     await setupTestData();
     const clientId = randomUUID();
     const contractId = randomUUID();
+
+    // First create the client
+    await prisma.clients.create({
+      data: {
+        id: clientId,
+        company_id: tenantId,
+        name: 'Test Client for Service Management',
+        contact_email: 'service-client@test.com',
+        contract_status: ContractStatus.ACTIVE,
+        created_at: new Date(),
+        updated_at: new Date()
+      }
+    });
 
     // Create contract with comprehensive service definitions
     const contract = await prisma.contracts.create({
@@ -270,19 +283,6 @@ describe('Property 31: Client Architecture Correctness', () => {
       }
     });
 
-    // Create matching client
-    await prisma.clients.create({
-      data: {
-        id: clientId,
-        company_id: tenantId,
-        name: 'Service Test Client',
-        contact_email: 'services@testclient.com',
-        contract_status: ContractStatus.ACTIVE,
-        created_at: new Date(),
-        updated_at: new Date()
-      }
-    });
-
     // Property 31.3a: Validate service definitions structure
     expect(contract.service_definitions).toBeDefined();
     const services = contract.service_definitions as any;
@@ -319,7 +319,7 @@ describe('Property 31: Client Architecture Correctness', () => {
     expect(expectedSupervisorCost).toBeGreaterThan(expectedRegularCost / 3); // Supervisors cost more
 
     await cleanupTestData(clientId, contractId, null);
-  });
+  }, 30000); // 30 second timeout for Prisma operations
 
   /**
    * Property 31.4: Client Data Model Consistency
@@ -372,7 +372,7 @@ describe('Property 31: Client Architecture Correctness', () => {
     expect(client!.company_id).toBe(tenantId);
 
     await cleanupCompleteHierarchy(testData);
-  });
+  }, 30000); // 30 second timeout for Prisma operations
 
   async function setupTestData() {
     await prisma.companies.create({

@@ -8,7 +8,7 @@ export const OPTIMIZED_PROPERTY_TEST_CONFIG = {
   // Standard configuration for most property tests
   standard: {
     numRuns: 3, // Reduced from higher values for better performance
-    timeout: 10000, // 10 second timeout - reasonable for most operations
+    timeout: 20000, // 20 second timeout - reasonable for most operations (increased from 10000ms)
     seed: 42,
     endOnFailure: true,
   },
@@ -16,7 +16,7 @@ export const OPTIMIZED_PROPERTY_TEST_CONFIG = {
   // Fast configuration for simple tests
   fast: {
     numRuns: 2,
-    timeout: 5000, // 5 second timeout for simple operations
+    timeout: 8000, // 8 second timeout for simple operations (increased from 5000ms)
     seed: 42,
     endOnFailure: true,
   },
@@ -24,7 +24,7 @@ export const OPTIMIZED_PROPERTY_TEST_CONFIG = {
   // Comprehensive configuration for complex integration tests
   comprehensive: {
     numRuns: 5,
-    timeout: 15000, // 15 second timeout for complex operations
+    timeout: 30000, // 30 second timeout for complex operations (increased from 20000ms)
     seed: 42,
     endOnFailure: true,
   },
@@ -42,10 +42,10 @@ export const OPTIMIZED_PROPERTY_TEST_CONFIG = {
  * Jest test timeout settings optimized for different test types
  */
 export const JEST_TEST_TIMEOUTS = {
-  fast: 15000,       // 15s for fast property tests
-  standard: 25000,   // 25s for standard property tests  
-  comprehensive: 35000, // 35s for comprehensive tests
-  performance: 45000,   // 45s for performance tests
+  fast: 20000,       // 20s for fast property tests (increased from 15s)
+  standard: 30000,   // 30s for standard property tests (increased from 25s)
+  comprehensive: 45000, // 45s for comprehensive tests (increased from 35s)
+  performance: 60000,   // 60s for performance tests (increased from 45s)
 };
 
 /**

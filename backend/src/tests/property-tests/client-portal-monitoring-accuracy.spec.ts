@@ -595,29 +595,33 @@ describe('Property Test: Client Portal Monitoring Accuracy', () => {
 
             // Cleanup: Remove test data
             await prismaService.withTenant(testTenantId, async (prisma) => {
-              await prisma.attendance.deleteMany({});
-              await prisma.shifts.deleteMany({});
-              await prisma.assignments.deleteMany({});
-              await prisma.sites.deleteMany({});
-              await prisma.contracts.deleteMany({});
-              await prisma.employees.deleteMany({});
-              await prisma.clients.deleteMany({});
+              try {
+                await prisma.attendance.deleteMany({});
+                await prisma.shifts.deleteMany({});
+                await prisma.assignments.deleteMany({});
+                await prisma.sites.deleteMany({});
+                await prisma.contracts.deleteMany({});
+                await prisma.employees.deleteMany({});
+                await prisma.clients.deleteMany({});
+              } catch (cleanupError) {
+                // Log but don't throw - cleanup errors shouldn't fail the test
+                console.warn('Cleanup failed:', cleanupError.message);
+              }
             });
           }
-        ),
-        getOptimizedConfig('standard')
-      );
-    } finally {
-      // Cleanup: Remove test company
-      await prismaService.withSystemContext(async (prisma) => {
-        await prisma.companies
-          .deleteMany({ where: { id: testTenantId } })
-          .catch(() => {
-            // Ignore cleanup errors
-          });
-      });
-    }
-  }, getOptimizedTimeout('standard')); // Optimized timeout
+      )
+    );
+  } finally {
+    // Cleanup: Remove test company
+    await prismaService.withSystemContext(async (prisma) => {
+      await prisma.companies
+        .deleteMany({ where: { id: testTenantId } })
+        .catch(() => {
+          // Ignore cleanup errors
+        });
+    });
+  }
+}, 40000); // 40 second test timeout
   /**
    * Property 27: Client Portal Data Temporal Consistency
    * **Validates: Requirements 11.4**

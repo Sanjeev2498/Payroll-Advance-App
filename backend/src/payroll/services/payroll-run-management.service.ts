@@ -5,6 +5,7 @@ import {
   Logger,
   ConflictException
 } from '@nestjs/common';
+import { randomUUID } from 'crypto'; // Added import for randomUUID
 import { Decimal } from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../../common/tenant-context.service';
@@ -78,12 +79,12 @@ export class PayrollRunManagementService {
             ? PayrollStatus.COMPLETED 
             : PayrollStatus.PROCESSING;
 
-        await tx.payrollRun.update({
+        await tx.payroll_runs.update({
           where: { id: payrollRun.id },
           data: { 
             status: finalStatus,
-            totalAmount: processingResult.summary.totalNetAmount,
-            processedAt: finalStatus === PayrollStatus.COMPLETED ? new Date() : null,
+            total_amount: processingResult.summary.totalNetAmount,
+            processed_at: finalStatus === PayrollStatus.COMPLETED ? new Date() : null,
           },
         });
 
@@ -102,7 +103,7 @@ export class PayrollRunManagementService {
 
       } catch (error) {
         // Mark payroll run as cancelled on error
-        await tx.payrollRun.update({
+        await tx.payroll_runs.update({
           where: { id: payrollRun.id },
           data: { status: PayrollStatus.CANCELLED },
         });
@@ -150,18 +151,18 @@ export class PayrollRunManagementService {
     }
 
     const [payrollRuns, total] = await Promise.all([
-      this.prisma.payrollRun.findMany({
+      this.prisma.payrollRuns.findMany({
         where: whereClause,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         skip,
         take: filter.limit || 20,
         include: {
           _count: {
-            select: { payrollItems: true },
+            select: { payroll_items: true },
           },
         },
       }),
-      this.prisma.payrollRun.count({
+      this.prisma.payrollRuns.count({
         where: whereClause,
       }),
     ]);
@@ -183,8 +184,8 @@ export class PayrollRunManagementService {
   async approvePayrollRun(payrollRunId: string, approval: PayrollRunApprovalDto) {
     const companyId = this.tenantContext.getTenantId();
     
-    const payrollRun = await this.prisma.payrollRun.findFirst({
-      where: { id: payrollRunId, companyId },
+    const payrollRun = await this.prisma.payrollRuns.findFirst({
+      where: { id: payrollRunId, company_id: companyId },
     });
 
     if (!payrollRun) {
@@ -198,7 +199,7 @@ export class PayrollRunManagementService {
     const newStatus = approval.action === 'approve' ? PayrollStatus.COMPLETED : PayrollStatus.DRAFT;
 
     // Update payroll run with approval status
-    const updatedRun = await this.prisma.payrollRun.update({
+    const updatedRun = await this.prisma.payrollRuns.update({
       where: { id: payrollRunId },
       data: {
         status: newStatus,
@@ -227,12 +228,12 @@ export class PayrollRunManagementService {
   async correctPayrollRun(payrollRunId: string, corrections: PayrollRunCorrectionDto) {
     const companyId = this.tenantContext.getTenantId();
     
-    const payrollRun = await this.prisma.payrollRun.findFirst({
-      where: { id: payrollRunId, companyId },
+    const payrollRun = await this.prisma.payrollRuns.findFirst({
+      where: { id: payrollRunId, company_id: companyId },
       include: {
-        payrollItems: {
+        payroll_items: {
           include: {
-            employee: true,
+            employees: true,
           },
         },
       },
@@ -264,7 +265,7 @@ export class PayrollRunManagementService {
 
       // Update payroll run total if corrections were made
       if (correctedAmount.abs().gt(0)) {
-        const newTotal = payrollRun.totalAmount.add(correctedAmount);
+        const newTotal = payrollRun.total_amount.add(correctedAmount);
         await tx.payrollRun.update({
           where: { id: payrollRunId },
           data: { 
@@ -291,10 +292,10 @@ export class PayrollRunManagementService {
   async exportPayrollRun(payrollRunId: string, exportOptions: PayrollExportDto) {
     const companyId = this.tenantContext.getTenantId();
     
-    const payrollRun = await this.prisma.payrollRun.findFirst({
-      where: { id: payrollRunId, companyId },
+    const payrollRun = await this.prisma.payrollRuns.findFirst({
+      where: { id: payrollRunId, company_id: companyId },
       include: {
-        payrollItems: {
+        payroll_items: {
           include: {
             employee: {
               select: {
@@ -326,9 +327,9 @@ export class PayrollRunManagementService {
     return {
       success: true,
       format: exportOptions.format,
-      filename: `payroll_${payrollRun.runNumber}_${new Date().toISOString().split('T')[0]}`,
+      filename: `payroll_${payrollRun.run_number}_${new Date().toISOString().split('T')[0]}`,
       data: exportData,
-      recordCount: payrollRun.payrollItems.length,
+      recordCount: payrollRun.payroll_items.length,
     };
   }
 
@@ -338,12 +339,12 @@ export class PayrollRunManagementService {
   async getPayrollRunAnalytics(payrollRunId: string) {
     const companyId = this.tenantContext.getTenantId();
     
-    const payrollRun = await this.prisma.payrollRun.findFirst({
-      where: { id: payrollRunId, companyId },
+    const payrollRun = await this.prisma.payrollRuns.findFirst({
+      where: { id: payrollRunId, company_id: companyId },
       include: {
-        payrollItems: {
+        payroll_items: {
           include: {
-            employee: true,
+            employees: true,
           },
         },
       },
@@ -418,12 +419,14 @@ export class PayrollRunManagementService {
 
     return tx.payroll_runs.create({
       data: {
+        id: randomUUID(), // Added missing id field
         company_id: companyId,
         run_number: runNumber,
         pay_period_start: new Date(dto.payPeriodStart),
         pay_period_end: new Date(dto.payPeriodEnd),
         status: PayrollStatus.PROCESSING,
         total_amount: new Decimal(0),
+        updated_at: new Date(),
       } as any,
     });
   }
@@ -489,28 +492,28 @@ export class PayrollRunManagementService {
   }
 
   private async calculatePayrollAnalytics(payrollRun: PayrollRunWithDetails) {
-    const items = payrollRun.payrollItems;
+    const items = payrollRun.payroll_items;
     
     return {
       payrollRunId: payrollRun.id,
-      run_number: payrollRun.runNumber,
+      run_number: payrollRun.run_number,
       payPeriod: {
-        start: payrollRun.payPeriodStart,
+        start: payrollRun.pay_period_start,
         end: payrollRun.payPeriodEnd,
       },
       status: payrollRun.status,
-      employeeCount: new Set(items.map(item => item.employeeId)).size,
-      totalAmount: payrollRun.totalAmount,
-      processedAt: payrollRun.processedAt,
+      employeeCount: new Set(items.map(item => item.employee_id)).size,
+      totalAmount: payrollRun.total_amount,
+      processedAt: payrollRun.processed_at,
       analytics: {
         totalGross: items
-          .filter(item => ['BASIC_PAY', 'OVERTIME', 'BONUS', 'ALLOWANCE'].includes(item.itemType))
-          .reduce((sum, item) => sum.add(item.amount), new Decimal(0)),
+          .filter(item => ['BASIC_PAY', 'OVERTIME', 'BONUS', 'ALLOWANCE'].includes(item.item_type))
+          .reduce((sum, item) => sum.add(new Decimal(item.amount)), new Decimal(0)),
         totalDeductions: items
-          .filter(item => item.itemType.includes('DEDUCTION') || item.itemType === 'TAX_DEDUCTION')
-          .reduce((sum, item) => sum.add(item.amount.abs()), new Decimal(0)),
+          .filter(item => item.item_type.includes('DEDUCTION') || item.item_type === 'TAX_DEDUCTION')
+          .reduce((sum, item) => sum.add(new Decimal(item.amount).abs()), new Decimal(0)),
         averageSalary: items.length > 0 
-          ? payrollRun.totalAmount.div(new Set(items.map(item => item.employeeId)).size)
+          ? payrollRun.total_amount.div(new Set(items.map(item => item.employee_id)).size)
           : new Decimal(0),
         itemBreakdown: this.calculateItemBreakdown(items),
       },
@@ -524,7 +527,7 @@ export class PayrollRunManagementService {
       if (!breakdown[item.item_type]) {
         breakdown[item.item_type] = new Decimal(0);
       }
-      breakdown[item.item_type] = breakdown[item.item_type].add(item.amount);
+      breakdown[item.item_type] = breakdown[item.item_type].add(new Decimal(item.amount));
     });
 
     return breakdown;
@@ -534,9 +537,9 @@ export class PayrollRunManagementService {
     const year = payPeriod.getFullYear();
     const month = String(payPeriod.getMonth() + 1).padStart(2, '0');
     
-    const count = await this.prisma.payrollRun.count({
+    const count = await this.prisma.payrollRuns.count({
       where: {
-        companyId,
+        company_id: companyId, // Fixed: use company_id instead of companyId
         run_number: {
           startsWith: `PAY-${year}-${month}`,
         },

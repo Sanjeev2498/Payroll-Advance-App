@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DashboardService } from '../../dashboard/dashboard.service';
+import { MonitoringService } from '../../monitoring/monitoring.service';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { PropertyTestSetup, PropertyTestGenerators, TestDataFactory } from '../../test/helpers/property-test-setup';
 import * as fc from 'fast-check';
@@ -22,7 +23,11 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
   let module: TestingModule;
 
   beforeAll(async () => {
-    module = await PropertyTestSetup.createTestModule([DashboardService]);
+    // Create test module with MonitoringService included
+    module = await PropertyTestSetup.createTestModule([
+      DashboardService,
+      MonitoringService, // Add MonitoringService to resolve DI dependency
+    ]);
 
     dashboardService = await module.resolve<DashboardService>(DashboardService);
     prismaService = module.get<PrismaService>(PrismaService);

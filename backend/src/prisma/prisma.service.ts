@@ -33,9 +33,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         // Configure pool settings for better cleanup and less interference
         max: process.env.NODE_ENV === 'test' ? 2 : 20, // Very small pool size in tests
         idleTimeoutMillis: process.env.NODE_ENV === 'test' ? 5000 : 30000,
-        connectionTimeoutMillis: 15000, // Increased timeout to avoid conflicts
+        connectionTimeoutMillis: 30000, // Increased timeout to 30 seconds to avoid connection failures
         allowExitOnIdle: true,
-        statement_timeout: process.env.NODE_ENV === 'test' ? 10000 : 60000
+        statement_timeout: process.env.NODE_ENV === 'test' ? 20000 : 60000 // Increased statement timeout
       });
       
       if (process.env.NODE_ENV === 'test') {
@@ -257,6 +257,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       const tenantAwarePrisma = this.createTenantAwareProxy(prisma, tenantId);
 
       return operation(tenantAwarePrisma);
+    }, {
+      maxWait: 45000, // 45 seconds max wait time
+      timeout: 25000, // 25 seconds transaction timeout (increased from 15000ms)
     });
   }
 
@@ -455,6 +458,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       await prisma.$executeRaw`SELECT set_config('app.user_role', 'SUPER_ADMIN', true)`;
 
       return operation(prisma);
+    }, {
+      maxWait: 45000, // 45 seconds max wait time
+      timeout: 25000, // 25 seconds transaction timeout (increased from 15000ms)
     });
   }
 

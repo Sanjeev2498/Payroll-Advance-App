@@ -143,8 +143,15 @@ export class AttendanceService {
     const warnings: string[] = [];
     const anomalies: any[] = [];
 
-    // Check for early/late arrival
-    const shiftStart = this.combineDateTime(shift.shiftDate, shift.startTime);
+    // Check for early/late arrival - handle both camelCase and snake_case field names
+    const shiftDate = shift.shiftDate || shift.shift_date;
+    const startTime = shift.startTime || shift.start_time;
+    
+    if (!shiftDate || !startTime) {
+      throw new BadRequestException('Shift date and start time are required');
+    }
+    
+    const shiftStart = this.combineDateTime(shiftDate, startTime);
     const timeDiffMinutes = (clockInTime.getTime() - shiftStart.getTime()) / (1000 * 60);
 
     if (timeDiffMinutes > this.GRACE_PERIOD_MINUTES) {
@@ -1153,12 +1160,22 @@ export class AttendanceService {
    * Combine date and time into a single DateTime
    */
   private combineDateTime(date: Date, time: Date): Date {
-    if (!date || !time || isNaN(date.getTime()) || isNaN(time.getTime())) {
+    // Ensure we have valid Date objects
+    if (!date || !time) {
+      throw new BadRequestException('Both date and time are required for combineDateTime');
+    }
+    
+    // Convert to Date objects if they're strings or other types
+    const dateObj = date instanceof Date ? date : new Date(date);
+    const timeObj = time instanceof Date ? time : new Date(time);
+    
+    // Check if the dates are valid
+    if (isNaN(dateObj.getTime()) || isNaN(timeObj.getTime())) {
       throw new BadRequestException('Invalid date or time provided to combineDateTime');
     }
     
-    const combined = new Date(date);
-    combined.setHours(time.getHours(), time.getMinutes(), time.getSeconds(), time.getMilliseconds());
+    const combined = new Date(dateObj);
+    combined.setHours(timeObj.getHours(), timeObj.getMinutes(), timeObj.getSeconds(), timeObj.getMilliseconds());
     return combined;
   }
 

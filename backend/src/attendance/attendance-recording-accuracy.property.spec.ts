@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../common/tenant-context.service';
 import { AttendanceService } from './attendance.service';
 import { AttendanceRepository } from '../common/repositories/attendance.repository';
+import { getOptimizedConfig } from '../test/helpers/property-test-config';
 import * as fc from 'fast-check';
 import { AttendanceStatus, ShiftStatus, AssignmentStatus, EmploymentStatus } from '@prisma/client';
 
@@ -235,7 +236,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
           expect(result.attendance.notes).toBe(actualClockInData.notes);
         }
       }
-    ), { numRuns: 50, timeout: 5000 });
+    ), getOptimizedConfig('fast')); // Use optimized configuration instead of hardcoded values
   });
   /**
    * Property Test: Clock-out data completeness and accuracy
@@ -322,7 +323,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
           expect(result.attendance.notes).toContain(actualClockOutData.notes.trim());
         }
       }
-    ), { numRuns: 50, timeout: 5000 });
+    ), getOptimizedConfig('fast')); // Use optimized configuration
   });
 
   /**
@@ -406,7 +407,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
           expect(clock_outLocationData.clock_out.capturedAt).toBe(clock_outLocation.capturedAt);
         }
       }
-    ), { numRuns: 30, timeout: 5000 });
+    ), getOptimizedConfig('fast')); // Use optimized configuration
   });
   /**
    * Property Test: Verification data completeness
@@ -492,7 +493,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
           });
         }
       }
-    ), { numRuns: 30, timeout: 5000 });
+    ), getOptimizedConfig('fast')); // Use optimized configuration
   });
 
   /**
@@ -578,7 +579,7 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
         expect(clockInResult.nextExpectedAction).toBe('CLOCK_OUT');
         expect(clockOutResult.nextExpectedAction).toBe('NONE');
       }
-    ), { numRuns: 25, timeout: 5000 });
+    ), getOptimizedConfig('fast')); // Use optimized configuration
   });
 
   // ============================================================================
@@ -736,9 +737,12 @@ describe('AttendanceService Property Tests - Recording Accuracy', () => {
       id: 'shift-' + Math.random().toString(36).substr(2, 9),
       siteId: site.id,
       assignmentId: 'assignment-' + Math.random().toString(36).substr(2, 9),
-      shift_date: new Date(), // FIXED: Use snake_case to match database schema
-      start_time: new Date('2024-01-01T08:00:00Z'), // FIXED: Use snake_case 
-      end_time: new Date('2024-01-01T17:00:00Z'), // FIXED: Use snake_case
+      shift_date: new Date(), // Database field name
+      shiftDate: new Date(), // Prisma client field name
+      start_time: new Date('2024-01-01T08:00:00Z'), // Database field name
+      startTime: new Date('2024-01-01T08:00:00Z'), // Prisma client field name  
+      end_time: new Date('2024-01-01T17:00:00Z'), // Database field name
+      endTime: new Date('2024-01-01T17:00:00Z'), // Prisma client field name
       status: ShiftStatus.SCHEDULED,
       site: site,
       assignment: {

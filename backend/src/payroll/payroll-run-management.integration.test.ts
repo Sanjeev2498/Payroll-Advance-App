@@ -67,8 +67,16 @@ describe('PayrollRunManagementService Integration', () => {
       prismaCompanyMethod: typeof prismaService?.company
     });
 
-    // Setup test data
+    // Setup test data and wait for completion
     await setupTestData();
+    
+    // Verify testCompanyId is available
+    if (!testCompanyId) {
+      throw new Error('Test company ID not initialized after setup');
+    }
+    
+    // Set the tenant context for all tests
+    mockTenantContextService.setContext(testCompanyId);
   });
 
   afterAll(async () => {
@@ -78,6 +86,9 @@ describe('PayrollRunManagementService Integration', () => {
 
   describe('Payroll Run Batch Processing', () => {
     it('should create payroll run with batch processing successfully', async () => {
+      // Recreate company and essential test data
+      await setupTestData();
+      
       // Setup tenant context
       jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
 
@@ -165,6 +176,9 @@ describe('PayrollRunManagementService Integration', () => {
     let testPayrollRunId: string;
 
     beforeEach(async () => {
+      // Recreate company and essential test data for this test suite
+      await setupTestData();
+      
       // Create a test payroll run
       jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
       
@@ -242,6 +256,9 @@ describe('PayrollRunManagementService Integration', () => {
     let testPayrollRunId: string;
 
     beforeEach(async () => {
+      // Recreate company and essential test data for this test suite  
+      await setupTestData();
+      
       // Create test payroll run with items
       jest.spyOn(tenantContextService, 'getTenantId').mockReturnValue(testCompanyId);
       
@@ -265,6 +282,7 @@ describe('PayrollRunManagementService Integration', () => {
       await prismaService.payrollItems.createMany({
         data: [
           {
+            id: randomUUID(),
             payroll_run_id: testPayrollRunId,
             employee_id: testEmployeeIds[0],
             item_type: 'BASIC_PAY',
@@ -273,8 +291,10 @@ describe('PayrollRunManagementService Integration', () => {
             amount_iv: "test-iv",
             amount_tag: "test-tag",
             calculation_data: { hours: 160, rate: 125 },
+            updated_at: new Date(),
           },
           {
+            id: randomUUID(),
             payroll_run_id: testPayrollRunId,
             employee_id: testEmployeeIds[0],
             item_type: 'OVERTIME',
@@ -283,8 +303,10 @@ describe('PayrollRunManagementService Integration', () => {
             amount_iv: "test-iv",
             amount_tag: "test-tag",
             calculation_data: { hours: 20, rate: 250 },
+            updated_at: new Date(),
           },
           {
+            id: randomUUID(),
             payroll_run_id: testPayrollRunId,
             employee_id: testEmployeeIds[0],
             item_type: 'TAX_DEDUCTION',
@@ -293,6 +315,7 @@ describe('PayrollRunManagementService Integration', () => {
             amount_iv: "test-iv",
             amount_tag: "test-tag",
             calculation_data: { rate: 0.1 },
+            updated_at: new Date(),
           },
         ],
       });
@@ -334,6 +357,10 @@ describe('PayrollRunManagementService Integration', () => {
   // Helper functions
 
   async function setupTestData() {
+    // Reset arrays for fresh setup
+    testEmployeeIds.length = 0;
+    testAssignmentIds.length = 0;
+    
     // Generate a UUID for the test company
     const companyId = uuidv4();
     const now = new Date();
@@ -460,59 +487,103 @@ describe('PayrollRunManagementService Integration', () => {
   }
 
   async function cleanupTestData() {
-    // Clean up in reverse order of dependencies
-    await prismaService.attendance.deleteMany({
-      where: {
-        employees: { company_id: testCompanyId },
-      },
-    });
+    try {
+      // Clean up in reverse order of dependencies
+      // Get all employee IDs for the company first
+      const companyEmployees = await prismaService.employees.findMany({
+        where: { company_id: testCompanyId },
+        select: { id: true }
+      });
+      const employeeIds = companyEmployees.map(emp => emp.id);
 
-    await prismaService.shiftTemplates.deleteMany({
-      where: {
-        company_id: testCompanyId,
-      },
-    });
+      // Get all payroll run IDs for the company first
+      const companyPayrollRuns = await prismaService.payrollRuns.findMany({
+        where: { company_id: testCompanyId },
+        select: { id: true }
+      });
+      const payrollRunIds = companyPayrollRuns.map(run => run.id);
 
-    await prismaService.payrollItems.deleteMany({
-      where: {
-        payroll_runs: { company_id: testCompanyId },
-      },
-    });
+      // Get all client IDs for the company first
+      const companyClients = await prismaService.clients.findMany({
+        where: { company_id: testCompanyId },
+        select: { id: true }
+      });
+      const clientIds = companyClients.map(client => client.id);
 
-    await prismaService.payrollRuns.deleteMany({
-      where: { company_id: testCompanyId },
-    });
+      // Get all contract IDs for these clients
+      const clientContracts = await prismaService.contracts.findMany({
+        where: { client_id: { in: clientIds } },
+        select: { id: true }
+      });
+      const contractIds = clientContracts.map(contract => contract.id);
 
-    await prismaService.assignments.deleteMany({
-      where: {
-        employees: { company_id: testCompanyId },
-      },
-    });
+      // Clean up attendance using employee IDs
+      if (employeeIds.length > 0) {
+        await prismaService.attendance.deleteMany({
+          where: { employee_id: { in: employeeIds } }
+        });
+      }
 
-    await prismaService.employees.deleteMany({
-      where: { company_id: testCompanyId },
-    });
+      // Clean up shifts
+      await prismaService.shifts.deleteMany({
+        where: { site_id: testSiteId }
+      });
 
-    await prismaService.sites.deleteMany({
-      where: {
-        contracts: {
-          clients: { company_id: testCompanyId },
-        },
-      },
-    });
+      // Clean up shift templates
+      await prismaService.shiftTemplates.deleteMany({
+        where: { company_id: testCompanyId }
+      });
 
-    await prismaService.contracts.deleteMany({
-      where: {
-        clients: { company_id: testCompanyId },
-      },
-    });
+      // Clean up payroll items using payroll run IDs
+      if (payrollRunIds.length > 0) {
+        await prismaService.payrollItems.deleteMany({
+          where: { payroll_run_id: { in: payrollRunIds } }
+        });
+      }
 
-    await prismaService.clients.deleteMany({
-      where: { company_id: testCompanyId },
-    });
+      // Clean up payroll runs
+      await prismaService.payrollRuns.deleteMany({
+        where: { company_id: testCompanyId }
+      });
 
-    await prismaService.companies.delete({
-      where: { id: testCompanyId },
-    });
+      // Clean up assignments using employee IDs
+      if (employeeIds.length > 0) {
+        await prismaService.assignments.deleteMany({
+          where: { employee_id: { in: employeeIds } }
+        });
+      }
+
+      // Clean up employees
+      await prismaService.employees.deleteMany({
+        where: { company_id: testCompanyId }
+      });
+
+      // Clean up sites using contract IDs
+      if (contractIds.length > 0) {
+        await prismaService.sites.deleteMany({
+          where: { contract_id: { in: contractIds } }
+        });
+      }
+
+      // Clean up contracts using client IDs
+      if (clientIds.length > 0) {
+        await prismaService.contracts.deleteMany({
+          where: { client_id: { in: clientIds } }
+        });
+      }
+
+      // Clean up clients
+      await prismaService.clients.deleteMany({
+        where: { company_id: testCompanyId }
+      });
+
+      // Finally, clean up the company
+      await prismaService.companies.delete({
+        where: { id: testCompanyId }
+      });
+    } catch (error) {
+      console.error('Cleanup failed:', error);
+      // Don't throw error during cleanup to avoid interfering with test results
+    }
   }
 });
