@@ -116,7 +116,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
               // Create attendance records if specified
               for (const attendanceData of testData.attendanceRecords) {
                 // Create a shift first (required for attendance)
-                const shift = await systemPrisma.shift.create({
+                const shift = await systemPrisma.shifts.create({
                   data: {
                     siteId: createdData.sites[0].id,
                     shiftDate: attendanceData.clockIn,
@@ -345,7 +345,7 @@ describe('Property Test: Operations Command Center KPI Accuracy', () => {
                 }
               }));
 
-              await systemPrisma.site.createMany({ data: siteData });
+              await systemPrisma.sites.createMany({ data: siteData });
             });
             // Test: Measure KPI calculation performance
             const kpiStartTime = Date.now();

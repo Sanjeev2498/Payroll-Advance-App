@@ -223,7 +223,7 @@ export class AttendanceRepository extends TenantAwareRepository {
           company_id: this.tenantContext.getTenantId(),
         },
         shifts: {
-          shiftDate: {
+          shift_date: {
             gte: dateFrom,
             lte: dateTo,
           },
@@ -232,7 +232,7 @@ export class AttendanceRepository extends TenantAwareRepository {
       include: this.getDefaultIncludes(),
       orderBy: {
         shifts: {
-          shiftDate: 'asc',
+          shift_date: 'asc',
         },
       },
     });
@@ -269,7 +269,7 @@ export class AttendanceRepository extends TenantAwareRepository {
       orderBy: [
         {
           shifts: {
-            shiftDate: 'asc',
+            shift_date: 'asc',
           },
         },
         {
@@ -302,7 +302,7 @@ export class AttendanceRepository extends TenantAwareRepository {
     const shiftFilter: any = {};
 
     if (dateFrom || dateTo) {
-      shiftFilter.shiftDate = {
+      shiftFilter.shift_date = {
         ...(dateFrom && { gte: dateFrom }),
         ...(dateTo && { lte: dateTo }),
       };
@@ -325,7 +325,7 @@ export class AttendanceRepository extends TenantAwareRepository {
       include: this.getDefaultIncludes(),
       orderBy: {
         shifts: {
-          shiftDate: 'desc',
+          shift_date: 'desc',
         },
       },
     });
@@ -333,8 +333,8 @@ export class AttendanceRepository extends TenantAwareRepository {
     const anomalies = [];
 
     for (const record of attendance) {
-      const shiftStart = this.combineDateTime(record.shift.shiftDate, record.shift.startTime);
-      const shiftEnd = this.combineDateTime(record.shift.shiftDate, record.shift.endTime);
+      const shiftStart = this.combineDateTime(record.shift.shift_date, record.shift.start_time);
+      const shiftEnd = this.combineDateTime(record.shift.shift_date, record.shift.end_time);
 
       // Late arrival detection
       if (record.clockIn && record.clockIn > shiftStart) {
@@ -443,7 +443,7 @@ export class AttendanceRepository extends TenantAwareRepository {
       }
       
       if (dateFrom || dateTo) {
-        shiftFilter.shiftDate = {
+        shiftFilter.shift_date = {
           ...(dateFrom && { gte: dateFrom }),
           ...(dateTo && { lte: dateTo }),
         };
@@ -481,7 +481,7 @@ export class AttendanceRepository extends TenantAwareRepository {
 
     attendance.forEach(record => {
       if (record.clockIn && record.shift) {
-        const shiftStart = this.combineDateTime(record.shift.shiftDate, record.shift.startTime);
+        const shiftStart = this.combineDateTime(record.shift.shift_date, record.shift.start_time);
         if (record.clockIn > shiftStart) {
           const minutesLate = (record.clockIn.getTime() - shiftStart.getTime()) / (1000 * 60);
           if (minutesLate > 5) lateCount++;
@@ -489,7 +489,7 @@ export class AttendanceRepository extends TenantAwareRepository {
       }
 
       if (record.clockOut && record.shift) {
-        const shiftEnd = this.combineDateTime(record.shift.shiftDate, record.shift.endTime);
+        const shiftEnd = this.combineDateTime(record.shift.shift_date, record.shift.end_time);
         if (record.clockOut < shiftEnd) {
           const minutesEarly = (shiftEnd.getTime() - record.clockOut.getTime()) / (1000 * 60);
           if (minutesEarly > 5) earlyDepartureCount++;
@@ -498,8 +498,8 @@ export class AttendanceRepository extends TenantAwareRepository {
 
       if (record.clockIn && record.clockOut && record.shift) {
         const hoursWorked = (record.clockOut.getTime() - record.clockIn.getTime()) / (1000 * 60 * 60);
-        const shiftStart = this.combineDateTime(record.shift.shiftDate, record.shift.startTime);
-        const shiftEnd = this.combineDateTime(record.shift.shiftDate, record.shift.endTime);
+        const shiftStart = this.combineDateTime(record.shift.shift_date, record.shift.start_time);
+        const shiftEnd = this.combineDateTime(record.shift.shift_date, record.shift.end_time);
         const scheduledHours = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60 * 60);
         
         totalHoursWorked += hoursWorked;
@@ -520,7 +520,7 @@ export class AttendanceRepository extends TenantAwareRepository {
     const attendanceRate = totalRecords > 0 ? (presentCount / totalRecords) * 100 : 0;
     const onTimeRate = presentCount > 0 ? ((presentCount - lateCount) / presentCount) * 100 : 0;
 
-    const uniqueDates = new Set(attendance.map(a => a.shift?.shiftDate.toDateString())).size;
+    const uniqueDates = new Set(attendance.map(a => a.shift?.shift_date.toDateString())).size;
     const averageDailyAttendance = uniqueDates > 0 ? totalRecords / uniqueDates : 0;
 
     return {
@@ -641,7 +641,7 @@ export class AttendanceRepository extends TenantAwareRepository {
       }
       
       if (filters.dateFrom || filters.dateTo) {
-        shiftFilter.shiftDate = {
+        shiftFilter.shift_date = {
           ...(filters.dateFrom && { gte: filters.dateFrom }),
           ...(filters.dateTo && { lte: filters.dateTo }),
         };

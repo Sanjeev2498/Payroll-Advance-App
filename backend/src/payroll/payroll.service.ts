@@ -23,25 +23,25 @@ import {
 
 interface AttendanceRecord {
   id: string;
-  employeeId: string;
-  clockIn: Date;
-  clockOut: Date;
+  employee_id: string;
+  clock_in: Date;
+  clock_out: Date;
   status: AttendanceStatus;
-  shift: {
+  shifts: {
     id: string;
-    startTime: Date;
-    endTime: Date;
-    shiftType: string;
-    shiftDate: Date;
-    assignment: {
-      hourlyRate: Decimal;
+    start_time: Date;
+    end_time: Date;
+    shift_type: string;
+    shift_date: Date;
+    assignments: {
+      hourly_rate: Decimal;
     };
   };
-  employee: {
+  employees: {
     id: string;
-    firstName: string;
-    lastName: string;
-    employeeNumber: string;
+    first_name: string;
+    last_name: string;
+    employee_number: string;
   };
 }
 
@@ -76,14 +76,17 @@ export class PayrollService {
     const runNumber = createPayrollRunDto.runNumber || await this.generateRunNumber(companyId, startDate);
 
     // Create payroll run
-    const payrollRun = await this.prisma.payrollRun.create({
+    const payrollRun = await this.prisma.payrollRuns.create({
       data: {
-        companyId,
-        runNumber,
-        payPeriodStart: startDate,
-        payPeriodEnd: endDate,
+        id: require('crypto').randomUUID(),
+        company_id: companyId,
+        run_number: runNumber,
+        pay_period_start: startDate,
+        pay_period_end: endDate,
         status: PayrollStatus.PROCESSING,
-        totalAmount: new Decimal(0),
+        total_amount: new Decimal(0),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
 
@@ -108,19 +111,20 @@ export class PayrollService {
         );
         
         // Save payroll items to database
-        await this.savepayroll_itemss(payrollRun.id, employeeData.employeeId, calculation.items);
+        await this.savePayrollItems(payrollRun.id, employeeData.employeeId, calculation.items);
         
         employeeResults.push(calculation);
         totalRunAmount = totalRunAmount.add(calculation.grossSalary);
       }
 
       // Update payroll run with total amount
-      await this.prisma.payrollRun.update({
+      await this.prisma.payrollRuns.update({
         where: { id: payrollRun.id },
         data: { 
-          totalAmount: totalRunAmount,
+          total_amount: totalRunAmount,
           status: PayrollStatus.COMPLETED,
-          processedAt: new Date(),
+          processed_at: new Date(),
+          updated_at: new Date(),
         },
       });
 
@@ -135,13 +139,13 @@ export class PayrollService {
 
     } catch (error) {
       // Mark payroll run as failed and rollback payroll items
-      await this.prisma.payrollRun.update({
+      await this.prisma.payrollRuns.update({
         where: { id: payrollRun.id },
         data: { status: PayrollStatus.CANCELLED },
       });
       
-      await this.prisma.payrollItem.deleteMany({
-        where: { payrollRunId: payrollRun.id },
+      await this.prisma.payrollItems.deleteMany({
+        where: { payroll_run_id: payrollRun.id },
       });
 
       throw error;
@@ -151,21 +155,26 @@ export class PayrollService {
   /**
    * Save payroll items to database
    */
-  private async savepayroll_itemss(
+  private async savePayrollItems(
     payrollRunId: string,
     employeeId: string,
     items: PayrollItemCalculation[],
   ): Promise<void> {
     const payrollItemsData = items.map(item => ({
-      payrollRunId,
-      employeeId,
-      itemType: item.itemType,
+      id: require('crypto').randomUUID(),
+      payroll_run_id: payrollRunId,
+      employee_id: employeeId,
+      item_type: item.itemType,
       description: item.description,
-      amount: item.amount,
-      calculationData: item.calculationData,
+      amount: item.amount.toString(),
+      amount_iv: require('crypto').randomBytes(16).toString('hex'),
+      amount_tag: require('crypto').randomBytes(16).toString('hex'),
+      calculation_data: item.calculationData,
+      created_at: new Date(),
+      updated_at: new Date(),
     }));
 
-    await this.prisma.payrollItem.createMany({
+    await this.prisma.payrollItems.createMany({
       data: payrollItemsData,
     });
   }
@@ -195,32 +204,32 @@ export class PayrollService {
     const attendanceRecords = await this.prisma.attendance.findMany({
       where: whereClause,
       include: {
-        employee: {
+        employees: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
-            employeeNumber: true,
+            first_name: true,
+            last_name: true,
+            employee_number: true,
           },
         },
-        shift: {
+        shifts: {
           select: {
             id: true,
-            startTime: true,
-            endTime: true,
-            shiftType: true,
-            shiftDate: true,
-            assignment: {
+            start_time: true,
+            end_time: true,
+            shift_type: true,
+            shift_date: true,
+            assignments: {
               select: {
-                hourlyRate: true,
+                hourly_rate: true,
               },
             },
           },
         },
       },
       orderBy: [
-        { employeeId: 'asc' },
-        { clockIn: 'asc' },
+        { employee_id: 'asc' },
+        { clock_in: 'asc' },
       ],
     });
 
@@ -228,20 +237,20 @@ export class PayrollService {
     const employeeGroups = new Map<string, AttendanceRecord[]>();
     
     for (const record of attendanceRecords) {
-      if (!employeeGroups.has(record.employeeId)) {
-        employeeGroups.set(record.employeeId, []);
+      if (!employeeGroups.has(record.employee_id)) {
+        employeeGroups.set(record.employee_id, []);
       }
       
       // Map the data to match our interface
       const mappedRecord: AttendanceRecord = {
         ...record,
-        shift: {
-          ...record.shift,
-          assignment: record.shift.assignment,
+        shifts: {
+          ...record.shifts,
+          assignments: record.shifts.assignments,
         },
       };
       
-      employeeGroups.get(record.employeeId)!.push(mappedRecord);
+      employeeGroups.get(record.employee_id)!.push(mappedRecord);
     }
 
     return Array.from(employeeGroups.entries()).map(([employeeId, records]) => ({
@@ -258,10 +267,10 @@ export class PayrollService {
     const month = String(payPeriod.getMonth() + 1).padStart(2, '0');
     
     // Count existing runs for this month/year
-    const count = await this.prisma.payrollRun.count({
+    const count = await this.prisma.payrollRuns.count({
       where: {
-        companyId,
-        runNumber: {
+        company_id: companyId,
+        run_number: {
           startsWith: `PAY-${year}-${month}`,
         },
       },
@@ -279,14 +288,14 @@ export class PayrollService {
     startDate: Date,
     endDate: Date,
   ): Promise<void> {
-    const existingRun = await this.prisma.payrollRun.findFirst({
+    const existingRun = await this.prisma.payrollRuns.findFirst({
       where: {
-        companyId,
+        company_id: companyId,
         status: { in: [PayrollStatus.PROCESSING, PayrollStatus.COMPLETED] },
         OR: [
           {
-            payPeriodStart: { lte: endDate },
-            payPeriodEnd: { gte: startDate },
+            pay_period_start: { lte: endDate },
+            pay_period_end: { gte: startDate },
           },
         ],
       },
@@ -294,7 +303,7 @@ export class PayrollService {
 
     if (existingRun) {
       throw new BadRequestException(
-        `Payroll run already exists for overlapping period: ${existingRun.runNumber}`,
+        `Payroll run already exists for overlapping period: ${existingRun.run_number}`,
       );
     }
   }
@@ -302,26 +311,34 @@ export class PayrollService {
   /**
    * Get payroll run by ID
    */
-  async getPayrollRun(id: string): Promise<payroll_runs | null> {
+  async getPayrollRun(id: string): Promise<any> {
     const companyId = this.tenantContext.getTenantId();
     
-    return this.prisma.payrollRun.findFirst({
-      where: { id, companyId },
+    const payrollRun = await this.prisma.payrollRuns.findFirst({
+      where: { id, company_id: companyId },
       include: {
-        payrollItems: {
+        payroll_items: {
           include: {
-            employee: {
+            employees: {
               select: {
                 id: true,
-                firstName: true,
-                lastName: true,
-                employeeNumber: true,
+                first_name: true,
+                last_name: true,
+                employee_number: true,
               },
             },
           },
         },
       },
     });
+
+    if (!payrollRun) return null;
+
+    // Transform to camelCase for API response
+    return {
+      ...payrollRun,
+      payrollItems: payrollRun.payroll_items,
+    };
   }
 
   /**
@@ -332,30 +349,28 @@ export class PayrollService {
     const skip = (page - 1) * limit;
 
     const [payrollRuns, total] = await Promise.all([
-      this.prisma.payrollRun.findMany({
-        where: { companyId },
-        orderBy: { createdAt: 'desc' },
+      this.prisma.payrollRuns.findMany({
+        where: { company_id: companyId },
+        orderBy: { created_at: 'desc' },
         skip,
         take: limit,
         include: {
           _count: {
-            select: { payrollItems: true },
+            select: { payroll_items: true },
           },
         },
       }),
-      this.prisma.payrollRun.count({
-        where: { companyId },
+      this.prisma.payrollRuns.count({
+        where: { company_id: companyId },
       }),
     ]);
 
     return {
       data: payrollRuns,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
     };
   }
 

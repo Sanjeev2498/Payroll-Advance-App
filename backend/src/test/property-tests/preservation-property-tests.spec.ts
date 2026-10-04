@@ -134,11 +134,11 @@ describe('Preservation Property Tests - Production System Integrity', () => {
 
     // Verify current relationships are preserved
     hierarchy.contracts.forEach((contract, index) => {
-      expect(contract.clientId).toBe(hierarchy.clients[index].id);
+      expect(contract.client_id).toBe(hierarchy.clients[index].id);
     });
     
     hierarchy.sites.forEach((site, index) => {
-      expect(site.contractId).toBe(hierarchy.contracts[index % hierarchy.contracts.length].id);
+      expect(site.contract_id).toBe(hierarchy.contracts[index % hierarchy.contracts.length].id);
     });
 
     console.log('✅ PRESERVED: Hierarchical data creation with system context');

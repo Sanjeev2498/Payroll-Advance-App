@@ -28,10 +28,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: {
         id: payload.sub,
         email: payload.email,
-        isActive: true,
+        is_active: true,
       },
       include: {
-        company: {
+        companies: {
           select: {
             id: true,
             name: true,
@@ -46,16 +46,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Set tenant context for RLS
-    await this.prisma.setTenantContext(user.companyId, user.role);
+    await this.prisma.setTenantContext(user.company_id, user.role);
 
     return {
       id: user.id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName: user.first_name,
+      lastName: user.last_name,
       role: user.role,
-      companyId: user.companyId,
-      isActive: user.isActive,
+      companyId: user.company_id,
+      isActive: user.is_active,
     };
   }
 }

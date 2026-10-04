@@ -186,7 +186,11 @@ describe('UserManagementService', () => {
     };
 
     it('should update user successfully', async () => {
-      const updatedUser = { ...mockUser, ...updateUserDto };
+      const updatedUser = { 
+        ...mockUser, 
+        first_name: updateUserDto.firstName,
+        last_name: updateUserDto.lastName 
+      };
       userRepository.update.mockResolvedValue(updatedUser);
 
       const result = await service.updateUser(mockUserId, updateUserDto);
@@ -212,7 +216,11 @@ describe('UserManagementService', () => {
     };
 
     it('should allow user to update own profile', async () => {
-      const updatedUser = { ...mockUser, ...updateProfileDto };
+      const updatedUser = { 
+        ...mockUser, 
+        first_name: updateProfileDto.firstName,
+        email: updateProfileDto.email
+      };
       userRepository.update.mockResolvedValue(updatedUser);
 
       const result = await service.updateUserProfile(mockUserId, updateProfileDto);
@@ -288,7 +296,7 @@ describe('UserManagementService', () => {
 
   describe('deactivateUser', () => {
     it('should deactivate user if user is admin', async () => {
-      const deactivatedUser = { ...mockUser, isActive: false };
+      const deactivatedUser = { ...mockUser, is_active: false };
       userRepository.update.mockResolvedValue(deactivatedUser);
 
       const result = await service.deactivateUser('other-user-123');

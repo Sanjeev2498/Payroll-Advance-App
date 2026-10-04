@@ -1,0 +1,496 @@
+{
+  "info": {
+    "name": "Payroll API - Developer Onboarding",
+    "description": "Step-by-step guide for new developers to get started with the API",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/postman_collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3005/api/v1"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Getting Started",
+      "description": "Basic API exploration and health checks",
+      "item": [
+        {
+          "name": "1.1 Check API Health",
+          "description": "Verify that the API is running and accessible",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// This is your first API test!",
+                  "pm.test(\"API is running\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log(\"✅ API is healthy and running!\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response format is correct\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql(\"healthy\");",
+                  "    console.log(\"✅ API response format is correct!\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Get API Documentation",
+          "description": "Access the Swagger documentation endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/../docs-json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "..",
+                "docs-json"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Documentation is accessible\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const openapi = pm.response.json();",
+                  "    pm.expect(openapi.openapi).to.exist;",
+                  "    pm.expect(openapi.info.title).to.include(\"Payroll\");",
+                  "    console.log(\"✅ API documentation is accessible at /docs\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication Flow",
+      "description": "Learn how to authenticate with the API",
+      "item": [
+        {
+          "name": "2.1 Login as Admin",
+          "description": "Authenticate as an administrator to get access tokens",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@company.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    // Extract and store tokens",
+                  "    const tokens = response.data.tokens;",
+                  "    pm.collectionVariables.set(\"access_token\", tokens.accessToken);",
+                  "    pm.collectionVariables.set(\"refresh_token\", tokens.refreshToken);",
+                  "    ",
+                  "    console.log(\"✅ Successfully logged in!\");",
+                  "    console.log(\"🔑 Access token stored for subsequent requests\");",
+                  "});",
+                  "",
+                  "pm.test(\"User profile included\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.user).to.exist;",
+                  "    pm.expect(response.data.user.email).to.eql(\"admin@company.com\");",
+                  "    console.log(\"👤 User profile: \" + response.data.user.role);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Get Current User Profile",
+          "description": "Use the access token to get your user profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Profile retrieved with token\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data.email).to.exist;",
+                  "    ",
+                  "    console.log(\"✅ Successfully authenticated request!\");",
+                  "    console.log(\"🏢 Company: \" + (response.data.tenantId || \"N/A\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Basic CRUD Operations",
+      "description": "Learn the fundamental Create, Read, Update, Delete operations",
+      "item": [
+        {
+          "name": "3.1 List Employees",
+          "description": "Get a paginated list of employees",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees?page=1&limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Employee list retrieved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an(\"array\");",
+                  "    ",
+                  "    console.log(\"✅ Found \" + response.data.length + \" employees\");",
+                  "    ",
+                  "    if (response.metadata.pagination) {",
+                  "        console.log(\"📄 Page \" + response.metadata.pagination.page +                    \" of \" + response.metadata.pagination.totalPages);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Create New Employee",
+          "description": "Create a new employee record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"New\",\n  \"lastName\": \"Developer\",\n  \"email\": \"new.developer@company.com\",\n  \"phoneNumber\": \"+1-555-0199\",\n  \"employeeId\": \"DEV001\",\n  \"position\": \"Security Guard\",\n  \"hireDate\": \"2024-03-15\",\n  \"hourlyRate\": 22,\n  \"skills\": [\n    \"Security Guard\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Employee created successfully\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data.id).to.exist;",
+                  "    ",
+                  "    // Store the new employee ID for next steps",
+                  "    pm.collectionVariables.set(\"new_employee_id\", response.data.id);",
+                  "    ",
+                  "    console.log(\"✅ Created employee with ID: \" + response.data.id);",
+                  "    console.log(\"💼 Position: \" + response.data.position);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Get Employee by ID",
+          "description": "Retrieve the employee we just created",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees/{{new_employee_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "{{new_employee_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Retrieved employee by ID\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data.firstName).to.eql(\"New\");",
+                  "    pm.expect(response.data.lastName).to.eql(\"Developer\");",
+                  "    ",
+                  "    console.log(\"✅ Successfully retrieved: \" +                response.data.firstName + \" \" + response.data.lastName);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Error Handling",
+      "description": "Learn how the API handles errors",
+      "item": [
+        {
+          "name": "4.1 Try Invalid Endpoint",
+          "description": "See what happens when you access a non-existent endpoint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/nonexistent-endpoint",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "nonexistent-endpoint"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Handles 404 errors properly\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    console.log(\"✅ API properly returns 404 for invalid endpoints\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Try Unauthorized Request",
+          "description": "See what happens without authentication",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Requires authentication\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.false;",
+                  "    pm.expect(response.error.code).to.exist;",
+                  "    ",
+                  "    console.log(\"🔒 API properly requires authentication\");",
+                  "    console.log(\"Error code: \" + response.error.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Congratulations!",
+      "description": "You have completed the onboarding tutorial",
+      "item": [
+        {
+          "name": "5.1 Summary",
+          "description": "Review what you have learned",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/dashboard/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "dashboard",
+                "summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Onboarding completed!\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    console.log(\"🎉 Congratulations! You have completed the API onboarding.\");",
+                  "    console.log(\"\");",
+                  "    console.log(\"What you learned:\");",
+                  "    console.log(\"✅ How to check API health\");",
+                  "    console.log(\"✅ How to authenticate with login\");",
+                  "    console.log(\"✅ How to use JWT tokens in requests\");",
+                  "    console.log(\"✅ How to perform CRUD operations\");",
+                  "    console.log(\"✅ How the API handles errors\");",
+                  "    console.log(\"\");",
+                  "    console.log(\"Next steps:\");",
+                  "    console.log(\"📚 Explore the full API documentation at /docs\");",
+                  "    console.log(\"🔍 Try the comprehensive test collection\");",
+                  "    console.log(\"🛠 Start building your integration!\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

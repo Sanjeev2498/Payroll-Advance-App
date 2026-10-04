@@ -5,6 +5,7 @@ import { InvoiceCalculationService } from './invoice-calculation.service';
 import { BillingValidationService } from './billing-validation.service';
 import { Prisma, invoices, InvoiceStatus } from '@prisma/client';
 import { Decimal } from 'decimal.js';
+import { randomUUID } from 'crypto';
 import {
   CreateInvoiceDto,
   UpdateInvoiceDto,
@@ -32,9 +33,9 @@ export class InvoiceService {
     }
 
     // Get contract to extract client information
-    const contract = await this.prisma.contract.findFirst({
+    const contract = await this.prisma.contracts.findFirst({
       where: { id: createInvoiceDto.contractId },
-      include: { client: true }
+      include: { clients: true }
     });
     
     if (!contract) {
@@ -43,7 +44,7 @@ export class InvoiceService {
 
     // Validate billing period
     await this.billingValidationService.validateBillingPeriod(
-      contract.client.id,
+      contract.clients.id,
       new Date(createInvoiceDto.billingPeriodStart),
       new Date(createInvoiceDto.billingPeriodEnd),
     );
@@ -64,11 +65,12 @@ export class InvoiceService {
     // Use the contract we already retrieved above (no need for duplicate lookup)
 
     if (!contract) {
-      throw new NotFoundException(`No active contract found for client ${contract.client.id}`);
+      throw new NotFoundException('Contract not found');
     }
 
     // Create invoice
     const invoiceData: Prisma.invoicesCreateInput = {
+      id: randomUUID(),
       clients: {
         connect: { id: contract.client_id },
       },
@@ -83,21 +85,15 @@ export class InvoiceService {
       updated_at: new Date(),
     } as Prisma.invoicesCreateInput;
 
-    const invoice = await this.prisma.invoice.create({
+    const invoice = await this.prisma.invoices.create({
       data: invoiceData,
       include: {
-        contract: {
+        clients: {
           select: {
             id: true,
-            title: true,
-            clients: {
-              select: {
-                id: true,
-                name: true,
-                contactEmail: true,
-                contactInfo: true,
-              },
-            },
+            name: true,
+            contact_email: true,
+            contact_info: true,
           },
         },
       },
@@ -125,7 +121,7 @@ export class InvoiceService {
       deploymentSummary: billingResult.siteDeployments,
       additionalCharges: createInvoiceDto.additionalCharges,
       notes: createInvoiceDto.notes,
-    });
+    }, createInvoiceDto.contractId);
   }
 
   /**
@@ -168,20 +164,16 @@ export class InvoiceService {
     }
 
     // Update invoice
-    const updatedInvoice = await this.prisma.invoice.update({
+    const updatedInvoice = await this.prisma.invoices.update({
       where: { id },
       data: updateData,
       include: {
-        contract: {
-          include: {
-            clients: {
-              select: {
-                id: true,
-                name: true,
-                contactEmail: true,
-                contactInfo: true,
-              },
-            },
+        clients: {
+          select: {
+            id: true,
+            name: true,
+            contact_email: true,
+            contact_info: true,
           },
         },
       },
@@ -205,7 +197,7 @@ export class InvoiceService {
    */
   async listInvoices(filterDto: InvoiceFilterDto): Promise<InvoiceListResponse> {
     const companyId = this.tenantContext.getTenantId();
-    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = filterDto;
+    const { page = 1, limit = 20, sortBy = 'created_at', sortOrder = 'desc' } = filterDto;
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -213,19 +205,15 @@ export class InvoiceService {
 
     // Execute queries
     const [invoices, total, summary] = await Promise.all([
-      this.prisma.invoice.findMany({
+      this.prisma.invoices.findMany({
         where: whereClause,
         include: {
-          contract: {
-            include: {
-              clients: {
-                select: {
-                  id: true,
-                  name: true,
-                  contactEmail: true,
-                  contactInfo: true,
-                },
-              },
+          clients: {
+            select: {
+              id: true,
+              name: true,
+              contact_email: true,
+              contact_info: true,
             },
           },
         },
@@ -233,7 +221,7 @@ export class InvoiceService {
         skip,
         take: limit,
       }),
-      this.prisma.invoice.count({ where: whereClause }),
+      this.prisma.invoices.count({ where: whereClause }),
       this.calculateInvoiceSummary(whereClause),
     ]);
 
@@ -267,7 +255,7 @@ export class InvoiceService {
       throw new BadRequestException('Cannot delete paid invoice');
     }
 
-    await this.prisma.invoice.update({
+    await this.prisma.invoices.update({
       where: { id },
       data: { status: InvoiceStatus.CANCELLED },
     });
@@ -283,20 +271,16 @@ export class InvoiceService {
       throw new BadRequestException('Only draft invoices can be marked as sent');
     }
 
-    const updatedInvoice = await this.prisma.invoice.update({
+    const updatedInvoice = await this.prisma.invoices.update({
       where: { id },
       data: { status: InvoiceStatus.SENT },
       include: {
-        contract: {
-          include: {
-            clients: {
-              select: {
-                id: true,
-                name: true,
-                contactEmail: true,
-                contactInfo: true,
-              },
-            },
+        clients: {
+          select: {
+            id: true,
+            name: true,
+            contact_email: true,
+            contact_info: true,
           },
         },
       },
@@ -326,13 +310,13 @@ export class InvoiceService {
     }
 
     const [statusCounts, amounts] = await Promise.all([
-      this.prisma.invoice.groupBy({
+      this.prisma.invoices.groupBy({
         by: ['status'],
         where: whereClause,
         _count: { status: true },
         _sum: { totalAmount: true },
       }),
-      this.prisma.invoice.aggregate({
+      this.prisma.invoices.aggregate({
         where: whereClause,
         _sum: { totalAmount: true },
         _count: { id: true },
@@ -360,24 +344,20 @@ export class InvoiceService {
   private async findInvoiceById(id: string) {
     const companyId = this.tenantContext.getTenantId();
     
-    const invoice = await this.prisma.invoice.findFirst({
+    const invoice = await this.prisma.invoices.findFirst({
       where: {
         id,
-        contract: { 
-          client: { companyId },
+        clients: { 
+          company_id: companyId,
         },
       },
       include: {
-        contract: {
-          include: {
-            clients: {
-              select: {
-                id: true,
-                name: true,
-                contactEmail: true,
-                contactInfo: true,
-              },
-            },
+        clients: {
+          select: {
+            id: true,
+            name: true,
+            contact_email: true,
+            contact_info: true,
           },
         },
       },
@@ -436,11 +416,11 @@ export class InvoiceService {
   }
 
   private async calculateInvoiceSummary(whereClause: Prisma.invoicesWhereInput) {
-    const statusGroups = await this.prisma.invoice.groupBy({
+    const statusGroups = await this.prisma.invoices.groupBy({
       by: ['status'],
       where: whereClause,
       _count: { status: true },
-      _sum: { totalAmount: true },
+      _sum: { total_amount: true },
     });
 
     const statusBreakdown = statusGroups.reduce((acc, group) => {
@@ -450,17 +430,17 @@ export class InvoiceService {
 
     const paidAmount = statusGroups
       .filter(group => group.status === InvoiceStatus.PAID)
-      .reduce((sum, group) => sum + (group._sum.totalAmount?.toNumber() || 0), 0);
+      .reduce((sum, group) => sum + (group._sum.total_amount?.toNumber() || 0), 0);
 
     const pendingAmount = statusGroups
       .filter(group => [InvoiceStatus.DRAFT, InvoiceStatus.SENT].includes(group.status))
-      .reduce((sum, group) => sum + (group._sum.totalAmount?.toNumber() || 0), 0);
+      .reduce((sum, group) => sum + (group._sum.total_amount?.toNumber() || 0), 0);
 
     const overdueAmount = await this.getOverdueAmount(whereClause);
 
     return {
       totalInvoices: statusGroups.reduce((sum, group) => sum + group._count.status, 0),
-      totalAmount: statusGroups.reduce((sum, group) => sum + (group._sum.totalAmount?.toNumber() || 0), 0),
+      totalAmount: statusGroups.reduce((sum, group) => sum + (group._sum.total_amount?.toNumber() || 0), 0),
       paidAmount,
       pendingAmount,
       overdueAmount,
@@ -469,10 +449,10 @@ export class InvoiceService {
   }
 
   private async getOverdueInvoicesCount(companyId: string): Promise<number> {
-    return this.prisma.invoice.count({
+    return this.prisma.invoices.count({
       where: {
-        contract: { 
-          client: { companyId },
+        contracts: { 
+          clients: { company_id: companyId },
         },
         status: { in: [InvoiceStatus.SENT] },
         due_date: { lt: new Date() },
@@ -481,16 +461,16 @@ export class InvoiceService {
   }
 
   private async getOverdueAmount(baseWhereClause: Prisma.invoicesWhereInput): Promise<number> {
-    const result = await this.prisma.invoice.aggregate({
+    const result = await this.prisma.invoices.aggregate({
       where: {
         ...baseWhereClause,
         status: { in: [InvoiceStatus.SENT] },
         due_date: { lt: new Date() },
       },
-      _sum: { totalAmount: true },
+      _sum: { total_amount: true },
     });
 
-    return result._sum.totalAmount?.toNumber() || 0;
+    return result._sum.total_amount?.toNumber() || 0;
   }
 
   private calculateDefaultDueDate(invoiceDate: Date): Date {
@@ -500,12 +480,12 @@ export class InvoiceService {
     return dueDate;
   }
 
-  private mapToInvoiceResponse(invoice: any, metadata?: any): InvoiceResponse {
+  private mapToInvoiceResponse(invoice: any, metadata?: any, contractId?: string): InvoiceResponse {
     return {
       id: invoice.id,
-      contractId: invoice.contractId,
-      clientId: invoice.contract?.clients?.id,
-      client: invoice.contract?.clients,
+      contractId: contractId || invoice.contractId,
+      clientId: invoice.clients?.id || invoice.client_id,
+      client: invoice.clients,
       invoiceNumber: invoice.invoice_number,
       billingPeriodStart: invoice.billing_period_start.toISOString(),
       billingPeriodEnd: invoice.billing_period_end.toISOString(),

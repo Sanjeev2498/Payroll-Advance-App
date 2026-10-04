@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { EmployeesService } from './employees.service';
 import { EmployeeRepository } from '../common/repositories/employee.repository';
 import { TenantContextService } from '../common/tenant-context.service';
@@ -10,6 +11,7 @@ import { CreateEmployeeDto, EmploymentStatus, EmploymentType } from './dto';
 
 describe('EmployeesService', () => {
   let service: EmployeesService;
+  let employeeRepository: jest.Mocked<EmployeeRepository>;
   let prismaService: jest.Mocked<PrismaService>;
   let tenantContext: jest.Mocked<TenantContextService>;
   let dataTransformService: jest.Mocked<DataTransformService>;
@@ -39,8 +41,42 @@ describe('EmployeesService', () => {
   } as any;
 
   beforeEach(async () => {
+    const mockEmployeeRepository = {
+      create: jest.fn().mockResolvedValue(mockEmployee),
+      findById: jest.fn().mockResolvedValue(mockEmployee),
+      findMany: jest.fn().mockResolvedValue([mockEmployee]),
+      update: jest.fn().mockResolvedValue(mockEmployee),
+      delete: jest.fn().mockResolvedValue({ ...mockEmployee, employmentStatus: EmploymentStatus.TERMINATED }),
+      findBySkills: jest.fn().mockResolvedValue([mockEmployee]),
+      searchEmployees: jest.fn().mockResolvedValue([mockEmployee]),
+      getStats: jest.fn().mockResolvedValue({
+        total: 10,
+        active: 8,
+        inactive: 1,
+        onLeave: 1,
+        terminated: 0,
+      }),
+      findAvailable: jest.fn().mockResolvedValue([mockEmployee]),
+    };
+
     const mockPrismaService = {
       employee: {
+        create: jest.fn().mockImplementation((args) => ({ 
+          id: 'test-employee-id', 
+          ...args.data,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        update: jest.fn().mockImplementation((args) => ({ 
+          id: args.where.id || 'test-employee-id', 
+          ...args.data,
+          updatedAt: new Date()
+        })),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      employees: {
         create: jest.fn().mockImplementation((args) => ({ 
           id: 'test-employee-id', 
           ...args.data,
@@ -76,6 +112,7 @@ describe('EmployeesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EmployeesService,
+        { provide: EmployeeRepository, useValue: mockEmployeeRepository },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: TenantContextService, useValue: mockTenantContext },
         { provide: DataTransformService, useValue: mockDataTransformService },
@@ -84,6 +121,7 @@ describe('EmployeesService', () => {
     }).compile();
 
     service = module.get<EmployeesService>(EmployeesService);
+    employeeRepository = module.get<EmployeeRepository>(EmployeeRepository);
     prismaService = module.get(PrismaService);
     tenantContext = await module.resolve(TenantContextService);
     dataTransformService = module.get(DataTransformService);
@@ -118,16 +156,16 @@ describe('EmployeesService', () => {
 
     it('should create employee successfully', async () => {
       prismaService.employee.findFirst.mockResolvedValue(null);
-      prismaService.employee.create.mockResolvedValue(mockEmployee as any);
+      prismaService.employees.create.mockResolvedValue(mockEmployee as any);
 
-      const result = await service.create(createEmployeeDto, 'ADMIN');
+      const result = await service.create(createEmployeeDto, UserRole.COMPANY_ADMIN);
 
-      expect(prismaService.employee.create).toHaveBeenCalledWith({
+      expect(prismaService.employees.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           employeeNumber: createEmployeeDto.employeeNumber,
           firstName: createEmployeeDto.firstName,
           lastName: createEmployeeDto.lastName,
-          hireDate: createEmployeeDto.hireDate,
+          hireDate: new Date(createEmployeeDto.hireDate),
           companyId: 'company-123',
           employmentStatus: 'ACTIVE',
           skills: createEmployeeDto.skills?.map(skill => skill.name) || [],
@@ -157,14 +195,14 @@ describe('EmployeesService', () => {
         hireDate: futureDate,
       };
 
-      await expect(service.create(invalidDto as any, 'ADMIN')).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto as any, UserRole.COMPANY_ADMIN)).rejects.toThrow(BadRequestException);
       expect(prismaService.employee.create).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException for duplicate employee number', async () => {
       prismaService.employee.findFirst.mockResolvedValue(mockEmployee as any);
 
-      await expect(service.create(createEmployeeDto, 'ADMIN')).rejects.toThrow(ConflictException);
+      await expect(service.create(createEmployeeDto, UserRole.COMPANY_ADMIN)).rejects.toThrow(ConflictException);
       expect(prismaService.employee.create).not.toHaveBeenCalled();
     });
 
@@ -184,7 +222,7 @@ describe('EmployeesService', () => {
     it('should return employee when found', async () => {
       prismaService.employee.findFirst.mockResolvedValue(mockEmployee as any);
 
-      const result = await service.findOne(mockEmployee.id, 'ADMIN');
+      const result = await service.findOne(mockEmployee.id, UserRole.COMPANY_ADMIN);
 
       expect(prismaService.employee.findFirst).toHaveBeenCalledWith({
         where: {
@@ -198,7 +236,7 @@ describe('EmployeesService', () => {
     it('should throw NotFoundException when employee not found', async () => {
       prismaService.employee.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne('non-existent-id', 'ADMIN')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('non-existent-id', UserRole.COMPANY_ADMIN)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -215,7 +253,7 @@ describe('EmployeesService', () => {
       prismaService.employee.findFirst.mockResolvedValue(mockEmployee as any);
       prismaService.employee.update.mockResolvedValue(updatedEmployee as any);
 
-      const result = await service.update(mockEmployee.id, updateDto, 'ADMIN');
+      const result = await service.update(mockEmployee.id, updateDto, UserRole.COMPANY_ADMIN);
 
       expect(prismaService.employee.update).toHaveBeenCalledWith({
         where: { id: mockEmployee.id },
@@ -234,7 +272,7 @@ describe('EmployeesService', () => {
     it('should throw NotFoundException for non-existent employee', async () => {
       prismaService.employee.findFirst.mockResolvedValue(null);
 
-      await expect(service.update('non-existent-id', updateDto, 'ADMIN')).rejects.toThrow(NotFoundException);
+      await expect(service.update('non-existent-id', updateDto, UserRole.COMPANY_ADMIN)).rejects.toThrow(NotFoundException);
       expect(prismaService.employee.update).not.toHaveBeenCalled();
     });
 
@@ -251,7 +289,7 @@ describe('EmployeesService', () => {
           employeeNumber: 'EMP-002',
         } as any);
 
-      await expect(service.update(mockEmployee.id, updateWithEmployeeNumber, 'ADMIN'))
+      await expect(service.update(mockEmployee.id, updateWithEmployeeNumber, UserRole.COMPANY_ADMIN))
         .rejects.toThrow(ConflictException);
       expect(prismaService.employee.update).not.toHaveBeenCalled();
     });
@@ -267,7 +305,7 @@ describe('EmployeesService', () => {
 
       prismaService.employee.update.mockResolvedValue(terminatedEmployee as any);
 
-      const result = await service.remove(mockEmployee.id, 'ADMIN');
+      const result = await service.remove(mockEmployee.id, UserRole.COMPANY_ADMIN);
 
       expect(prismaService.employee.update).toHaveBeenCalledWith({
         where: { 
@@ -285,7 +323,7 @@ describe('EmployeesService', () => {
     it('should throw NotFoundException for non-existent employee', async () => {
       prismaService.employee.update.mockRejectedValue(new Error('Record to update not found'));
 
-      await expect(service.remove('non-existent-id', 'ADMIN')).rejects.toThrow(BadRequestException);
+      await expect(service.remove('non-existent-id', UserRole.COMPANY_ADMIN)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -296,7 +334,7 @@ describe('EmployeesService', () => {
       const employeesWithSkills = [mockEmployee];
       prismaService.employee.findMany.mockResolvedValue(employeesWithSkills as any);
 
-      const result = await service.findBySkills(requiredSkills, 'ADMIN');
+      const result = await service.findBySkills(requiredSkills, UserRole.COMPANY_ADMIN);
 
       expect(prismaService.employee.findMany).toHaveBeenCalledWith({
         where: {
@@ -330,7 +368,7 @@ describe('EmployeesService', () => {
 
       prismaService.employee.findMany.mockResolvedValue([employeeWithPerformance]);
 
-      const result = await service.searchEmployees(searchDto, 'ADMIN');
+      const result = await service.searchEmployees(searchDto, UserRole.COMPANY_ADMIN);
 
       expect(prismaService.employee.findMany).toHaveBeenCalledWith({
         where: {
@@ -358,7 +396,7 @@ describe('EmployeesService', () => {
 
       prismaService.employee.findMany.mockResolvedValue([employeeWithLowRating]);
 
-      const result = await service.searchEmployees(searchDto, 'ADMIN');
+      const result = await service.searchEmployees(searchDto, UserRole.COMPANY_ADMIN);
 
       // Should return results (filtering by performance is not implemented in the actual service)
       expect(result).toHaveLength(1);
@@ -386,7 +424,7 @@ describe('EmployeesService', () => {
         .mockResolvedValueOnce(3)   // onLeave
         .mockResolvedValueOnce(7);  // terminated
 
-      const result = await service.getStats('ADMIN');
+      const result = await service.getStats(UserRole.COMPANY_ADMIN);
 
       expect(prismaService.employee.count).toHaveBeenCalledTimes(5);
       expect(result).toEqual(mockStats);
@@ -401,7 +439,7 @@ describe('EmployeesService', () => {
 
       prismaService.employee.findMany.mockResolvedValue(availableEmployees as any);
 
-      const result = await service.findAvailable(startDate, endDate, ['security'], 'ADMIN');
+      const result = await service.findAvailable(startDate, endDate, ['security'], UserRole.COMPANY_ADMIN);
 
       expect(prismaService.employee.findMany).toHaveBeenCalledWith({
         where: {
@@ -419,7 +457,7 @@ describe('EmployeesService', () => {
       const allActiveEmployees = [mockEmployee];
       prismaService.employee.findMany.mockResolvedValue(allActiveEmployees as any);
 
-      const result = await service.findAvailable(undefined, undefined, undefined, 'ADMIN');
+      const result = await service.findAvailable(undefined, undefined, undefined, UserRole.COMPANY_ADMIN);
 
       expect(prismaService.employee.findMany).toHaveBeenCalledWith({
         where: {

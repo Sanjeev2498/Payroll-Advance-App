@@ -52,16 +52,13 @@ export class DeploymentService {
         operational_status: 'ACTIVE'
       },
       include: {
-        contracts: {
-          include: {
-            clients: { 
-              select: { 
-                name: true,
-                contact_info: true 
-              } 
-            }
-          }
+        clients: { 
+          select: { 
+            name: true,
+            contact_info: true 
+          } 
         },
+        contracts: true,
         assignments: {
           where: { status: 'ACTIVE' },
           include: {
@@ -121,12 +118,12 @@ export class DeploymentService {
       }
 
       // Extract contact information
-      const contactInfo = site.contactInfo || site.contract.clients.contactInfo || {};
+      const contactInfo = site.contact_info || site.clients?.contact_info || {};
 
       return {
         siteId: site.id,
         siteName: site.name,
-        clientName: site.contract.clients.name,
+        clientName: site.clients?.name || 'Unknown Client',
         requiredGuards,
         assignedGuards,
         onDutyGuards,

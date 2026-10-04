@@ -1,13 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { PrismaService } from '../prisma/prisma.service';
 import { PayrollModule } from './payroll.module';
 import { CommonModule } from '../common/common.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
 import { TenantContextService } from '../common/tenant-context.service';
-import { PayrollStatus, AttendanceStatus, EmploymentStatus, AssignmentStatus, ShiftStatus } from '@prisma/client';
+import { PayrollStatus, AttendanceStatus, EmploymentStatus, AssignmentStatus, ShiftStatus, UserRole } from '@prisma/client';
 import { TestDataUtil } from '../test/utils/test-data.util';
 import { Decimal } from 'decimal.js';
 
@@ -15,6 +17,7 @@ describe('Payroll Integration Tests', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let tenantContextService: TenantContextService;
+  let jwtService: JwtService;
 
   // Test data IDs
   let companyId: string;
@@ -23,6 +26,19 @@ describe('Payroll Integration Tests', () => {
   let employeeId: string;
   let assignmentId: string;
   let shiftId: string;
+  let authToken: string;
+
+  // Helper function to generate valid JWT tokens
+  const generateToken = (user: any) => {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId,
+      type: 'access',
+    };
+    return jwtService.sign(payload);
+  };
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -33,12 +49,14 @@ describe('Payroll Integration Tests', () => {
         }),
         PayrollModule, 
         CommonModule, 
-        PrismaModule
+        PrismaModule,
+        AuthModule
       ],
     }).compile();
 
     app = moduleRef.createNestApplication();
     prisma = moduleRef.get<PrismaService>(PrismaService);
+    jwtService = moduleRef.get<JwtService>(JwtService);
     tenantContextService = await moduleRef.resolve<TenantContextService>(TenantContextService);
 
     // Mock tenant context for testing
@@ -178,6 +196,30 @@ describe('Payroll Integration Tests', () => {
         updated_at: new Date(),
       },
     });
+
+    // Create a test user for authentication
+    const testUser = await prisma.users.create({
+      data: {
+        id: TestDataUtil.generateTestId(),
+        company_id: companyId,
+        email: 'payroll.manager@testcorp.com',
+        first_name: 'Payroll',
+        last_name: 'Manager',
+        password_hash: 'test-hash',
+        role: UserRole.MANAGER,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+
+    // Generate authentication token
+    authToken = generateToken({
+      id: testUser.id,
+      email: testUser.email,
+      role: testUser.role,
+      companyId: companyId,
+    });
   });
 
   afterAll(async () => {
@@ -193,6 +235,7 @@ describe('Payroll Integration Tests', () => {
 
       const response = await request(app.getHttpServer())
         .post('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(createPayrollRunDto)
         .expect(201);
 
@@ -225,11 +268,14 @@ describe('Payroll Integration Tests', () => {
         data: {
           id: TestDataUtil.generateTestId(),
           assignment_id: assignmentId,
+          site_id: siteId, // Required field
           shift_date: new Date('2024-01-16'),
           start_time: new Date('2024-01-16T09:00:00Z'),
           end_time: new Date('2024-01-16T19:00:00Z'), // 10 hours
           shift_type: 'OVERTIME',
           status: ShiftStatus.COMPLETED,
+          created_at: new Date(),
+          updated_at: new Date(),
         },
       });
 
@@ -243,6 +289,8 @@ describe('Payroll Integration Tests', () => {
           clock_in: new Date('2024-01-16T09:00:00Z'),
           clock_out: new Date('2024-01-16T19:00:00Z'), // 10 hours total
           status: AttendanceStatus.PRESENT,
+          created_at: new Date(),
+          updated_at: new Date(),
         },
       });
 
@@ -253,6 +301,7 @@ describe('Payroll Integration Tests', () => {
 
       const response = await request(app.getHttpServer())
         .post('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(createPayrollRunDto)
         .expect(201);
 
@@ -271,6 +320,7 @@ describe('Payroll Integration Tests', () => {
 
       const response = await request(app.getHttpServer())
         .post('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(createPayrollRunDto)
         .expect(201);
 
@@ -307,6 +357,7 @@ describe('Payroll Integration Tests', () => {
       // Create first payroll run
       await request(app.getHttpServer())
         .post('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(createPayrollRunDto)
         .expect(201);
 
@@ -318,6 +369,7 @@ describe('Payroll Integration Tests', () => {
 
       await request(app.getHttpServer())
         .post('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(overlappingDto)
         .expect(400);
     });
@@ -328,6 +380,7 @@ describe('Payroll Integration Tests', () => {
       // Create a test payroll run
       await request(app.getHttpServer())
         .post('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           payPeriodStart: '2024-01-01',
           payPeriodEnd: '2024-01-31',
@@ -337,24 +390,24 @@ describe('Payroll Integration Tests', () => {
     it('should list payroll runs with pagination', async () => {
       const response = await request(app.getHttpServer())
         .get('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(1);
-      expect(response.body.pagination).toEqual({
-        page: 1,
-        limit: 20,
-        total: 1,
-        pages: 1,
-      });
+      expect(response.body.metadata.page).toBe(1);
+      expect(response.body.metadata.limit).toBe(20);
+      expect(response.body.metadata.total).toBe(1);
+      expect(response.body.metadata.totalPages).toBe(1);
     });
 
     it('should support custom pagination', async () => {
       const response = await request(app.getHttpServer())
         .get('/payroll/runs?page=1&limit=5')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.pagination.limit).toBe(5);
+      expect(response.body.metadata.limit).toBe(5);
     });
   });
 
@@ -364,6 +417,7 @@ describe('Payroll Integration Tests', () => {
     beforeEach(async () => {
       const createResponse = await request(app.getHttpServer())
         .post('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           payPeriodStart: '2024-01-01',
           payPeriodEnd: '2024-01-31',
@@ -375,6 +429,7 @@ describe('Payroll Integration Tests', () => {
     it('should get payroll run details', async () => {
       const response = await request(app.getHttpServer())
         .get(`/payroll/runs/${payrollRunId}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -387,6 +442,7 @@ describe('Payroll Integration Tests', () => {
       
       await request(app.getHttpServer())
         .get(`/payroll/runs/${nonExistentId}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
   });
@@ -397,6 +453,7 @@ describe('Payroll Integration Tests', () => {
     beforeEach(async () => {
       const createResponse = await request(app.getHttpServer())
         .post('/payroll/runs')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           payPeriodStart: '2024-01-01',
           payPeriodEnd: '2024-01-31',
@@ -408,6 +465,7 @@ describe('Payroll Integration Tests', () => {
     it('should get payroll run summary', async () => {
       const response = await request(app.getHttpServer())
         .get(`/payroll/runs/${payrollRunId}/summary`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);

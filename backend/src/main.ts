@@ -5,17 +5,60 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { SecurityMiddleware } from './common/middleware/security.middleware';
+import { RequestSizeLimitMiddleware } from './common/middleware/request-size-limit.middleware';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import * as express from 'express';
+import helmet from 'helmet';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function bootstrap() {
   const configService = new ConfigService();
   
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    // Enable HTTPS in production
+    httpsOptions: process.env.NODE_ENV === 'production' ? {
+      // Add your SSL certificates here for production
+    } : undefined,
+  });
 
-  // Security headers middleware
+  // Request size limits for security
+  app.use('/api', express.json({ limit: '10mb' }));
+  app.use('/api', express.urlencoded({ limit: '10mb', extended: true }));
+  app.use('/api', express.raw({ limit: '10mb' }));
+  app.use('/api', express.text({ limit: '10mb' }));
+
+  // Apply Helmet security middleware first
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    },
+    xssFilter: false, // Disable legacy XSS protection (modern approach)
+    referrerPolicy: { policy: 'no-referrer' }
+  }));
+
+  // Security middleware - order matters (apply after Helmet)
+  app.use(new RequestSizeLimitMiddleware().use);
   app.use(new SecurityMiddleware().use);
-
-  // Request ID middleware for tracing
   app.use(new RequestIdMiddleware().use);
+
+  // Global logging interceptor for audit trails
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   // CORS configuration for development and production
   app.enableCors({
@@ -38,6 +81,7 @@ async function bootstrap() {
       'X-RateLimit-Remaining',
       'X-RateLimit-Reset'
     ],
+    maxAge: 86400, // 24 hours
   });
 
   // API versioning
@@ -47,7 +91,7 @@ async function bootstrap() {
     prefix: 'v',
   });
 
-  // Global validation pipe with enhanced configuration
+  // Enhanced global validation pipe with security configuration
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -58,48 +102,58 @@ async function bootstrap() {
         target: false,
         value: false,
       },
+      // Enhanced validation options
+      skipMissingProperties: false,
+      skipNullProperties: false,
+      skipUndefinedProperties: false,
+      stopAtFirstError: false,
+      transformOptions: {
+        enableImplicitConversion: false, // Strict type conversion
+      },
     }),
   );
 
   // Global prefix for API routes
   app.setGlobalPrefix('api');
 
-  // Swagger API documentation
+  // Swagger API documentation with comprehensive security and documentation
   if (process.env.NODE_ENV !== 'production') {
-    const config = new DocumentBuilder()
-      .setTitle('Security Workforce & Payroll Management API')
-      .setDescription('Comprehensive API for workforce operations, payroll processing, and client management')
-      .setVersion('1.0')
-      .addBearerAuth()
-      .addApiKey(
-        {
-          type: 'apiKey',
-          name: 'X-API-Key',
-          in: 'header',
-        },
-        'api-key',
-      )
-      .addTag('Authentication', 'User authentication and authorization')
-      .addTag('Clients', 'Client management and relationships')
-      .addTag('Employees', 'Employee lifecycle and skills management')
-      .addTag('Sites', 'Site operations and requirements')
-      .addTag('Assignments', 'Workforce assignment and scheduling')
-      .addTag('Attendance', 'Real-time attendance tracking')
-      .addTag('Payroll', 'Payroll processing and calculations')
-      .addTag('Billing', 'Client billing and invoicing')
-      .addTag('Dashboard', 'Operational dashboards and analytics')
-      .build();
+    const { ApiDocsGenerator } = require('./common/utils/api-docs-generator');
+    
+    const document = ApiDocsGenerator.setupSwagger(app);
+    
+    // Custom CSS for better documentation appearance
+    const customCss = `
+      .swagger-ui .topbar { display: none; }
+      .swagger-ui .info { margin: 20px 0; }
+      .swagger-ui .info .title { color: #1f2937; }
+      .swagger-ui .scheme-container { background: #f8fafc; padding: 15px; border-radius: 8px; }
+    `;
 
-    const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document, {
+      customCss,
+      customSiteTitle: 'Workforce & Payroll API Documentation',
+      customfavIcon: '/favicon.ico',
       swaggerOptions: {
         persistAuthorization: true,
         displayRequestDuration: true,
         docExpansion: 'none',
         filter: true,
         showRequestHeaders: true,
+        tryItOutEnabled: true,
+        supportedSubmitMethods: ['get', 'post', 'put', 'patch', 'delete'],
+        validatorUrl: null,
+        defaultModelsExpandDepth: 2,
+        defaultModelExpandDepth: 2,
+        displayOperationId: true,
+        showExtensions: true,
+        showCommonExtensions: true,
       },
+      explorer: true,
     });
+    
+    // Generate comprehensive documentation files
+    ApiDocsGenerator.generateDocumentationFiles(document);
   }
 
   const port = configService.get('PORT') || 3005;
@@ -109,9 +163,12 @@ async function bootstrap() {
   console.log(`🚀 Application is running on: http://localhost:${port}/api/v1`);
   console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
   console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🛡️  Security headers enabled`);
-  console.log(`📝 Request logging enabled`);
+  console.log(`🛡️  Enhanced security headers enabled`);
+  console.log(`🛡️  Request size limits: 10MB max`);
+  console.log(`📝 Request logging and audit trails enabled`);
   console.log(`⚡ Rate limiting enabled`);
+  console.log(`🔐 CORS configured for secure cross-origin requests`);
+  console.log(`🔒 Input validation and sanitization enabled`);
 }
 
 bootstrap().catch(error => {

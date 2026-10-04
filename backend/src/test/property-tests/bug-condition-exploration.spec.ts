@@ -286,6 +286,19 @@ describe('Bug Condition Exploration - Infrastructure Reliability Verification (P
     ]);
 
     const invoiceService = module.get<InvoiceCalculationService>(InvoiceCalculationService);
+    const prismaService = module.get<PrismaService>(PrismaService);
+    
+    // Mock the contracts.findFirst to return a valid contract
+    (prismaService.contracts.findFirst as jest.Mock).mockResolvedValue({
+      id: 'contract-123',
+      client_id: 'client-123',
+      clients: {
+        name: 'Test Client'
+      }
+    });
+
+    // Mock the invoices.count to return 0
+    (prismaService.invoices.count as jest.Mock).mockResolvedValue(0);
     
     let parameterError = null;
     let result = null;
@@ -328,7 +341,7 @@ describe('Bug Condition Exploration - Infrastructure Reliability Verification (P
 
     try {
       // Create test data using CORRECT structure (contract fields removed from Client)
-      testClient = await prisma.client.create({
+      testClient = await prisma.clients.create({
         data: {
           companyId: testTenantId,
           name: 'Test Client',
@@ -370,7 +383,7 @@ describe('Bug Condition Exploration - Infrastructure Reliability Verification (P
 
     try {
       // Create employee with CORRECT field names
-      testEmployee = await prisma.employee.create({
+      testEmployee = await prisma.employees.create({
         data: {
           companyId: testTenantId,
           employeeNumber: 'EMP-001',
@@ -597,14 +610,14 @@ describe('Bug Condition Exploration - Infrastructure Reliability Verification (P
         if (scenario.operationType === 'employee_creation') {
           // This should now succeed with correct field names
           if (scenario.useCorrectFieldNames) {
-            const result = await prisma.employee.findMany({
+            const result = await prisma.employees.findMany({
               where: { contactInfo: { not: null } } // FIXED: Correct field name
             });
             infrastructureSuccesses.push(`${scenario.operationType}: contactInfo field works correctly`);
           } else {
             // Try old field name to ensure it properly fails
             try {
-              await prisma.employee.findMany({
+              await prisma.employees.findMany({
                 where: { contact_info: { not: null } } // Wrong field name
               });
               infrastructureSuccesses.push(`${scenario.operationType}: Old field name should have failed but didn't`);
@@ -614,7 +627,7 @@ describe('Bug Condition Exploration - Infrastructure Reliability Verification (P
           }
         } else if (scenario.operationType === 'client_billing') {
           // Test client creation works
-          const client = await prisma.client.create({
+          const client = await prisma.clients.create({
             data: {
               companyId: scenario.tenantId,
               name: 'Test Client',

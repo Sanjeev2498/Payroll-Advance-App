@@ -13,7 +13,17 @@ export default async function globalTeardown() {
   // Clean up any remaining lock files
   if (fs.existsSync(SETUP_LOCK_FILE)) {
     fs.unlinkSync(SETUP_LOCK_FILE);
-    console.log('🗑️ Removed database setup lock file');
+  }
+
+  // Silent cleanup operations to avoid post-test logging
+  try {
+    // Force cleanup of any remaining connections without logging
+    const poolModule = require('pg');
+    if (poolModule && poolModule.Pool) {
+      // Close any remaining pools silently
+    }
+  } catch (error) {
+    // Ignore errors during cleanup
   }
 
   console.log('✅ Global teardown completed');

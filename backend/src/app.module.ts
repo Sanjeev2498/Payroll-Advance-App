@@ -20,7 +20,10 @@ import { ClientPortalModule } from './client-portal/client-portal.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { SupervisorPortalModule } from './supervisor-portal/supervisor-portal.module';
 import { EncryptionModule } from './common/encryption/encryption.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 import { TenantContextMiddleware } from './common/tenant-context.middleware';
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
+import { MetricsMiddleware } from './common/middleware/metrics.middleware';
 
 @Module({
   imports: [
@@ -44,6 +47,7 @@ import { TenantContextMiddleware } from './common/tenant-context.middleware';
     AttendanceModule, // ✅ WORKING
     PayrollModule, // ✅ WORKING
     DashboardModule, // ✅ WORKING
+    MonitoringModule, // ✅ NEW - API Observability
     DeploymentModule, // ✅ WORKING  
     ClientPortalModule, // ✅ WORKING
     // SupervisorPortalModule, // ❌ DI ERROR - temporarily disabled to fix API issues
@@ -69,6 +73,10 @@ import { TenantContextMiddleware } from './common/tenant-context.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    // Apply observability middleware first
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+    consumer.apply(MetricsMiddleware).forRoutes('*');
+    
     // Apply tenant context middleware to all routes after authentication
     consumer.apply(TenantContextMiddleware).forRoutes('*');
   }

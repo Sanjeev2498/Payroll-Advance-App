@@ -241,11 +241,26 @@ export class AttendanceService {
     );
 
     const clockOutTime = clockOutDto.clockOutTime ? new Date(clockOutDto.clockOutTime) : new Date();
+    
+    // Validate that we have valid dates for calculations
+    if (!attendance.clock_in || isNaN(attendance.clock_in.getTime())) {
+      throw new BadRequestException('Invalid clock-in time in existing attendance record');
+    }
+    
+    if (isNaN(clockOutTime.getTime())) {
+      throw new BadRequestException('Invalid clock-out time provided');
+    }
     const warnings: string[] = [];
     const anomalies: any[] = [];
 
     // Check for early departure
-    const shiftEnd = this.combineDateTime(shift.shiftDate, shift.endTime);
+    const shiftEnd = this.combineDateTime(shift.shift_date, shift.end_time);
+    
+    // Validate shift dates for calculations
+    if (isNaN(shiftEnd.getTime())) {
+      throw new BadRequestException('Invalid shift end time');
+    }
+    
     const timeDiffMinutes = (shiftEnd.getTime() - clockOutTime.getTime()) / (1000 * 60);
 
     if (timeDiffMinutes > this.GRACE_PERIOD_MINUTES) {
@@ -257,10 +272,21 @@ export class AttendanceService {
       });
     }
 
-    // Calculate total hours worked
+    // Calculate total hours worked with validation
     const hoursWorked = (clockOutTime.getTime() - attendance.clock_in.getTime()) / (1000 * 60 * 60);
-    const scheduledHours = (shiftEnd.getTime() - this.combineDateTime(shift.shiftDate, shift.startTime).getTime()) / (1000 * 60 * 60);
-    const overtimeHours = Math.max(0, hoursWorked - scheduledHours);
+    const shiftStart = this.combineDateTime(shift.shift_date, shift.start_time);
+    
+    // Validate shift start time
+    if (isNaN(shiftStart.getTime())) {
+      throw new BadRequestException('Invalid shift start time');
+    }
+    
+    const scheduledHours = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60 * 60);
+    
+    // Ensure we have valid numbers for overtime calculation
+    const overtimeHours = (isNaN(hoursWorked) || isNaN(scheduledHours)) 
+      ? 0 
+      : Math.max(0, hoursWorked - scheduledHours);
 
     if (overtimeHours > 0.1) { // More than 6 minutes overtime
       warnings.push(`Overtime detected: ${overtimeHours.toFixed(1)} hours`);
@@ -1127,6 +1153,10 @@ export class AttendanceService {
    * Combine date and time into a single DateTime
    */
   private combineDateTime(date: Date, time: Date): Date {
+    if (!date || !time || isNaN(date.getTime()) || isNaN(time.getTime())) {
+      throw new BadRequestException('Invalid date or time provided to combineDateTime');
+    }
+    
     const combined = new Date(date);
     combined.setHours(time.getHours(), time.getMinutes(), time.getSeconds(), time.getMilliseconds());
     return combined;

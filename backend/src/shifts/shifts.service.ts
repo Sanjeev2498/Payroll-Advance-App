@@ -82,18 +82,18 @@ export class ShiftsService {
         id: crypto.randomUUID(),
         created_at: new Date(),
         updated_at: new Date(),
-        assignment: createShiftDto.assignmentId ? {
+        assignments: createShiftDto.assignmentId ? {
           connect: { id: createShiftDto.assignmentId }
         } : undefined,
-        site: {
+        sites: {
           connect: { id: createShiftDto.siteId }
         },
-        template: createShiftDto.templateId ? {
+        shift_templates: createShiftDto.templateId ? {
           connect: { id: createShiftDto.templateId }
         } : undefined,
         shift_date: new Date(createShiftDto.shiftDate),
-        start_time: new Date(`1970-01-01T${createShiftDto.startTime}:00Z`),
-        end_time: new Date(`1970-01-01T${createShiftDto.endTime}:00Z`),
+        start_time: this.parseTimeToDateTime(createShiftDto.startTime),
+        end_time: this.parseTimeToDateTime(createShiftDto.endTime),
         shift_type: createShiftDto.shiftType || ShiftType.REGULAR,
         status: ShiftStatus.SCHEDULED,
         priority: createShiftDto.priority || DtoShiftPriority.NORMAL,
@@ -113,6 +113,11 @@ export class ShiftsService {
       };
 
       const shift = await this.shiftRepository.create(shiftData as any);
+      
+      if (!shift) {
+        throw new BadRequestException('Failed to create shift - repository returned undefined');
+      }
+      
       this.logger.log(`Successfully created shift: ${shift.id}`);
 
       // Handle recurring shift creation
@@ -289,26 +294,86 @@ export class ShiftsService {
     }
 
     try {
-      const updateData: any = {
-        ...updateShiftDto,
-      };
+      // Build updateData with proper field name mapping
+      const updateData: any = {};
 
-      // Handle date conversion
-      if (updateShiftDto.shiftDate) {
-        updateData.shiftDate = new Date(updateShiftDto.shiftDate);
-      }
-
-      // Handle assignment changes
+      // Map DTO fields to database fields
       if (updateShiftDto.assignmentId !== undefined) {
         if (updateShiftDto.assignmentId) {
-          updateData.assignment = { connect: { id: updateShiftDto.assignmentId } };
+          updateData.assignments = { connect: { id: updateShiftDto.assignmentId } };
           updateData.coverage_assigned = (currentShift.coverage_assigned || 0) + 1;
         } else {
-          updateData.assignment = { disconnect: true };
+          updateData.assignments = { disconnect: true };
           updateData.coverage_assigned = Math.max((currentShift.coverage_assigned || 1) - 1, 0);
         }
-        delete updateData.assignmentId;
       }
+
+      if (updateShiftDto.siteId) {
+        updateData.site_id = updateShiftDto.siteId;
+      }
+
+      if (updateShiftDto.templateId !== undefined) {
+        if (updateShiftDto.templateId) {
+          updateData.shift_templates = { connect: { id: updateShiftDto.templateId } };
+        } else {
+          updateData.shift_templates = { disconnect: true };
+        }
+      }
+
+      if (updateShiftDto.shiftDate) {
+        updateData.shift_date = new Date(updateShiftDto.shiftDate);
+      }
+
+      if (updateShiftDto.startTime) {
+        updateData.start_time = updateShiftDto.startTime;
+      }
+
+      if (updateShiftDto.endTime) {
+        updateData.end_time = updateShiftDto.endTime;
+      }
+
+      if (updateShiftDto.shiftType) {
+        updateData.shift_type = updateShiftDto.shiftType;
+      }
+
+      if (updateShiftDto.status) {
+        updateData.status = updateShiftDto.status;
+      }
+
+      if (updateShiftDto.priority) {
+        updateData.priority = updateShiftDto.priority;
+      }
+
+      if (updateShiftDto.isRecurring !== undefined) {
+        updateData.is_recurring = updateShiftDto.isRecurring;
+      }
+
+      if (updateShiftDto.recurringPattern) {
+        updateData.recurring_pattern = updateShiftDto.recurringPattern;
+      }
+
+      if (updateShiftDto.coverageRequired) {
+        updateData.coverage_required = updateShiftDto.coverageRequired;
+      }
+
+      if (updateShiftDto.notes) {
+        updateData.notes = updateShiftDto.notes;
+      }
+
+      if (updateShiftDto.breakSchedule) {
+        updateData.break_schedule = updateShiftDto.breakSchedule;
+      }
+
+      if (updateShiftDto.shiftRequirements) {
+        updateData.shift_requirements = updateShiftDto.shiftRequirements;
+      }
+
+      if (updateShiftDto.skillRequirements) {
+        updateData.skill_requirements = updateShiftDto.skillRequirements;
+      }
+
+      // Always update the updated_at timestamp
+      updateData.updated_at = new Date();
 
       // Add modification log
       if (updateShiftDto.modificationReason) {
@@ -507,11 +572,11 @@ export class ShiftsService {
     }
 
     // Validate site exists and belongs to tenant
-    const site = await this.prisma.site.findFirst({
+    const site = await this.prisma.sites.findFirst({
       where: {
         id: shiftDto.siteId,
-        client: {
-          companyId: this.tenantContext.getTenantId(),
+        clients: {
+          company_id: this.tenantContext.getTenantId(),
         },
       },
     });
@@ -522,12 +587,12 @@ export class ShiftsService {
 
     // Validate assignment if specified
     if (shiftDto.assignmentId) {
-      const assignment = await this.prisma.assignment.findFirst({
+      const assignment = await this.prisma.assignments.findFirst({
         where: {
           id: shiftDto.assignmentId,
-          siteId: shiftDto.siteId,
-          employee: {
-            companyId: this.tenantContext.getTenantId(),
+          site_id: shiftDto.siteId,
+          employees: {
+            company_id: this.tenantContext.getTenantId(),
           },
           status: 'ACTIVE',
         },
@@ -568,12 +633,12 @@ export class ShiftsService {
 
     // Validate assignment changes
     if (updateDto.assignmentId) {
-      const assignment = await this.prisma.assignment.findFirst({
+      const assignment = await this.prisma.assignments.findFirst({
         where: {
           id: updateDto.assignmentId,
-          siteId: currentShift.site_id,
-          employee: {
-            companyId: this.tenantContext.getTenantId(),
+          site_id: currentShift.site_id,
+          employees: {
+            company_id: this.tenantContext.getTenantId(),
           },
           status: 'ACTIVE',
         },
@@ -749,6 +814,11 @@ export class ShiftsService {
    * Send shift notifications
    */
   private async sendShiftNotifications(shift: Shift, type: NotificationType): Promise<void> {
+    if (!shift || !shift.id) {
+      this.logger.warn(`Cannot send notification - shift is undefined or has no ID`);
+      return;
+    }
+    
     // Implementation would depend on notification service
     this.logger.log(`Sending ${type} notification for shift: ${shift.id}`);
     
@@ -804,7 +874,7 @@ export class ShiftsService {
     const template = await this.prisma.shiftTemplate.findFirst({
       where: {
         id: templateId,
-        companyId: this.tenantContext.getTenantId(),
+        company_id: this.tenantContext.getTenantId(),
       },
     });
 
@@ -837,5 +907,27 @@ export class ShiftsService {
     }
 
     return dates;
+  }
+
+  /**
+   * Parse time string to DateTime object for Prisma
+   * Handles various time formats: HH:MM, HH:MM:SS
+   */
+  private parseTimeToDateTime(timeStr: string): Date {
+    // If time string is just HH:MM, add :00 for seconds
+    let formattedTime = timeStr;
+    if (timeStr.length === 5 && timeStr.includes(':')) {
+      formattedTime = `${timeStr}:00`;
+    }
+    
+    // Create DateTime using epoch date (1970-01-01) with the time
+    const dateTime = new Date(`1970-01-01T${formattedTime}.000Z`);
+    
+    // Validate the created date
+    if (isNaN(dateTime.getTime())) {
+      throw new BadRequestException(`Invalid time format: ${timeStr}. Expected format: HH:MM or HH:MM:SS`);
+    }
+    
+    return dateTime;
   }
 }

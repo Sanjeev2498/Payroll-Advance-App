@@ -153,7 +153,7 @@ describe('ClientsService', () => {
         },
         1,
         20,
-        'createdAt',
+        'created_at',
         undefined,
       );
       expect(result).toEqual(mockListResult);

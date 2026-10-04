@@ -18,7 +18,6 @@ describe('ClientsController', () => {
     name: 'Test clients',
     contact_email: 'test@client.com',
     contact_info: null,
-    // Updated to match current schema structure
     organization_type: 'CORPORATE_OFFICE' as any,
     industry: null,
     company_size: null,
@@ -42,7 +41,6 @@ describe('ClientsController', () => {
     findByOrganizationType: jest.fn(),
   };
 
-  // Mock guard that always allows access
   const mockGuard = {
     canActivate: () => true,
   };
@@ -82,15 +80,14 @@ describe('ClientsController', () => {
       };
 
       service.create.mockResolvedValue(mockClient);
-
       const result = await controller.create(createDto);
 
       expect(service.create).toHaveBeenCalledWith(createDto);
       expect(result).toMatchObject({
         id: mockClient.id,
         name: mockClient.name,
-        contact_email: mockClient.contact_email,
-        contact_info: mockClient.contact_info,
+        contactEmail: mockClient.contact_email,
+        contactInfo: mockClient.contact_info,
         organizationType: mockClient.organization_type,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
@@ -119,7 +116,6 @@ describe('ClientsController', () => {
 
       const queryDto = { page: 1, limit: 20 };
       service.findAll.mockResolvedValue(mockListResult);
-
       const result = await controller.findAll(queryDto);
 
       expect(service.findAll).toHaveBeenCalledWith(queryDto);
@@ -127,13 +123,12 @@ describe('ClientsController', () => {
         clients: [
           {
             id: mockClient.id,
-            companyId: mockClient.company_id,
+            companySize: mockClient.company_size,
             name: mockClient.name,
-            contact_email: mockClient.contact_email,
-            contact_info: mockClient.contact_info,
+            contactEmail: mockClient.contact_email,
+            contactInfo: mockClient.contact_info,
             organizationType: mockClient.organization_type,
             industry: mockClient.industry,
-            company_size: mockClient.company_size,
             createdAt: mockClient.created_at,
             updatedAt: mockClient.updated_at,
             _count: { 
@@ -163,32 +158,36 @@ describe('ClientsController', () => {
       };
 
       service.getStats.mockResolvedValue(mockStats);
-
       const result = await controller.getStats();
 
       expect(service.getStats).toHaveBeenCalled();
-      expect(result).toEqual(mockStats);
+      expect(result).toEqual({
+        total: 10,
+        active: 8,
+        suspended: 0,
+        expired: 0,
+        terminated: 0,
+        expiringThisMonth: 2,
+      });
     });
   });
 
   describe('findExpiringContracts', () => {
     it('should return expiring contracts with default days', async () => {
-      const expiringclientss = [mockClient];
-      service.findExpiringContracts.mockResolvedValue(expiringclientss);
-
+      const expiringClients = [mockClient];
+      service.findExpiringContracts.mockResolvedValue(expiringClients);
       const result = await controller.findExpiringContracts();
 
       expect(service.findExpiringContracts).toHaveBeenCalledWith(30);
       expect(result).toEqual([
         {
           id: mockClient.id,
-          companyId: mockClient.company_id,
           name: mockClient.name,
-          contact_email: mockClient.contact_email,
-          contact_info: mockClient.contact_info,
+          contactEmail: mockClient.contact_email,
+          contactInfo: mockClient.contact_info,
           organizationType: mockClient.organization_type,
           industry: mockClient.industry,
-          company_size: mockClient.company_size,
+          companySize: mockClient.company_size,
           createdAt: mockClient.created_at,
           updatedAt: mockClient.updated_at,
         },
@@ -196,22 +195,20 @@ describe('ClientsController', () => {
     });
 
     it('should return expiring contracts with custom days', async () => {
-      const expiringclientss = [mockClient];
-      service.findExpiringContracts.mockResolvedValue(expiringclientss);
-
+      const expiringClients = [mockClient];
+      service.findExpiringContracts.mockResolvedValue(expiringClients);
       const result = await controller.findExpiringContracts(60);
 
       expect(service.findExpiringContracts).toHaveBeenCalledWith(60);
       expect(result).toEqual([
         {
           id: mockClient.id,
-          companyId: mockClient.company_id,
           name: mockClient.name,
-          contact_email: mockClient.contact_email,
-          contact_info: mockClient.contact_info,
+          contactEmail: mockClient.contact_email,
+          contactInfo: mockClient.contact_info,
           organizationType: mockClient.organization_type,
           industry: mockClient.industry,
-          company_size: mockClient.company_size,
+          companySize: mockClient.company_size,
           createdAt: mockClient.created_at,
           updatedAt: mockClient.updated_at,
         },
@@ -221,22 +218,20 @@ describe('ClientsController', () => {
 
   describe('findByStatus', () => {
     it('should return clients by contract status', async () => {
-      const activeclientss = [mockClient];
-      service.findByOrganizationType.mockResolvedValue(activeclientss);
-
+      const activeClients = [mockClient];
+      service.findByOrganizationType.mockResolvedValue(activeClients);
       const result = await controller.findByStatus(ClientOrganizationType.CORPORATE_OFFICE);
 
       expect(service.findByOrganizationType).toHaveBeenCalledWith(ClientOrganizationType.CORPORATE_OFFICE);
       expect(result).toEqual([
         {
           id: mockClient.id,
-          companyId: mockClient.company_id,
           name: mockClient.name,
-          contact_email: mockClient.contact_email,
-          contact_info: mockClient.contact_info,
+          contactEmail: mockClient.contact_email,
+          contactInfo: mockClient.contact_info,
           organizationType: mockClient.organization_type,
           industry: mockClient.industry,
-          company_size: mockClient.company_size,
+          companySize: mockClient.company_size,
           createdAt: mockClient.created_at,
           updatedAt: mockClient.updated_at,
         },
@@ -247,19 +242,17 @@ describe('ClientsController', () => {
   describe('findOne', () => {
     it('should return a client by ID', async () => {
       service.findOne.mockResolvedValue(mockClient);
-
       const result = await controller.findOne('client-1');
 
       expect(service.findOne).toHaveBeenCalledWith('client-1');
       expect(result).toEqual({
         id: 'client-1',
-        companyId: 'company-1',
         name: 'Test clients',
         contactEmail: 'test@client.com',
-        contact_info: null,
+        contactInfo: null,
         organizationType: 'CORPORATE_OFFICE',
         industry: null,
-        company_size: null,
+        companySize: null,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });
@@ -272,22 +265,24 @@ describe('ClientsController', () => {
         name: 'Updated clients',
         contactEmail: 'updated@client.com',
       };
-      const updatedclients = { ...mockClient, ...updateDto };
+      const updatedClient = { 
+        ...mockClient, 
+        name: updateDto.name,
+        contact_email: updateDto.contactEmail,
+      };
 
-      service.update.mockResolvedValue(updatedclients as any);
-
+      service.update.mockResolvedValue(updatedClient as any);
       const result = await controller.update('client-1', updateDto);
 
       expect(service.update).toHaveBeenCalledWith('client-1', updateDto);
       expect(result).toEqual({
         id: 'client-1',
-        companyId: 'company-1',
         name: 'Updated clients',
         contactEmail: 'updated@client.com',
-        contact_info: null,
+        contactInfo: null,
         organizationType: 'CORPORATE_OFFICE',
         industry: null,
-        company_size: null,
+        companySize: null,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });
@@ -296,21 +291,19 @@ describe('ClientsController', () => {
 
   describe('remove', () => {
     it('should soft delete a client successfully', async () => {
-      const deletedclients = { ...mockClient };
-      service.remove.mockResolvedValue(deletedclients);
-
+      const deletedClient = { ...mockClient };
+      service.remove.mockResolvedValue(deletedClient);
       const result = await controller.remove('client-1');
 
       expect(service.remove).toHaveBeenCalledWith('client-1');
       expect(result).toEqual({
         id: 'client-1',
-        companyId: 'company-1',
         name: 'Test clients',
         contactEmail: 'test@client.com',
-        contact_info: null,
+        contactInfo: null,
         organizationType: 'CORPORATE_OFFICE',
         industry: null,
-        company_size: null,
+        companySize: null,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });

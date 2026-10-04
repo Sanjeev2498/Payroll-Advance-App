@@ -122,7 +122,7 @@ describe('UserRepository', () => {
           passwordHash: 'hashed-password',
           role: createUserDto.role,
           companyId: mockTenantId,
-          isActive: true,
+          is_active: true,
         },
         include: {
           company: {
@@ -194,7 +194,7 @@ describe('UserRepository', () => {
           passwordHash: 'hashed-password',
           role: UserRole.EMPLOYEE, // Default role for registration
           companyId: registerUserDto.companyId,
-          isActive: true,
+          is_active: true,
         },
         include: {
           company: {
@@ -229,14 +229,14 @@ describe('UserRepository', () => {
 
       expect(mockPrismaUser.findMany).toHaveBeenCalledWith({
         where: {
-          companyId: mockTenantId,
+          company_id: mockTenantId,
           OR: [
-            { firstName: { contains: 'john', mode: 'insensitive' } },
-            { lastName: { contains: 'john', mode: 'insensitive' } },
+            { first_name: { contains: 'john', mode: 'insensitive' } },
+            { last_name: { contains: 'john', mode: 'insensitive' } },
             { email: { contains: 'john', mode: 'insensitive' } },
           ],
           role: UserRole.EMPLOYEE,
-          isActive: true,
+          is_active: true,
         },
         skip: 0,
         take: 20,
@@ -253,7 +253,7 @@ describe('UserRepository', () => {
       });
       expect(mockPrismaUser.count).toHaveBeenCalledWith({
         where: expect.objectContaining({
-          companyId: mockTenantId,
+          company_id: mockTenantId,
         }),
       });
       expect(result).toEqual({ users, total });
@@ -270,7 +270,7 @@ describe('UserRepository', () => {
 
       expect(mockPrismaUser.findMany).toHaveBeenCalledWith({
         where: {
-          companyId: mockTenantId,
+          company_id: mockTenantId,
         },
         skip: 0,
         take: 20,
@@ -297,7 +297,7 @@ describe('UserRepository', () => {
       expect(mockPrismaUser.findFirst).toHaveBeenCalledWith({
         where: {
           id: mockUserId,
-          companyId: mockTenantId,
+          company_id: mockTenantId,
         },
         include: {
           company: {
@@ -432,7 +432,7 @@ describe('UserRepository', () => {
       expect(mockPrismaUser.findFirst).toHaveBeenCalledWith({
         where: {
           id: mockUserId,
-          companyId: mockTenantId,
+          company_id: mockTenantId,
         },
         select: { id: true },
       });

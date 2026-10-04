@@ -12,9 +12,9 @@ describe('Enhanced Client Management Service', () => {
     id: 'test-client-id',
     name: 'Test Security Corp',
     contactEmail: 'contact@testsecurity.com',
-    contractStatus: ContractStatus.ACTIVE,
-    contractStart: new Date('2024-01-01'),
-    contractEnd: new Date('2024-12-31'),
+    contract_status: ContractStatus.ACTIVE,
+    contract_start: new Date('2024-01-01'),
+    contract_end: new Date('2024-12-31'),
     industry: 'Security Services',
     companySize: 'MEDIUM',
     createdAt: new Date(),
@@ -26,7 +26,7 @@ describe('Enhanced Client Management Service', () => {
     findById: jest.fn(),
     findMany: jest.fn(),
     update: jest.fn(),
-    getClientPerformanceMetrics: jest.fn(),
+    getclientsPerformanceMetrics: jest.fn(),
     getContractRenewalInfo: jest.fn(),
     getOnboardingStatus: jest.fn(),
   };
@@ -88,14 +88,14 @@ describe('Enhanced Client Management Service', () => {
       const mockMetrics = {
         serviceQualityScore: 8.5,
         paymentTimelinessScore: 9.0,
-        contractComplianceScore: 8.8,
+        contractCompliance: 8.8,
         satisfactionRating: 4.2,
         complaintsThisYear: 0,
         escalationsThisYear: 0,
         avgResponseTime: 2.5,
       };
 
-      mockRepository.getClientPerformanceMetrics.mockResolvedValue(mockMetrics);
+      mockRepository.getclientsPerformanceMetrics.mockResolvedValue(mockMetrics);
 
       const metrics = await service.getClientPerformanceMetrics('test-client-id');
       
@@ -160,10 +160,10 @@ describe('Enhanced Client Management Service', () => {
     it('should return comprehensive dashboard data', async () => {
       // Mock all the dependencies
       mockRepository.findById.mockResolvedValue(mockClient);
-      mockRepository.getClientPerformanceMetrics.mockResolvedValue({
+      mockRepository.getclientsPerformanceMetrics.mockResolvedValue({
         serviceQualityScore: 8.5,
         paymentTimelinessScore: 9.0,
-        contractComplianceScore: 8.8,
+        contractCompliance: 8.8,
         satisfactionRating: 4.2,
         complaintsThisYear: 0,
         escalationsThisYear: 0,

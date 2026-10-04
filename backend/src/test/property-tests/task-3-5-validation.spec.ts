@@ -174,25 +174,25 @@ describe('Task 3.5 - Property Test Infrastructure Fixes', () => {
     // 2. Clients (depend on Company)
     expect(hierarchy.clients).toHaveLength(2);
     hierarchy.clients.forEach(client => {
-      expect(client.companyId).toBe(testTenantId);
+      expect(client.company_id).toBe(testTenantId);
     });
 
     // 3. Contracts (depend on Client)
     expect(hierarchy.contracts).toHaveLength(2);
     hierarchy.contracts.forEach((contract, index) => {
-      expect(contract.clientId).toBe(hierarchy.clients[index].id);
+      expect(contract.client_id).toBe(hierarchy.clients[index].id);
     });
 
     // 4. Sites (depend on Contract)
     expect(hierarchy.sites).toHaveLength(2);
     hierarchy.sites.forEach((site, index) => {
-      expect(site.contractId).toBe(hierarchy.contracts[index % hierarchy.contracts.length].id);
+      expect(site.contract_id).toBe(hierarchy.contracts[index % hierarchy.contracts.length].id);
     });
 
     // 5. Employees (depend on Company)
     expect(hierarchy.employees).toHaveLength(2);
     hierarchy.employees.forEach(employee => {
-      expect(employee.companyId).toBe(testTenantId);
+      expect(employee.company_id).toBe(testTenantId);
     });
 
     console.log('✅ FIXED: Proper entity creation order: Company -> Client -> Contract -> Site -> Employee');
@@ -324,10 +324,10 @@ describe('Task 3.5 - Property Test Infrastructure Fixes', () => {
 
     // 4. Verify proper dependency order
     expect(hierarchy.company.id).toBe(testTenantId);
-    expect(hierarchy.clients[0].companyId).toBe(testTenantId);
-    expect(hierarchy.contracts[0].clientId).toBe(hierarchy.clients[0].id);
-    expect(hierarchy.sites[0].contractId).toBe(hierarchy.contracts[0].id);
-    expect(hierarchy.employees[0].companyId).toBe(testTenantId);
+    expect(hierarchy.clients[0].company_id).toBe(testTenantId);
+    expect(hierarchy.contracts[0].client_id).toBe(hierarchy.clients[0].id);
+    expect(hierarchy.sites[0].contract_id).toBe(hierarchy.contracts[0].id);
+    expect(hierarchy.employees[0].company_id).toBe(testTenantId);
 
     // 5. Test cleanup with proper isolation
     await PropertyTestSetup.performTestCleanup(module, services.prisma as PrismaService, testTenantId);

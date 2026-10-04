@@ -740,25 +740,26 @@ graph TD
   
   ### **19.3 Missing Prisma Model Properties (Priority: CRITICAL)**
   - **Error Count**: Multiple test failures
-  - **Pattern**: Prisma client missing expected model properties 
+  - **Pattern**: Test cleanup code using incorrect Prisma model references
   - **Issues**:
-    - `prisma.payroll_items` undefined (should be `payroll_item`)
-    - `prisma.payroll_runs` undefined (should be `payroll_run`)  
-    - Prisma model name mismatches causing test failures
-    - Test cleanup queries using wrong model names
-  - **Files**: Test files, cleanup utilities, Prisma client usage
-  - **Expected Outcome**: All Prisma model references use correct singular/plural forms matching schema
+    - Test cleanup using `prisma.payroll_items.deleteMany()` and `prisma.payroll_runs.deleteMany()` - these are correct model names
+    - Potential issue with Prisma client not being properly generated or imported
+    - Test files may be using outdated Prisma client instance
+    - Mock Prisma service not implementing all required model methods
+  - **Files**: `src/common/company-registration.property.spec.ts`, test cleanup utilities, Prisma client usage
+  - **Expected Outcome**: All Prisma model references work correctly and test cleanup can access all required models
   
   ### **19.4 Complex Relation Path Fixes (Priority: HIGH)**
   - **Error Count**: Multiple property test failures
   - **Pattern**: Complex nested relation property access failures
   - **Issues**:
-    - `site.contract.clients.contactInfo` - Cannot read properties of undefined
-    - Nested relation paths not properly populated in queries
-    - Test assertions expecting complex data structures that don't exist
-    - Missing includes in Prisma queries for nested relations
-  - **Files**: Service files with complex queries, deployment service, test files
-  - **Expected Outcome**: All nested relation access properly handles undefined values or includes required relations
+    - `site.contract.clients.contactInfo` - incorrect relation path (should be `site.clients.contact_info` or `site.contracts.clients.contact_info`)
+    - Nested relation paths not properly populated in queries with `include` statements
+    - Test assertions expecting complex data structures that don't exist in current schema
+    - Missing includes in Prisma queries for nested relations (client, contracts, etc.)
+    - Service code using outdated relation paths from previous schema versions
+  - **Files**: `src/deployment/deployment.service.ts`, service files with complex queries, test files
+  - **Expected Outcome**: All nested relation access uses correct schema paths and properly handles undefined values or includes required relations
   
   ### **19.5 Property Test Data Structure Validation (Priority: HIGH)**
   - **Error Count**: Multiple property-based test failures
@@ -773,14 +774,15 @@ graph TD
   
   ### **19.6 Test Environment Database Schema Alignment (Priority: HIGH)**
   - **Error Count**: Multiple test suite failures
-  - **Pattern**: Test database schema mismatches causing widespread test failures
+  - **Pattern**: Test database schema mismatches and connectivity issues causing widespread test failures
   - **Issues**:
+    - Database server not accessible at `localhost:5432` during test execution
     - Test environment using outdated or mismatched database schema
     - Prisma client generation not synchronized with test database
     - Database migrations not applied consistently in test environment
     - Test setup using deprecated model structures
-  - **Files**: Test setup files, database configuration, Prisma schema
-  - **Expected Outcome**: Test database schema perfectly matches development schema and all tests run against correct structure
+  - **Files**: Test setup files, database configuration, Prisma schema, `docker-compose.yml`
+  - **Expected Outcome**: Test database server is running and accessible, schema perfectly matches development schema, and all tests run against correct structure
   
   ## **Implementation Strategy**
   

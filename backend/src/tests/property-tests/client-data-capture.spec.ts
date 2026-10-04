@@ -533,11 +533,15 @@ describe('Property Test: Date Validation Edge Cases', () => {
 
     try {
       // Test invalid dates that should be rejected by database constraints
+      // NOTE: These dates intentionally trigger Prisma warnings - this is expected behavior
+      // The warnings validate that PostgreSQL properly rejects out-of-range dates
       const invalidDates = [
-        new Date('0000-12-31'), // Year 0000 - PostgreSQL doesn't support
-        new Date('0000-01-01'), // Year 0000  
+        new Date('0000-12-31'), // Year 0000 - PostgreSQL doesn't support (triggers expected warning)
+        new Date('0000-01-01'), // Year 0000 - PostgreSQL doesn't support (triggers expected warning)
       ];
 
+      console.log('🧪 Testing invalid date rejection (Prisma warnings below are expected)...');
+      
       for (const invalidDate of invalidDates) {
         let wasRejected = false;
         
@@ -575,6 +579,8 @@ describe('Property Test: Date Validation Edge Cases', () => {
         // The invalid date should have been rejected
         expect(wasRejected).toBe(true);
       }
+      
+      console.log('✅ Invalid date rejection test completed successfully');
     } finally {
       // Cleanup: Remove the test company
       await prismaService.withSystemContext(async (prisma) => {

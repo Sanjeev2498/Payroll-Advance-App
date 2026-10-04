@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TenantContextService } from '../common/tenant-context.service';
@@ -27,6 +28,16 @@ describe('PayrollRunManagementService Integration', () => {
   let testAssignmentIds: string[] = [];
 
   beforeAll(async () => {
+    // Create a shared mock TenantContextService
+    const mockTenantContextService = {
+      tenantId: null,
+      setContext: function(tenantId: string) { this.tenantId = tenantId; },
+      getTenantId: function() { 
+        return this.tenantId || testCompanyId; // Default to testCompanyId
+      },
+      hasContext: () => true,
+    };
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -36,14 +47,17 @@ describe('PayrollRunManagementService Integration', () => {
         PayrollModule,
         PrismaModule,
       ],
-    }).compile();
+    })
+    .overrideProvider(TenantContextService)
+    .useValue(mockTenantContextService)
+    .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
 
     payrollRunManagementService = await moduleFixture.resolve<PayrollRunManagementService>(PayrollRunManagementService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService) || new PrismaService();
-    tenantContextService = await moduleFixture.resolve<TenantContextService>(TenantContextService);
+    tenantContextService = mockTenantContextService;
 
     console.log('Services resolved:', {
       payrollService: !!payrollRunManagementService,
@@ -156,6 +170,7 @@ describe('PayrollRunManagementService Integration', () => {
       
       const payrollRun = await prismaService.payrollRuns.create({
         data: {
+          id: randomUUID(),
           company_id: testCompanyId,
           run_number: 'TEST-2024-01-001',
           pay_period_start: new Date('2024-01-01'),
@@ -163,6 +178,7 @@ describe('PayrollRunManagementService Integration', () => {
           status: PayrollStatus.COMPLETED,
           total_amount: 50000,
           processed_at: new Date(),
+          updated_at: new Date(),
         },
       });
 
@@ -231,6 +247,7 @@ describe('PayrollRunManagementService Integration', () => {
       
       const payrollRun = await prismaService.payrollRuns.create({
         data: {
+          id: randomUUID(),
           company_id: testCompanyId,
           run_number: 'ANALYTICS-TEST-001',
           pay_period_start: new Date('2024-01-01'),
@@ -238,6 +255,7 @@ describe('PayrollRunManagementService Integration', () => {
           status: PayrollStatus.COMPLETED,
           total_amount: 75000,
           processed_at: new Date(),
+          updated_at: new Date(),
         },
       });
 
@@ -362,10 +380,13 @@ describe('PayrollRunManagementService Integration', () => {
     // Create test site with contract
     const site = await prismaService.sites.create({
       data: {
+        id: randomUUID(),
+        client_id: client.id,
         contract_id: contract.id,
         name: 'Test Site',
         address: { street: '123 Test St', city: 'Test City' },
         operational_status: 'ACTIVE',
+        updated_at: new Date(),
       },
     });
     testSiteId = site.id;
@@ -374,6 +395,7 @@ describe('PayrollRunManagementService Integration', () => {
     for (let i = 1; i <= 3; i++) {
       const employee = await prismaService.employees.create({
         data: {
+          id: randomUUID(),
           company_id: testCompanyId,
           employee_number: `EMP-${i.toString().padStart(3, '0')}`,
           first_name: `Test${i}`,
@@ -383,6 +405,7 @@ describe('PayrollRunManagementService Integration', () => {
           employment_status: 'ACTIVE',
           hire_date: new Date('2023-06-01'),
           skills: ['security', 'customer-service'],
+          updated_at: new Date(),
         },
       });
       testEmployeeIds.push(employee.id);
@@ -390,35 +413,47 @@ describe('PayrollRunManagementService Integration', () => {
       // Create assignment for each employee
       const assignment = await prismaService.assignments.create({
         data: {
+          id: randomUUID(),
           employee_id: employee.id,
           site_id: testSiteId,
           role: 'Security Guard',
           status: 'ACTIVE',
           start_date: new Date('2023-06-01'),
+          hourly_rate: '25.00', // Required field
+          hourly_rate_iv: 'mock_iv', // Required field
+          hourly_rate_tag: 'mock_tag', // Required field
+          updated_at: new Date(),
         },
       });
       testAssignmentIds.push(assignment.id);
 
       // Create sample shifts and attendance
-      const shift = await prismaService.shiftTemplates.create({
+      const shift = await prismaService.shifts.create({
         data: {
-          company_id: testCompanyId,
-          name: `Day Shift ${i}`,
+          id: randomUUID(),
+          assignment_id: assignment.id,
           site_id: testSiteId,
+          shift_date: new Date('2024-01-15'),
           start_time: new Date('2024-01-15T08:00:00Z'),
           end_time: new Date('2024-01-15T16:00:00Z'),
           shift_type: 'REGULAR',
+          status: 'SCHEDULED',
+          coverage_required: 1,
+          coverage_assigned: 1,
+          updated_at: new Date(),
         },
       });
 
       await prismaService.attendance.create({
         data: {
+          id: randomUUID(),
           employee_id: employee.id,
           shift_id: shift.id,
           clock_in: new Date('2024-01-15T08:00:00Z'),
           clock_out: new Date('2024-01-15T16:00:00Z'),
           status: 'PRESENT',
           location_data: { lat: 12.9716, lng: 77.5946 },
+          updated_at: new Date(),
         },
       });
     }

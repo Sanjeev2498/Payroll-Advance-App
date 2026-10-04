@@ -63,7 +63,7 @@ export class ContractRepository extends TenantAwareRepository {
     const client = await this.prisma.client.findFirst({
       where: {
         id: data.clientId,
-        companyId: this.tenantContext.getTenantId(),
+        company_id: this.tenantContext.getTenantId(),
       },
     });
 
@@ -115,7 +115,7 @@ export class ContractRepository extends TenantAwareRepository {
         where: {
           id,
           clients: {
-            companyId: this.tenantContext.getTenantId(),
+            company_id: this.tenantContext.getTenantId(),
           },
         },
         include: {
@@ -328,7 +328,7 @@ export class ContractRepository extends TenantAwareRepository {
       this.prisma.contract.findMany({
         where: {
           clients: {
-            companyId: this.tenantContext.getTenantId(),
+            company_id: this.tenantContext.getTenantId(),
           },
           status: 'ACTIVE',
           endDate: {

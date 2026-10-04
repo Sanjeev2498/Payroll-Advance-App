@@ -34,6 +34,11 @@ module.exports = {
   // Optimized for better performance in CI environments
   maxWorkers: process.env.CI ? '25%' : 1, // Reduced from 50% for better stability
   
+  // Force exit to prevent hanging connections
+  forceExit: true,
+  // Detect open handles disabled to prevent Jest from logging connection warnings after tests complete
+  detectOpenHandles: false,
+  
   moduleNameMapper: {
     ...pathsToModuleNameMapper(compilerOptions.paths || {}, { 
       prefix: '<rootDir>/'

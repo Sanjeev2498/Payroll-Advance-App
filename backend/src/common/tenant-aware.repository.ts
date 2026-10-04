@@ -20,9 +20,9 @@ export abstract class TenantAwareRepository {
   /**
    * Get the tenant filter for direct tenant-owned entities
    */
-  protected getTenantFilter(): { companyId: string } {
+  protected getTenantFilter(): { company_id: string } {
     const tenantId = this.tenantContext.getTenantId();
-    return { companyId: tenantId };
+    return { company_id: tenantId };
   }
 
   /**

@@ -127,13 +127,13 @@ describe('JWT-Tenant Integration', () => {
             
             return {
               id: testUser.id,
-              companyId: testUser.companyId,
+              company_id: testUser.companyId,
               email: testUser.email,
-              firstName: testUser.email.split('@')[0],
-              lastName: 'User',
+              first_name: testUser.email.split('@')[0],
+              last_name: 'User',
               passwordHash: 'mock-hash',
               role: testUser.role,
-              isActive: true,
+              is_active: true,
               company: {
                 id: testUser.companyId,
                 name: 'Test Company',
@@ -422,10 +422,10 @@ describe('JWT-Tenant Integration', () => {
         where: {
           id: testUsers.employee.id,
           email: testUsers.employee.email,
-          isActive: true,
+          is_active: true,
         },
         include: {
-          company: {
+          companies: {
             select: {
               id: true,
               name: true,

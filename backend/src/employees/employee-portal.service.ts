@@ -31,73 +31,73 @@ export class EmployeePortalService {
     
     // Get current shift (active now)
     const now = new Date();
-    const currentShift = await this.prisma.shift.findFirst({
+    const currentShift = await this.prisma.shifts.findFirst({
       where: {
-        assignment: {
-          employeeId,
+        assignments: {
+          employee_id: employeeId,
           status: 'ACTIVE',
         },
-        shiftDate: {
+        shift_date: {
           equals: new Date(now.toISOString().split('T')[0]),
         },
-        startTime: { lte: now.toTimeString().split(' ')[0] },
-        endTime: { gte: now.toTimeString().split(' ')[0] },
+        start_time: { lte: now },
+        end_time: { gte: now },
         status: 'SCHEDULED',
       },
       include: {
-        assignment: {
+        assignments: {
           include: {
-            site: true,
+            sites: true,
           },
         },
       },
     });
 
     // Get next upcoming shift
-    const nextShift = await this.prisma.shift.findFirst({
+    const nextShift = await this.prisma.shifts.findFirst({
       where: {
-        assignment: {
-          employeeId,
+        assignments: {
+          employee_id: employeeId,
           status: 'ACTIVE',
         },
         OR: [
           {
-            shiftDate: { gt: now.toISOString().split('T')[0] },
+            shift_date: { gt: new Date(now.toISOString().split('T')[0]) },
           },
           {
-            shiftDate: { equals: now.toISOString().split('T')[0] },
-            startTime: { gt: now.toTimeString().split(' ')[0] },
+            shift_date: { equals: new Date(now.toISOString().split('T')[0]) },
+            start_time: { gt: now },
           },
         ],
         status: 'SCHEDULED',
       },
       include: {
-        assignment: {
+        assignments: {
           include: {
-            site: true,
+            sites: true,
           },
         },
       },
       orderBy: [
-        { shiftDate: 'asc' },
-        { startTime: 'asc' },
+        { shift_date: 'asc' },
+        { start_time: 'asc' },
       ],
     });
 
     // Get today's attendance
     const todaysAttendance = await this.prisma.attendance.findFirst({
       where: {
-        employeeId,
-        clockIn: {
+        employee_id: employeeId,
+        clock_in: {
           gte: new Date(now.toISOString().split('T')[0]),
         },
       },
       include: {
-        shift: {
+        shifts: {
           include: {
-            assignment: {
+            assignments: {
               include: {
-                site: true,
+                sites: true,
               },
             },
           },
@@ -111,29 +111,29 @@ export class EmployeePortalService {
     const attendanceSummary = await this.calculateAttendanceSummary(employeeId, monthStart, monthEnd);
 
     // Get recent payslips (last 3)
-    const recentPayslips = await this.prisma.payrollItem.findMany({
+    const recentPayslips = await this.prisma.payrollItems.findMany({
       where: {
-        employeeId,
-        payrollRun: {
-          status: 'FINALIZED',
+        employee_id: employeeId,
+        payroll_runs: {
+          status: 'COMPLETED',
         },
       },
       include: {
-        payrollRun: true,
+        payroll_runs: true,
       },
       orderBy: {
-        payrollRun: {
-          payPeriodEnd: 'desc',
+        payroll_runs: {
+          pay_period_end: 'desc',
         },
       },
       take: 3,
     });
 
     // Get unread notifications count
-    const unreadNotifications = await this.prisma.shiftNotification.count({
+    const unreadNotifications = await this.prisma.shiftNotifications.count({
       where: {
-        employeeId,
-        readAt: null,
+        employee_id: employeeId,
+        read_at: null,
       },
     });
 
@@ -143,28 +143,28 @@ export class EmployeePortalService {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
 
-    const upcomingShifts = await this.prisma.shift.findMany({
+    const upcomingShifts = await this.prisma.shifts.findMany({
       where: {
-        assignment: {
-          employeeId,
+        assignments: {
+          employee_id: employeeId,
           status: 'ACTIVE',
         },
-        shiftDate: {
-          gte: now.toISOString().split('T')[0],
-          lte: weekEnd.toISOString().split('T')[0],
+        shift_date: {
+          gte: new Date(now.toISOString().split('T')[0]),
+          lte: new Date(weekEnd.toISOString().split('T')[0]),
         },
         status: 'SCHEDULED',
       },
       include: {
-        assignment: {
+        assignments: {
           include: {
-            site: true,
+            sites: true,
           },
         },
       },
       orderBy: [
-        { shiftDate: 'asc' },
-        { startTime: 'asc' },
+        { shift_date: 'asc' },
+        { start_time: 'asc' },
       ],
       take: 5,
     });
@@ -172,17 +172,17 @@ export class EmployeePortalService {
     // Check clock-in/out status
     const lastAttendance = await this.prisma.attendance.findFirst({
       where: {
-        employeeId,
+        employee_id: employeeId,
       },
       orderBy: {
-        createdAt: 'desc',
+        created_at: 'desc',
       },
     });
 
     const clockStatus = {
-      isClockedIn: lastAttendance?.clockIn && !lastAttendance?.clockOut,
-      lastAction: lastAttendance?.clockOut ? 'CLOCK_OUT' : lastAttendance?.clockIn ? 'CLOCK_IN' : undefined,
-      lastActionTime: lastAttendance?.clockOut || lastAttendance?.clockIn || undefined,
+      isClockedIn: lastAttendance?.clock_in && !lastAttendance?.clock_out,
+      lastAction: lastAttendance?.clock_out ? 'CLOCK_OUT' : lastAttendance?.clock_in ? 'CLOCK_IN' : undefined,
+      lastActionTime: lastAttendance?.clock_out || lastAttendance?.clock_in || undefined,
     };
 
     return {
@@ -207,25 +207,25 @@ export class EmployeePortalService {
 
     const records = await this.prisma.attendance.findMany({
       where: {
-        employeeId,
-        clockIn: {
+        employee_id: employeeId,
+        clock_in: {
           gte: startDate,
           lte: endDate,
         },
       },
       include: {
-        shift: {
+        shifts: {
           include: {
-            assignment: {
+            assignments: {
               include: {
-                site: true,
+                sites: true,
               },
             },
           },
         },
       },
       orderBy: {
-        clockIn: 'desc',
+        clock_in: 'desc',
       },
     });
 
@@ -245,27 +245,27 @@ export class EmployeePortalService {
 
     const { startDate, endDate } = this.getShiftDateRange(queryDto.filter, queryDto.startDate, queryDto.endDate);
 
-    const shifts = await this.prisma.shift.findMany({
+    const shifts = await this.prisma.shifts.findMany({
       where: {
-        assignment: {
-          employeeId,
+        assignments: {
+          employee_id: employeeId,
           status: 'ACTIVE',
         },
-        shiftDate: {
-          gte: startDate.toISOString().split('T')[0],
-          lte: endDate.toISOString().split('T')[0],
+        shift_date: {
+          gte: new Date(startDate.toISOString().split('T')[0]),
+          lte: new Date(endDate.toISOString().split('T')[0]),
         },
       },
       include: {
-        assignment: {
+        assignments: {
           include: {
-            site: true,
+            sites: true,
           },
         },
       },
       orderBy: [
-        { shiftDate: 'asc' },
-        { startTime: 'asc' },
+        { shift_date: 'asc' },
+        { start_time: 'asc' },
       ],
     });
 
@@ -279,9 +279,9 @@ export class EmployeePortalService {
     await this.findEmployeeById(employeeId);
 
     const whereCondition: any = {
-      employeeId,
-      payrollRun: {
-        status: 'FINALIZED',
+      employee_id: employeeId,
+      payroll_runs: {
+        status: 'COMPLETED',
       },
     };
 
@@ -290,7 +290,7 @@ export class EmployeePortalService {
       const yearStart = new Date(year, 0, 1);
       const yearEnd = new Date(year, 11, 31);
       
-      whereCondition.payrollRun.payPeriodEnd = {
+      whereCondition.payroll_runs.pay_period_end = {
         gte: yearStart,
         lte: yearEnd,
       };
@@ -302,20 +302,20 @@ export class EmployeePortalService {
       const monthStart = new Date(year, month, 1);
       const monthEnd = new Date(year, month + 1, 0);
       
-      whereCondition.payrollRun.payPeriodEnd = {
+      whereCondition.payroll_runs.pay_period_end = {
         gte: monthStart,
         lte: monthEnd,
       };
     }
 
-    const payrollItems = await this.prisma.payrollItem.findMany({
+    const payrollItems = await this.prisma.payrollItems.findMany({
       where: whereCondition,
       include: {
-        payrollRun: true,
+        payroll_runs: true,
       },
       orderBy: {
-        payrollRun: {
-          payPeriodEnd: 'desc',
+        payroll_runs: {
+          pay_period_end: 'desc',
         },
       },
     });
@@ -326,12 +326,12 @@ export class EmployeePortalService {
   async generatePayslipDownload(employeeId: string, payrollId: string): Promise<string> {
     await this.findEmployeeById(employeeId);
 
-    const payrollItem = await this.prisma.payrollItem.findFirst({
+    const payrollItem = await this.prisma.payrollItems.findFirst({
       where: {
         id: payrollId,
-        employeeId,
-        payrollRun: {
-          status: 'FINALIZED',
+        employee_id: employeeId,
+        payroll_run: {
+          status: 'COMPLETED',
         },
       },
       include: {
@@ -354,7 +354,7 @@ export class EmployeePortalService {
 
     // In a real implementation, this would fetch from a document management system
     // For now, we'll return mock data based on employee metadata
-    const employee = await this.prisma.employee.findUnique({
+    const employee = await this.prisma.employees.findUnique({
       where: { id: employeeId },
     });
 
@@ -376,15 +376,15 @@ export class EmployeePortalService {
   async getNotifications(employeeId: string, unreadOnly?: boolean): Promise<EmployeeNotificationDto[]> {
     await this.findEmployeeById(employeeId);
 
-    const whereCondition: any = { employeeId };
+    const whereCondition: any = { employee_id: employeeId };
     if (unreadOnly) {
-      whereCondition.readAt = null;
+      whereCondition.read_at = null;
     }
 
-    const notifications = await this.prisma.shiftNotification.findMany({
+    const notifications = await this.prisma.shiftNotifications.findMany({
       where: whereCondition,
       orderBy: {
-        createdAt: 'desc',
+        created_at: 'desc',
       },
       take: 50, // Limit to recent notifications
     });
@@ -404,10 +404,10 @@ export class EmployeePortalService {
   async markNotificationRead(employeeId: string, notificationId: string): Promise<void> {
     await this.findEmployeeById(employeeId);
 
-    const notification = await this.prisma.shiftNotification.findFirst({
+    const notification = await this.prisma.shiftNotifications.findFirst({
       where: {
         id: notificationId,
-        employeeId,
+        employee_id: employeeId,
       },
     });
 
@@ -415,9 +415,9 @@ export class EmployeePortalService {
       throw new NotFoundException('Notification not found');
     }
 
-    await this.prisma.shiftNotification.update({
+    await this.prisma.shiftNotifications.update({
       where: { id: notificationId },
-      data: { readAt: new Date() },
+      data: { read_at: new Date() },
     });
   }
 
@@ -466,7 +466,7 @@ export class EmployeePortalService {
     }
 
     if (Object.keys(updateData).length > 0) {
-      await this.prisma.employee.update({
+      await this.prisma.employees.update({
         where: { id: employeeId },
         data: updateData,
       });
@@ -476,11 +476,11 @@ export class EmployeePortalService {
   async clockIn(employeeId: string, shiftId: string, location?: any): Promise<{ success: boolean; clockInTime: string }> {
     const employee = await this.findEmployeeById(employeeId);
 
-    const shift = await this.prisma.shift.findFirst({
+    const shift = await this.prisma.shifts.findFirst({
       where: {
         id: shiftId,
-        assignment: {
-          employeeId,
+        assignments: {
+          employee_id: employeeId,
           status: 'ACTIVE',
         },
       },
@@ -493,9 +493,9 @@ export class EmployeePortalService {
     // Check if already clocked in for this shift
     const existingAttendance = await this.prisma.attendance.findFirst({
       where: {
-        employeeId,
-        shiftId,
-        clockIn: { not: null },
+        employee_id: employeeId,
+        shift_id: shiftId,
+        clock_in: { not: null },
         clockOut: null,
       },
     });
@@ -508,9 +508,9 @@ export class EmployeePortalService {
 
     const attendance = await this.prisma.attendance.create({
       data: {
-        employeeId,
-        shiftId,
-        clockIn: clockInTime,
+        employee_id: employeeId,
+        shift_id: shiftId,
+        clock_in: clockInTime,
         status: 'PRESENT',
         metadata: {
           location,
@@ -530,10 +530,10 @@ export class EmployeePortalService {
 
     const attendance = await this.prisma.attendance.findFirst({
       where: {
-        employeeId,
-        shiftId,
-        clockIn: { not: null },
-        clockOut: null,
+        employee_id: employeeId,
+        shift_id: shiftId,
+        clock_in: { not: null },
+        clock_out: null,
       },
     });
 
@@ -542,12 +542,12 @@ export class EmployeePortalService {
     }
 
     const clockOutTime = new Date();
-    const hoursWorked = (clockOutTime.getTime() - attendance.clockIn.getTime()) / (1000 * 60 * 60);
+    const hoursWorked = (clockOutTime.getTime() - attendance.clock_in.getTime()) / (1000 * 60 * 60);
 
     await this.prisma.attendance.update({
       where: { id: attendance.id },
       data: {
-        clockOut: clockOutTime,
+        clock_out: clockOutTime,
         metadata: {
           ...((attendance.metadata as any) || {}),
           clockOutLocation: location,
@@ -567,10 +567,10 @@ export class EmployeePortalService {
   // Helper methods
 
   private async findEmployeeById(employeeId: string) {
-    const employee = await this.prisma.employee.findFirst({
+    const employee = await this.prisma.employees.findFirst({
       where: {
         id: employeeId,
-        companyId: this.tenantContext.getTenantId(),
+        company_id: this.tenantContext.getTenantId(),
       },
     });
 
@@ -668,8 +668,8 @@ export class EmployeePortalService {
   private async calculateAttendanceSummary(employeeId: string, startDate: Date, endDate: Date): Promise<AttendanceSummaryDto> {
     const attendanceRecords = await this.prisma.attendance.findMany({
       where: {
-        employeeId,
-        clockIn: {
+        employee_id: employeeId,
+        clock_in: {
           gte: startDate,
           lte: endDate,
         },
@@ -734,16 +734,16 @@ export class EmployeePortalService {
   }
 
   private mapToAttendanceDto(attendance: any): AttendanceRecordDto {
-    const hoursWorked = attendance.clockIn && attendance.clockOut
-      ? (attendance.clockOut.getTime() - attendance.clockIn.getTime()) / (1000 * 60 * 60)
+    const hoursWorked = attendance.clock_in && attendance.clock_out
+      ? (attendance.clock_out.getTime() - attendance.clock_in.getTime()) / (1000 * 60 * 60)
       : 0;
 
     return {
       id: attendance.id,
-      shiftDate: attendance.shift?.shiftDate || new Date().toISOString().split('T')[0],
-      siteName: attendance.shift?.assignment?.site?.name || 'Unknown Site',
-      clockIn: attendance.clockIn?.toISOString() || null,
-      clockOut: attendance.clockOut?.toISOString() || null,
+      shiftDate: attendance.shifts?.shift_date || new Date().toISOString().split('T')[0],
+      siteName: attendance.shifts?.assignments?.sites?.name || 'Unknown Site',
+      clockIn: attendance.clock_in?.toISOString() || null,
+      clockOut: attendance.clock_out?.toISOString() || null,
       hoursWorked: Math.round(hoursWorked * 100) / 100,
       status: attendance.status,
       locationVerified: !!(attendance.metadata as any)?.location,
@@ -754,13 +754,13 @@ export class EmployeePortalService {
   private mapToShiftDto(shift: any): ShiftScheduleDto {
     return {
       id: shift.id,
-      siteName: shift.assignment?.site?.name || 'Unknown Site',
-      siteAddress: shift.assignment?.site?.address || 'Unknown Address',
-      shiftDate: shift.shiftDate,
-      startTime: shift.startTime,
-      endTime: shift.endTime,
-      shiftType: shift.shiftType || 'regular',
-      role: shift.assignment?.role || 'Security Guard',
+      siteName: shift.assignments?.sites?.name || 'Unknown Site',
+      siteAddress: shift.assignments?.sites?.address || 'Unknown Address',
+      shiftDate: shift.shift_date,
+      startTime: shift.start_time,
+      endTime: shift.end_time,
+      shiftType: shift.shift_type || 'regular',
+      role: shift.assignments?.role || 'Security Guard',
       status: shift.status,
       instructions: (shift.metadata as any)?.instructions,
       requiresCheckIn: true, // Default to true for security
@@ -773,8 +773,8 @@ export class EmployeePortalService {
 
     return {
       id: payrollItem.id,
-      payPeriodStart: payrollItem.payrollRun.payPeriodStart.toISOString().split('T')[0],
-      payPeriodEnd: payrollItem.payrollRun.payPeriodEnd.toISOString().split('T')[0],
+      payPeriodStart: payrollItem.payroll_runs.pay_period_start.toISOString().split('T')[0],
+      payPeriodEnd: payrollItem.payroll_runs.pay_period_end.toISOString().split('T')[0],
       grossPay: calculationData.grossPay || payrollItem.amount || 0,
       netPay: payrollItem.amount || 0,
       taxDeductions: calculationData.taxDeductions || 0,
@@ -783,8 +783,8 @@ export class EmployeePortalService {
       regularHours: calculationData.regularHours || 0,
       overtimeHours: calculationData.overtimeHours || 0,
       payslipUrl: metadata.payslipUrl,
-      status: payrollItem.payrollRun.status,
-      paidDate: payrollItem.payrollRun.processedAt?.toISOString().split('T')[0],
+      status: payrollItem.payroll_runs.status,
+      paidDate: payrollItem.payroll_runs.processed_at?.toISOString().split('T')[0],
     };
   }
 

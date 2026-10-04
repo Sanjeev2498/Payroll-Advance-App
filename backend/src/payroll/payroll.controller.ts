@@ -64,13 +64,8 @@ export class PayrollController {
   @RequirePermissions(PayrollPermissions.CREATE_PAYROLL_RUN)
   async createPayrollRun(
     @Body() createPayrollRunDto: CreatePayrollRunDto,
-  ): Promise<{ success: boolean; data: PayrollSummary }> {
-    const result = await this.payrollService.createPayrollRun(createPayrollRunDto);
-    
-    return {
-      success: true,
-      data: result,
-    };
+  ): Promise<PayrollSummary> {
+    return await this.payrollService.createPayrollRun(createPayrollRunDto);
   }
 
   @Get('runs')
@@ -89,13 +84,7 @@ export class PayrollController {
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
     @Query('limit', new ParseIntPipe({ optional: true })) limit = 20,
   ) {
-    const result = await this.payrollService.listPayrollRuns(page, limit);
-    
-    return {
-      success: true,
-      data: result.data,
-      pagination: result.pagination,
-    };
+    return await this.payrollService.listPayrollRuns(page, limit);
   }
 
   @Get('runs/:id')
@@ -121,10 +110,7 @@ export class PayrollController {
       throw new NotFoundException(`Payroll run with ID ${id} not found`);
     }
 
-    return {
-      success: true,
-      data: payrollRun,
-    };
+    return payrollRun;
   }
 
   @Get('runs/:id/summary')
@@ -159,16 +145,13 @@ export class PayrollController {
         end: payrollRun.pay_period_end,
       },
       status: payrollRun.status,
-      employeeCount: new Set((payrollRun as any).payrollItems?.map((item: any) => item.employeeId) || []).size,
+      employeeCount: new Set((payrollRun as any).payrollItems?.map((item: any) => item.employee_id) || []).size,
       totalAmount: payrollRun.total_amount,
       processedAt: payrollRun.processed_at,
       itemBreakdown: this.calculateItemBreakdown((payrollRun as any).payrollItems || []),
     };
 
-    return {
-      success: true,
-      data: summary,
-    };
+    return summary;
   }
 
   @Get('employees/:employeeId/history')
@@ -189,13 +172,10 @@ export class PayrollController {
     // This would be implemented to get employee's payroll history
     // For now, returning a placeholder structure
     return {
-      success: true,
-      data: {
-        employeeId,
-        payrollHistory: [], // Would contain actual payroll items for this employee
-        totalEarnings: 0,
-        totalDeductions: 0,
-      },
+      employeeId,
+      payrollHistory: [], // Would contain actual payroll items for this employee
+      totalEarnings: 0,
+      totalDeductions: 0,
     };
   }
 
@@ -421,7 +401,7 @@ export class PayrollController {
     payrollItems.forEach(item => {
       const amount = parseFloat(item.amount.toString());
       
-      switch (item.itemType) {
+      switch (item.item_type || item.itemType) {
         case 'BASIC_PAY':
           breakdown.basicPay += amount;
           break;

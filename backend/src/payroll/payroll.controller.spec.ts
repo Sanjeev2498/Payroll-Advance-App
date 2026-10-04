@@ -25,13 +25,13 @@ describe('PayrollController', () => {
 
   const mockPayrollRun = {
     id: 'run-uuid',
-    runNumber: 'PAY-2024-01-001',
-    companyId: 'company-uuid',
+    run_number: 'PAY-2024-01-001',
+    company_id: 'company-uuid',
     status: PayrollStatus.COMPLETED,
-    payPeriodStart: new Date('2024-01-01'),
-    payPeriodEnd: new Date('2024-01-31'),
-    totalAmount: new Decimal(10000),
-    processedAt: new Date(),
+    pay_period_start: new Date('2024-01-01'),
+    pay_period_end: new Date('2024-01-31'),
+    total_amount: new Decimal(10000),
+    processed_at: new Date(),
     payrollItems: [],
   };
 
@@ -71,10 +71,7 @@ describe('PayrollController', () => {
 
       const result = await controller.createPayrollRun(createPayrollRunDto);
 
-      expect(result).toEqual({
-        success: true,
-        data: mockPayrollSummary,
-      });
+      expect(result).toEqual(mockPayrollSummary);
       expect(payrollService.createPayrollRun).toHaveBeenCalledWith(createPayrollRunDto);
     });
 
@@ -103,11 +100,7 @@ describe('PayrollController', () => {
 
       const result = await controller.listPayrollRuns();
 
-      expect(result).toEqual({
-        success: true,
-        data: mockResult.data,
-        pagination: mockResult.pagination,
-      });
+      expect(result).toEqual(mockResult);
       expect(payrollService.listPayrollRuns).toHaveBeenCalledWith(1, 20);
     });
 
@@ -125,11 +118,7 @@ describe('PayrollController', () => {
 
       const result = await controller.listPayrollRuns(2, 10);
 
-      expect(result).toEqual({
-        success: true,
-        data: mockResult.data,
-        pagination: mockResult.pagination,
-      });
+      expect(result).toEqual(mockResult);
       expect(payrollService.listPayrollRuns).toHaveBeenCalledWith(2, 10);
     });
   });
@@ -142,10 +131,7 @@ describe('PayrollController', () => {
 
       const result = await controller.getPayrollRun(payrollRunId);
 
-      expect(result).toEqual({
-        success: true,
-        data: mockPayrollRun,
-      });
+      expect(result).toEqual(mockPayrollRun);
       expect(payrollService.getPayrollRun).toHaveBeenCalledWith(payrollRunId);
     });
 
@@ -186,13 +172,12 @@ describe('PayrollController', () => {
 
       const result = await controller.getPayrollRunSummary(payrollRunId);
 
-      expect(result.success).toBe(true);
-      expect(result.data.payrollRunId).toBe(payrollRunId);
-      expect(result.data.runNumber).toBe('PAY-2024-01-001');
-      expect(result.data.employeeCount).toBe(1); // Unique employee count
-      expect(result.data.itemBreakdown).toHaveProperty('basicPay');
-      expect(result.data.itemBreakdown).toHaveProperty('overtime');
-      expect(result.data.itemBreakdown).toHaveProperty('taxDeductions');
+      expect(result.payrollRunId).toBe(payrollRunId);
+      expect(result.runNumber).toBe('PAY-2024-01-001');
+      expect(result.employeeCount).toBe(1); // Unique employee count
+      expect(result.itemBreakdown).toHaveProperty('basicPay');
+      expect(result.itemBreakdown).toHaveProperty('overtime');
+      expect(result.itemBreakdown).toHaveProperty('taxDeductions');
     });
 
     it('should throw NotFoundException for non-existent payroll run', async () => {
@@ -211,21 +196,17 @@ describe('PayrollController', () => {
       const result = await controller.getEmployeePayrollHistory(employeeId);
 
       expect(result).toEqual({
-        success: true,
-        data: {
-          employeeId,
-          payrollHistory: [],
-          totalEarnings: 0,
-          totalDeductions: 0,
-        },
+        employeeId,
+        payrollHistory: [],
+        totalEarnings: 0,
+        totalDeductions: 0,
       });
     });
 
     it('should accept custom limit parameter', async () => {
       const result = await controller.getEmployeePayrollHistory(employeeId, 6);
 
-      expect(result.success).toBe(true);
-      expect(result.data.employeeId).toBe(employeeId);
+      expect(result.employeeId).toBe(employeeId);
     });
   });
 

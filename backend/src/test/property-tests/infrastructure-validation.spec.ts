@@ -126,16 +126,16 @@ describe('Property Test Infrastructure Validation', () => {
     expect(hierarchy.company.id).toBe(testTenantId);
 
     expect(hierarchy.clients).toHaveLength(1);
-    expect(hierarchy.clients[0].companyId).toBe(testTenantId);
+    expect(hierarchy.clients[0].company_id).toBe(testTenantId);
 
     expect(hierarchy.contracts).toHaveLength(1);
-    expect(hierarchy.contracts[0].clientId).toBe(hierarchy.clients[0].id);
+    expect(hierarchy.contracts[0].client_id).toBe(hierarchy.clients[0].id);
 
     expect(hierarchy.sites).toHaveLength(1);
-    expect(hierarchy.sites[0].contractId).toBe(hierarchy.contracts[0].id);
+    expect(hierarchy.sites[0].contract_id).toBe(hierarchy.contracts[0].id);
 
     expect(hierarchy.employees).toHaveLength(1);
-    expect(hierarchy.employees[0].companyId).toBe(testTenantId);
+    expect(hierarchy.employees[0].company_id).toBe(testTenantId);
   });
 
   /**

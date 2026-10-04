@@ -577,7 +577,7 @@ export class DeploymentTestDataGenerator {
       data: {
         id: uuidv4(),
         name: scenario.companyName,
-        slug: scenario.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-recommendation-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        slug: scenario.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20) + '-' + Math.random().toString(36).substr(2, 6),
         created_at: new Date(),
         updated_at: new Date(),
         settings: {},

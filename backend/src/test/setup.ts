@@ -9,32 +9,38 @@ import './env-setup'; // Import centralized environment setup
  */
 
 let prisma: PrismaClient;
-let pool: Pool;
 
 beforeAll(async () => {
   try {
-    // Initialize database connection (schema already set up globally)
-    pool = new Pool({ 
-      connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: 5000,
-      idleTimeoutMillis: 5000,
-      max: 2, // Reduced connection pool for tests
-      min: 0,
-    });
-    
-    const adapter = new PrismaPg(pool);
-    
-    // Initialize Prisma client (no schema setup needed)
-    prisma = new PrismaClient({
-      adapter,
-      log: process.env.NODE_ENV === 'test' ? [] : ['error'], // Reduce logging in tests
-    });
+    // In test environment, create a lightweight prisma client without managing the pool
+    // The pool is managed by PrismaService globally
+    if (process.env.NODE_ENV === 'test') {
+      const pool = new Pool({ 
+        connectionString: process.env.DATABASE_URL,
+        connectionTimeoutMillis: 10000,
+        idleTimeoutMillis: 10000,
+        max: 1, // Minimal pool for test setup
+        min: 0,
+      });
+      
+      const adapter = new PrismaPg(pool);
+      
+      prisma = new PrismaClient({
+        adapter,
+        log: [], // No logging in test setup
+      });
+    } else {
+      // For non-test environments, use standard client
+      prisma = new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['error'] : [],
+      });
+    }
 
     // Connect to the database with timeout
     await Promise.race([
       prisma.$connect(),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout after 5 seconds')), 5000)
+        setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
       )
     ]);
     
@@ -44,28 +50,21 @@ beforeAll(async () => {
     console.error('Failed to connect to test database:', error);
     throw error;
   }
-}, 8000); // Reduced timeout since no schema setup
+}, 15000); // Increased timeout
 
 afterAll(async () => {
-  // Clean up connections
+  // Clean up connections with better error handling
   try {
     if (prisma) {
-      await Promise.race([
-        prisma.$disconnect(),
-        new Promise((resolve) => setTimeout(() => resolve('timeout'), 3000))
-      ]);
-    }
-    if (pool) {
-      await Promise.race([
-        pool.end(),
-        new Promise((resolve) => setTimeout(() => resolve('timeout'), 2000))
-      ]);
+      // Simplified disconnect without timeout race to prevent "Cannot log after tests are done"
+      await prisma.$disconnect();
     }
     console.log('✅ Test database cleanup completed');
   } catch (error) {
     console.error('Error during test cleanup:', error);
+    // Don't throw errors in cleanup to avoid masking test failures
   }
-}, 5000);
+}, 3000); // Reduced timeout from 8000ms to 3000ms
 
 // Clean database between tests to ensure isolation
 beforeEach(async () => {

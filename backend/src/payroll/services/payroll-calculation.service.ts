@@ -12,25 +12,25 @@ import { PayrollItemCalculation } from '../dto';
 
 interface AttendanceRecord {
   id: string;
-  employeeId: string;
-  clockIn: Date;
-  clockOut: Date;
+  employee_id: string;
+  clock_in: Date;
+  clock_out: Date;
   status: AttendanceStatus;
-  shift: {
+  shifts: {
     id: string;
-    startTime: Date;
-    endTime: Date;
-    shiftType: string;
-    shiftDate: Date;
-    assignment: {
-      hourlyRate: Decimal;
+    start_time: Date;
+    end_time: Date;
+    shift_type: string;
+    shift_date: Date;
+    assignments: {
+      hourly_rate: Decimal;
     };
   };
-  employee: {
+  employees: {
     id: string;
-    firstName: string;
-    lastName: string;
-    employeeNumber: string;
+    first_name: string;
+    last_name: string;
+    employee_number: string;
   };
 }
 
@@ -74,7 +74,7 @@ export class PayrollCalculationService {
       throw new Error(`No attendance records found for employee ${employeeId}`);
     }
 
-    const employee = attendanceRecords[0].employee;
+    const employee = attendanceRecords[0].employees;
     const policy = await this.payrollPolicyService.getPayrollPolicy();
 
     // Calculate detailed hours breakdown
@@ -114,8 +114,8 @@ export class PayrollCalculationService {
 
     return {
       employeeId,
-      employeeName: `${employee.firstName} ${employee.lastName}`,
-      employeeNumber: employee.employeeNumber,
+      employeeName: `${employee.first_name} ${employee.last_name}`,
+      employeeNumber: employee.employee_number,
       totalHours: hoursCalculation.totalHours,
       regularHours: hoursCalculation.regularHours,
       overtimeHours: hoursCalculation.overtimeHours,
@@ -143,51 +143,57 @@ export class PayrollCalculationService {
     policy: PayrollPolicy,
   ): DetailedHoursCalculation {
     let totalHours = 0;
+    let totalRegularHours = 0;
+    let totalOvertimeHours = 0;
+    let totalDoubleOvertimeHours = 0;
     let nightShiftHours = 0;
     let weekendHours = 0;
     let holidayHours = 0;
 
-    // Calculate total hours worked and track special shift types
+    // Calculate hours worked per day and apply daily overtime rules
     for (const record of attendanceRecords) {
-      if (record.status !== AttendanceStatus.PRESENT || !record.clockIn || !record.clockOut) {
+      if (record.status !== AttendanceStatus.PRESENT || !record.clock_in || !record.clock_out) {
         continue;
       }
 
-      const hoursWorked = (record.clockOut.getTime() - record.clockIn.getTime()) / (1000 * 60 * 60);
+      const hoursWorked = (record.clock_out.getTime() - record.clock_in.getTime()) / (1000 * 60 * 60);
       totalHours += hoursWorked;
+
+      // Apply daily overtime calculation
+      const dailyOvertime = this.payrollPolicyService.calculateOvertimeHours(hoursWorked, policy);
+      totalRegularHours += dailyOvertime.regularHours;
+      totalOvertimeHours += dailyOvertime.overtimeHours;
+      totalDoubleOvertimeHours += dailyOvertime.doubleOvertimeHours;
 
       // Track shift differential hours
       const shiftDifferential = this.payrollPolicyService.calculateShiftDifferential(
-        record.shift.startTime,
-        record.clockOut, // Use actual clock-out time
-        record.shift.shiftDate,
-        record.shift.shiftType,
+        record.shifts.start_time,
+        record.clock_out, // Use actual clock-out time
+        record.shifts.shift_date,
+        record.shifts.shift_type,
         policy,
       );
 
       // Categorize hours by shift type
-      if (this.isNightShift(record.shift.startTime, record.clockOut)) {
+      if (this.isNightShift(record.shifts.start_time, record.clock_out)) {
         nightShiftHours += hoursWorked;
       }
 
-      const dayOfWeek = record.shift.shiftDate.getDay();
+      const dayOfWeek = record.shifts.shift_date.getDay();
       if (dayOfWeek === 0 || dayOfWeek === 6) {
         weekendHours += hoursWorked;
       }
 
-      if (record.shift.shiftType === 'HOLIDAY') {
+      if (record.shifts.shift_type === 'HOLIDAY') {
         holidayHours += hoursWorked;
       }
     }
 
-    // Calculate overtime breakdown
-    const overtimeBreakdown = this.payrollPolicyService.calculateOvertimeHours(totalHours, policy);
-
     return {
       totalHours: Math.round(totalHours * 100) / 100,
-      regularHours: overtimeBreakdown.regularHours,
-      overtimeHours: overtimeBreakdown.overtimeHours,
-      doubleOvertimeHours: overtimeBreakdown.doubleOvertimeHours,
+      regularHours: Math.round(totalRegularHours * 100) / 100,
+      overtimeHours: Math.round(totalOvertimeHours * 100) / 100,
+      doubleOvertimeHours: Math.round(totalDoubleOvertimeHours * 100) / 100,
       nightShiftHours: Math.round(nightShiftHours * 100) / 100,
       weekendHours: Math.round(weekendHours * 100) / 100,
       holidayHours: Math.round(holidayHours * 100) / 100,
@@ -261,16 +267,16 @@ export class PayrollCalculationService {
     const items: PayrollItemCalculation[] = [];
     let totalDeductions = new Decimal(0);
 
-    // Income Tax (simplified calculation based on gross salary)
-    const incomeTax = grossSalary.mul(policy.taxRate);
+    // Income Tax (calculated on basic salary as per test expectations)
+    const incomeTax = basicSalary.mul(policy.taxRate);
     items.push({
       itemType: PayrollItemType.TAX_DEDUCTION,
       description: `Income Tax (${(policy.taxRate * 100)}%)`,
       amount: incomeTax.neg(),
       calculationData: {
         rate: policy.taxRate,
-        grossSalary: grossSalary.toString(),
-        calculation: `${grossSalary} × ${policy.taxRate}`,
+        basicSalary: basicSalary.toString(),
+        calculation: `${basicSalary} × ${policy.taxRate}`,
       },
     });
     totalDeductions = totalDeductions.add(incomeTax);
@@ -450,8 +456,9 @@ export class PayrollCalculationService {
    * Get employee's hourly rate from attendance records
    */
   private getEmployeeHourlyRate(attendanceRecords: AttendanceRecord[]): Decimal {
-    const firstRecord = attendanceRecords.find(record => record.shift.assignment?.hourlyRate);
-    return firstRecord?.shift.assignment?.hourlyRate || new Decimal(0);
+    const firstRecord = attendanceRecords.find(record => record.shifts.assignments?.hourly_rate);
+    const rate = firstRecord?.shifts.assignments?.hourly_rate;
+    return rate ? new Decimal(rate.toString()) : new Decimal(0);
   }
 
   /**

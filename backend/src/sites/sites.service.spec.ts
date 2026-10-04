@@ -41,7 +41,7 @@ const mockSite = {
 const mockClient = {
   id: 'test-client-id',
   name: 'Test Client',
-  contractStatus: 'ACTIVE',
+  contract_status: 'ACTIVE',
   companyId: 'test-tenant-id',
 };
 
@@ -103,24 +103,25 @@ describe('SitesService', () => {
       const mockContract = {
         id: 'test-contract-id',
         status: 'ACTIVE',
-        client: mockClient,
+        client_id: mockClient.id,
+        clients: mockClient,
       };
 
       mockClientRepository.findById.mockResolvedValue(mockClient);
-      prismaMock.contract.findFirst.mockResolvedValue(mockContract);
+      prismaMock.contracts.findFirst.mockResolvedValue(mockContract); // Updated to match plural schema
       mockSiteRepository.create.mockResolvedValue(mockSite);
 
       const result = await service.create(createSiteDto);
 
-      expect(prismaMock.contract.findFirst).toHaveBeenCalledWith({
+      expect(prismaMock.contracts.findFirst).toHaveBeenCalledWith({
         where: {
           id: createSiteDto.contractId,
-          client: {
-            companyId: expect.any(String),
+          clients: {
+            company_id: expect.any(String),
           },
         },
         include: {
-          client: true,
+          clients: true,
         },
       });
       expect(siteRepository.create).toHaveBeenCalled();
@@ -140,7 +141,7 @@ describe('SitesService', () => {
         },
       };
 
-      prismaMock.contract.findFirst.mockResolvedValue(null); // No contract found
+      prismaMock.contracts.findFirst.mockResolvedValue(null); // No contract found
 
       await expect(service.create(createSiteDto)).rejects.toThrow(BadRequestException);
     });
@@ -161,10 +162,11 @@ describe('SitesService', () => {
       const terminatedContract = {
         id: 'test-contract-id',
         status: 'TERMINATED',
-        client: mockClient,
+        client_id: mockClient.id,
+        clients: mockClient,
       };
 
-      prismaMock.contract.findFirst.mockResolvedValue(terminatedContract);
+      prismaMock.contracts.findFirst.mockResolvedValue(terminatedContract);
 
       await expect(service.create(createSiteDto)).rejects.toThrow(BadRequestException);
     });
@@ -275,24 +277,24 @@ describe('SitesService', () => {
       const sites = [mockSite];
 
       mockClientRepository.findById.mockResolvedValue(mockClient);
-      prismaMock.site.findMany.mockResolvedValue(sites);
+      prismaMock.sites.findMany.mockResolvedValue(sites);
 
       const result = await service.findByClientId(clientId);
 
       expect(clientRepository.findById).toHaveBeenCalledWith(clientId);
-      expect(prismaMock.site.findMany).toHaveBeenCalledWith({
+      expect(prismaMock.sites.findMany).toHaveBeenCalledWith({
         where: {
-          contract: {
-            clientId: clientId,
-            client: {
-              companyId: 'test-tenant-id',
+          contracts: {
+            client_id: clientId,
+            clients: {
+              company_id: expect.any(String),
             },
           },
         },
         include: {
-          contract: {
+          contracts: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,

@@ -78,8 +78,8 @@ describe('Billing Integration Tests', () => {
     it('should create invoice with basic deployment data', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2025-08-01',
-        billingPeriodEnd: '2025-08-31',
+        billingPeriodStart: '2026-08-01',
+        billingPeriodEnd: '2026-08-31',
         siteIds: [testSiteId],
       };
 
@@ -96,8 +96,8 @@ describe('Billing Integration Tests', () => {
     it('should calculate GST correctly for Indian billing', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2025-08-01',
-        billingPeriodEnd: '2025-08-31',
+        billingPeriodStart: '2026-08-01',
+        billingPeriodEnd: '2026-08-31',
         siteIds: [testSiteId],
         gstDetails: {
           companyGstin: '07AAAPZ2581P1ZF', // Delhi GSTIN
@@ -120,8 +120,8 @@ describe('Billing Integration Tests', () => {
     it('should handle additional charges correctly', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2025-08-01',
-        billingPeriodEnd: '2025-08-31',
+        billingPeriodStart: '2026-08-01',
+        billingPeriodEnd: '2026-08-31',
         siteIds: [testSiteId],
         additionalCharges: [
           {
@@ -150,16 +150,16 @@ describe('Billing Integration Tests', () => {
       // Create a few test invoices
       const invoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2025-08-01',
-        billingPeriodEnd: '2025-08-31',
+        billingPeriodStart: '2026-08-01',
+        billingPeriodEnd: '2026-08-31',
         siteIds: [testSiteId],
       };
 
       await billingService.createInvoice(invoiceDto);
       await billingService.createInvoice({
         ...invoiceDto,
-        billingPeriodStart: '2024-02-01',
-        billingPeriodEnd: '2024-02-28',
+        billingPeriodStart: '2026-07-01',
+        billingPeriodEnd: '2026-07-05', // Use July dates (no deployment data needed for this specific test)
       });
 
       const invoiceList = await billingService.listInvoices({
@@ -176,8 +176,8 @@ describe('Billing Integration Tests', () => {
     it('should update invoice status', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2025-08-01',
-        billingPeriodEnd: '2025-08-31',
+        billingPeriodStart: '2026-08-01',
+        billingPeriodEnd: '2026-08-31',
         siteIds: [testSiteId],
       };
 
@@ -193,8 +193,8 @@ describe('Billing Integration Tests', () => {
     it('should calculate billing preview correctly', async () => {
       const createInvoiceDto: CreateInvoiceDto = {
         contractId: testContractId,
-        billingPeriodStart: '2025-08-01',
-        billingPeriodEnd: '2025-08-31',
+        billingPeriodStart: '2026-08-01',
+        billingPeriodEnd: '2026-08-31',
         siteIds: [testSiteId],
       };
 
@@ -272,7 +272,7 @@ describe('Billing Integration Tests', () => {
         hourly_rate_iv: 'test_iv_1234567890123456789012', // 26 chars (max 32)
         hourly_rate_tag: 'test_tag_123456789012345678901', // 27 chars (max 32)
         status: 'ACTIVE',
-        start_date: new Date('2025-08-01'), // Current year
+        start_date: new Date('2026-08-01'), // Current year
         created_at: new Date(),
         updated_at: new Date(),
       },
@@ -281,7 +281,7 @@ describe('Billing Integration Tests', () => {
 
     // Create test shifts and attendance
     for (let i = 1; i <= 5; i++) {
-      const shiftDate = new Date(`2025-08-0${i}`); // Current year
+      const shiftDate = new Date(`2026-08-0${i}`); // Current year
       
       const shift = await prismaService.shifts.create({
         data: {
@@ -315,6 +315,43 @@ describe('Billing Integration Tests', () => {
         },
       });
     }
+
+    // Create additional test shifts and attendance for July (for second invoice)
+    for (let i = 1; i <= 5; i++) {
+      const shiftDate = new Date(`2026-07-0${i}`); // July 1-5, 2026
+      
+      const shift = await prismaService.shifts.create({
+        data: {
+          id: TestDataUtil.generateTestId(),
+          assignment_id: testAssignmentId,
+          site_id: testSiteId,
+          shift_date: shiftDate,
+          start_time: new Date(`1970-01-01T09:00:00.000Z`),
+          end_time: new Date(`1970-01-01T17:00:00.000Z`),
+          shift_type: 'REGULAR',
+          status: 'COMPLETED',
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+
+      // Create attendance record for July
+      await prismaService.attendance.create({
+        data: {
+          id: TestDataUtil.generateTestId(),
+          employee_id: testEmployeeId,
+          shift_id: shift.id,
+          clock_in: new Date(`${shiftDate.toISOString().split('T')[0]}T09:00:00.000Z`),
+          clock_out: new Date(`${shiftDate.toISOString().split('T')[0]}T17:00:00.000Z`),
+          status: 'PRESENT',
+          location_data: {},
+          verification_data: {},
+          notes: 'Test attendance record for July',
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+    }
   }
 
   async function cleanupTestData() {
@@ -328,7 +365,9 @@ describe('Billing Integration Tests', () => {
 
       await prismaService.shifts.deleteMany({
         where: {
-          sites: { contracts: { clients: { company_id: testCompanyId } } },
+          sites: { 
+            clients: { company_id: testCompanyId }
+          },
         },
       });
 
@@ -349,7 +388,9 @@ describe('Billing Integration Tests', () => {
       });
 
       await prismaService.sites.deleteMany({
-        where: { contracts: { clients: { company_id: testCompanyId } } },
+        where: { 
+          clients: { company_id: testCompanyId }
+        },
       });
 
       await prismaService.contracts.deleteMany({

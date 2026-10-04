@@ -21,7 +21,7 @@ export enum shiftsPriority {
 export interface ShiftFilters {
   search?: string;
   assignmentId?: string;
-  siteId?: string;
+  site_id?: string;
   status?: ShiftStatus;
   shiftType?: ShiftType;
   priority?: shiftsPriority;
@@ -66,36 +66,48 @@ export class ShiftRepository extends TenantAwareRepository {
   async create(shiftData: Prisma.shiftsCreateInput): Promise<any> {
     this.logger.log('Creating shift');
 
-    return this.writeWithTenant(() =>
-      this.prisma.shift.create({
-        data: shiftData,
-        include: {
-          assignment: {
-            include: {
-              employee: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  employeeNumber: true,
+    try {
+      const result = await this.writeWithTenant(() =>
+        this.prisma.shifts.create({
+          data: shiftData,
+          include: {
+            assignments: {
+              include: {
+                employees: {
+                  select: {
+                    id: true,
+                    first_name: true,
+                    last_name: true,
+                    employee_number: true,
+                  },
                 },
               },
             },
-          },
-          site: {
-            include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
+            sites: {
+              include: {
+                clients: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
                 },
               },
             },
+            shift_templates: true,
           },
-          template: true,
-        },
-      })
-    );
+        })
+      );
+      
+      if (!result) {
+        throw new Error('Shift creation failed - Prisma returned undefined');
+      }
+      
+      this.logger.log(`Successfully created shift with ID: ${result.id}`);
+      return result;
+    } catch (error) {
+      this.logger.error('Database write operation failed:', error);
+      throw error;
+    }
   }
 
   /**
@@ -105,7 +117,7 @@ export class ShiftRepository extends TenantAwareRepository {
     filters: ShiftFilters = {},
     page: number = 1,
     limit: number = 20,
-    sortBy: string = 'shiftDate',
+    sortBy: string = 'shift_date',
     sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     this.logger.log('Finding shifts', { filters, page, limit });
@@ -116,29 +128,29 @@ export class ShiftRepository extends TenantAwareRepository {
 
     return this.findWithTenant(async () => {
       const [shifts, total] = await Promise.all([
-        this.prisma.shift.findMany({
+        this.prisma.shifts.findMany({
           where,
           skip,
           take: limit,
           orderBy,
           include: {
-            assignment: {
+            assignments: {
               include: {
-                employee: {
+                employees: {
                   select: {
                     id: true,
-                    firstName: true,
-                    lastName: true,
-                    employeeNumber: true,
+                    first_name: true,
+                    last_name: true,
+                    employee_number: true,
                   },
                 },
               },
             },
-            site: {
+            sites: {
               include: {
-                contract: {
+                contracts: {
                   include: {
-                    client: {
+                    clients: {
                       select: {
                         id: true,
                         name: true,
@@ -148,8 +160,8 @@ export class ShiftRepository extends TenantAwareRepository {
                 },
               },
             },
-            template: true,
-            attendanceRecords: {
+            shift_templates: true,
+            attendance: {
               select: {
                 id: true,
                 status: true,
@@ -159,7 +171,7 @@ export class ShiftRepository extends TenantAwareRepository {
             },
           },
         }),
-        this.prisma.shift.count({ where }),
+        this.prisma.shifts.count({ where }),
       ]);
 
       return {
@@ -179,37 +191,37 @@ export class ShiftRepository extends TenantAwareRepository {
     this.logger.log(`Finding shift by ID: ${id}`);
 
     return this.findWithTenant(() =>
-      this.prisma.shift.findFirst({
+      this.prisma.shifts.findFirst({
         where: {
           id,
-          site: {
-            contract: {
-              client: {
-                companyId: this.tenantContext.getTenantId(),
+          sites: {
+            contracts: {
+              clients: {
+                company_id: this.tenantContext.getTenantId(),
               },
             },
           },
         },
         include: {
-          assignment: {
+          assignments: {
             include: {
-              employee: {
+              employees: {
                 select: {
                   id: true,
-                  firstName: true,
-                  lastName: true,
-                  employeeNumber: true,
+                  first_name: true,
+                  last_name: true,
+                  employee_number: true,
                   skills: true,
                   certifications: true,
                 },
               },
             },
           },
-          site: {
+          sites: {
             include: {
-              contract: {
+              contracts: {
                 include: {
-                  client: {
+                  clients: {
                     select: {
                       id: true,
                       name: true,
@@ -219,9 +231,9 @@ export class ShiftRepository extends TenantAwareRepository {
               },
             },
           },
-          template: true,
-          attendanceRecords: true,
-          notifications: true,
+          shift_templates: true,
+          attendance: true,
+          shift_notifications: true,
         },
       })
     );
@@ -234,32 +246,32 @@ export class ShiftRepository extends TenantAwareRepository {
     this.logger.log(`Updating shift: ${id}`);
 
     return this.writeWithTenant(() =>
-      this.prisma.shift.update({
+      this.prisma.shifts.update({
         where: { 
           id,
-          site: {
-            client: {
-              companyId: this.tenantContext.getTenantId(),
+          sites: {
+            clients: {
+              company_id: this.tenantContext.getTenantId(),
             },
           },
         },
         data: updateData,
         include: {
-          assignment: {
+          assignments: {
             include: {
-              employee: {
+              employees: {
                 select: {
                   id: true,
-                  firstName: true,
-                  lastName: true,
-                  employeeNumber: true,
+                  first_name: true,
+                  last_name: true,
+                  employee_number: true,
                 },
               },
             },
           },
-          site: {
+          sites: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -267,7 +279,7 @@ export class ShiftRepository extends TenantAwareRepository {
               },
             },
           },
-          template: true,
+          shift_templates: true,
         },
       })
     );
@@ -277,22 +289,22 @@ export class ShiftRepository extends TenantAwareRepository {
    * Find shifts by assignment
    */
   async findByAssignmentId(assignmentId: string): Promise<any[]> {
-    this.logger.log(`Finding shifts for assignment: ${assignmentId}`);
+    this.logger.log(`Finding shifts for assignments: ${assignmentId}`);
 
     return this.findWithTenant(() =>
-      this.prisma.shift.findMany({
+      this.prisma.shifts.findMany({
         where: {
-          assignmentId,
-          site: {
-            client: {
-              companyId: this.tenantContext.getTenantId(),
+          assignment_id: assignmentId,
+          sites: {
+            clients: {
+              company_id: this.tenantContext.getTenantId(),
             },
           },
         },
         include: {
-          site: {
+          sites: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -300,7 +312,7 @@ export class ShiftRepository extends TenantAwareRepository {
               },
             },
           },
-          attendanceRecords: {
+          attendance: {
             select: {
               id: true,
               status: true,
@@ -310,7 +322,7 @@ export class ShiftRepository extends TenantAwareRepository {
           },
         },
         orderBy: {
-          shiftDate: 'asc',
+          shift_date: 'asc',
         },
       })
     );
@@ -319,11 +331,11 @@ export class ShiftRepository extends TenantAwareRepository {
   /**
    * Find shifts by site
    */
-  async findBySiteId(siteId: string, dateFrom?: Date, dateTo?: Date): Promise<any[]> {
-    this.logger.log(`Finding shifts for site: ${siteId}`);
+  async findBySiteId(site_id: string, dateFrom?: Date, dateTo?: Date): Promise<any[]> {
+    this.logger.log(`Finding shifts for site: ${site_id}`);
 
     const where: Prisma.shiftsWhereInput = {
-      site_id: siteId,
+      site_id: site_id,
       sites: {
         contracts: {
           clients: {
@@ -340,22 +352,22 @@ export class ShiftRepository extends TenantAwareRepository {
     }
 
     return this.findWithTenant(() =>
-      this.prisma.shift.findMany({
+      this.prisma.shifts.findMany({
         where,
         include: {
-          assignment: {
+          assignments: {
             include: {
-              employee: {
+              employees: {
                 select: {
                   id: true,
-                  firstName: true,
-                  lastName: true,
-                  employeeNumber: true,
+                  first_name: true,
+                  last_name: true,
+                  employee_number: true,
                 },
               },
             },
           },
-          attendanceRecords: {
+          attendance: {
             select: {
               id: true,
               status: true,
@@ -365,7 +377,7 @@ export class ShiftRepository extends TenantAwareRepository {
           },
         },
         orderBy: {
-          shiftDate: 'asc',
+          shift_date: 'asc',
         },
       })
     );
@@ -378,21 +390,21 @@ export class ShiftRepository extends TenantAwareRepository {
     this.logger.log('Finding shifts needing coverage');
 
     return this.findWithTenant(() =>
-      this.prisma.shift.findMany({
+      this.prisma.shifts.findMany({
         where: {
-          site: {
-            client: {
-              companyId: this.tenantContext.getTenantId(),
+          sites: {
+            clients: {
+              company_id: this.tenantContext.getTenantId(),
             },
           },
           OR: [
-            { assignmentId: null },
+            { assignment_id: null },
             { status: 'NEEDS_COVERAGE' },
             {
               AND: [
                 { 
-                  coverageAssigned: { 
-                    lt: this.prisma.shift.fields.coverageRequired 
+                  coverage_assigned: { 
+                    lt: this.prisma.shifts.fields.coverage_required 
                   } 
                 },
                 { 
@@ -403,14 +415,14 @@ export class ShiftRepository extends TenantAwareRepository {
               ],
             },
           ],
-          shiftDate: {
+          shift_date: {
             gte: new Date(),
           },
         },
         include: {
-          site: {
+          sites: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -421,7 +433,7 @@ export class ShiftRepository extends TenantAwareRepository {
         },
         orderBy: [
           { priority: 'desc' },
-          { shiftDate: 'asc' },
+          { shift_date: 'asc' },
         ],
       })
     );
@@ -458,39 +470,39 @@ export class ShiftRepository extends TenantAwareRepository {
         upcomingshiftss,
         recurringshiftss,
       ] = await Promise.all([
-        this.prisma.shift.count({ where }),
+        this.prisma.shifts.count({ where }),
         
-        this.prisma.shift.groupBy({
+        this.prisma.shifts.groupBy({
           by: ['status'],
           where,
           _count: { status: true },
         }),
         
-        this.prisma.shift.groupBy({
+        this.prisma.shifts.groupBy({
           by: ['shiftType'],
           where,
           _count: { shiftType: true },
         }),
         
-        this.prisma.shift.aggregate({
+        this.prisma.shifts.aggregate({
           where,
           _sum: {
-            coverageRequired: true,
-            coverageAssigned: true,
+            coverage_required: true,
+            coverage_assigned: true,
           },
         }),
         
-        this.prisma.shift.count({
+        this.prisma.shifts.count({
           where: {
             ...where,
-            shiftDate: {
+            shift_date: {
               gte: new Date(),
               lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next 7 days
             },
           },
         }),
         
-        this.prisma.shift.count({
+        this.prisma.shifts.count({
           where: {
             ...where,
             isRecurring: true,
@@ -517,17 +529,17 @@ export class ShiftRepository extends TenantAwareRepository {
       });
 
       // Calculate coverage statistics
-      const totalCoverageRequired = coverageAggregates._sum.coverageRequired || 0;
-      const totalCoverageAssigned = coverageAggregates._sum.coverageAssigned || 0;
+      const totalCoverageRequired = coverageAggregates._sum.coverage_required || 0;
+      const totalCoverageAssigned = coverageAggregates._sum.coverage_assigned || 0;
       const coveragePercentage = totalCoverageRequired > 0 
         ? Math.round((totalCoverageAssigned / totalCoverageRequired) * 100)
         : 100;
 
-      const shiftsNeedingCoverage = await this.prisma.shift.count({
+      const shiftsNeedingCoverage = await this.prisma.shifts.count({
         where: {
           ...where,
-          coverageAssigned: {
-            lt: this.prisma.shift.fields.coverageRequired,
+          coverage_assigned: {
+            lt: this.prisma.shifts.fields.coverage_required,
           },
           status: {
             in: ['SCHEDULED', 'CONFIRMED', 'NEEDS_COVERAGE'],
@@ -556,16 +568,32 @@ export class ShiftRepository extends TenantAwareRepository {
    */
   async detectShiftConflicts(
     assignmentId: string,
-    shiftDate: Date,
+    shift_date: Date,
     startTime: string,
     endTime: string,
     excludeshiftsId?: string,
   ): Promise<any[]> {
-    this.logger.log('Detecting shift conflicts', { assignmentId, shiftDate });
+    this.logger.log('Detecting shift conflicts', { assignmentId, shift_date });
+
+    // Convert time strings to DateTime objects for the same date
+    // Time strings are in format "HH:MM" so we need to add seconds
+    const shift_dateStr = shift_date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+    
+    // Ensure time strings have seconds (HH:MM:SS format)
+    const formatTimeString = (timeStr: string): string => {
+      // If time string is just HH:MM, add :00 for seconds
+      if (timeStr.length === 5 && timeStr.includes(':')) {
+        return `${timeStr}:00`;
+      }
+      return timeStr;
+    };
+    
+    const startDateTime = new Date(`${shift_dateStr}T${formatTimeString(startTime)}.000Z`);
+    const endDateTime = new Date(`${shift_dateStr}T${formatTimeString(endTime)}.000Z`);
 
     const where: Prisma.shiftsWhereInput = {
       assignment_id: assignmentId,
-      shift_date: shiftDate,
+      shift_date: shift_date,
       sites: {
         contracts: {
           clients: {
@@ -579,20 +607,20 @@ export class ShiftRepository extends TenantAwareRepository {
       OR: [
         {
           AND: [
-            { start_time: { lte: startTime } },
-            { end_time: { gt: startTime } },
+            { start_time: { lte: startDateTime } },
+            { end_time: { gt: startDateTime } },
           ],
         },
         {
           AND: [
-            { start_time: { lt: endTime } },
-            { end_time: { gte: endTime } },
+            { start_time: { lt: endDateTime } },
+            { end_time: { gte: endDateTime } },
           ],
         },
         {
           AND: [
-            { start_time: { gte: startTime } },
-            { end_time: { lte: endTime } },
+            { start_time: { gte: startDateTime } },
+            { end_time: { lte: endDateTime } },
           ],
         },
       ],
@@ -603,10 +631,10 @@ export class ShiftRepository extends TenantAwareRepository {
     }
 
     return this.findWithTenant(() =>
-      this.prisma.shift.findMany({
+      this.prisma.shifts.findMany({
         where,
         include: {
-          site: {
+          sites: {
             select: {
               id: true,
               name: true,
@@ -623,9 +651,9 @@ export class ShiftRepository extends TenantAwareRepository {
   private buildWhereClause(filters: ShiftFilters): any {
     const where: any = {
       site: {
-        contract: {
-          client: {
-            companyId: this.tenantContext.getTenantId(),
+        contracts: {
+          clients: {
+            company_id: this.tenantContext.getTenantId(),
           },
         },
       },
@@ -634,7 +662,7 @@ export class ShiftRepository extends TenantAwareRepository {
     if (filters.search) {
       where.OR = [
         {
-          site: {
+          sites: {
             name: {
               contains: filters.search,
               mode: 'insensitive',
@@ -642,23 +670,23 @@ export class ShiftRepository extends TenantAwareRepository {
           },
         },
         {
-          assignment: {
-            employee: {
+          assignments: {
+            employees: {
               OR: [
                 {
-                  firstName: {
+                  first_name: {
                     contains: filters.search,
                     mode: 'insensitive',
                   },
                 },
                 {
-                  lastName: {
+                  last_name: {
                     contains: filters.search,
                     mode: 'insensitive',
                   },
                 },
                 {
-                  employeeNumber: {
+                  employee_number: {
                     contains: filters.search,
                     mode: 'insensitive',
                   },
@@ -674,8 +702,8 @@ export class ShiftRepository extends TenantAwareRepository {
       where.assignmentId = filters.assignmentId;
     }
 
-    if (filters.siteId) {
-      where.siteId = filters.siteId;
+    if (filters.site_id) {
+      where.site_id = filters.site_id;
     }
 
     if (filters.status) {
@@ -691,9 +719,9 @@ export class ShiftRepository extends TenantAwareRepository {
     }
 
     if (filters.dateFrom || filters.dateTo) {
-      where.shiftDate = {};
-      if (filters.dateFrom) where.shiftDate.gte = filters.dateFrom;
-      if (filters.dateTo) where.shiftDate.lte = filters.dateTo;
+      where.shift_date = {};
+      if (filters.dateFrom) where.shift_date.gte = filters.dateFrom;
+      if (filters.dateTo) where.shift_date.lte = filters.dateTo;
     }
 
     if (filters.isRecurring !== undefined) {
@@ -712,13 +740,13 @@ export class ShiftRepository extends TenantAwareRepository {
    */
   private buildOrderBy(sortBy: string, sortOrder: 'asc' | 'desc'): any {
     const orderMap: Record<string, any> = {
-      shiftDate: { shiftDate: sortOrder },
+      shift_date: { shift_date: sortOrder },
       startTime: { startTime: sortOrder },
       endTime: { endTime: sortOrder },
       status: { status: sortOrder },
       priority: { priority: sortOrder },
-      coverageRequired: { coverageRequired: sortOrder },
-      coverageAssigned: { coverageAssigned: sortOrder },
+      coverage_required: { coverage_required: sortOrder },
+      coverage_assigned: { coverage_assigned: sortOrder },
       createdAt: { createdAt: sortOrder },
       updatedAt: { updatedAt: sortOrder },
       siteName: { 
@@ -727,14 +755,14 @@ export class ShiftRepository extends TenantAwareRepository {
         } 
       },
       employeeName: { 
-        assignment: { 
-          employee: { 
-            firstName: sortOrder 
+        assignments: { 
+          employees: { 
+            first_name: sortOrder 
           } 
         } 
       },
     };
 
-    return orderMap[sortBy] || { shiftDate: sortOrder };
+    return orderMap[sortBy] || { shift_date: sortOrder };
   }
 }

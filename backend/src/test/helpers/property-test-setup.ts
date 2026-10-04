@@ -1221,6 +1221,7 @@ export class PropertyTestSetup {
           slug: `test-company-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
           settings: {},
           branding: {},
+          updated_at: new Date(),
         },
       });
 
@@ -1230,13 +1231,13 @@ export class PropertyTestSetup {
         const client = await systemPrisma.clients.create({
           data: {
             id: uuidv4(),
-            companyId: company.id,
+            company_id: company.id,  // FIXED: Directly set the foreign key
             name: `Test Client ${i + 1} - ${Date.now()}`,
-            contactEmail: `client-${i + 1}-${Date.now()}@test.com`,
-            contactInfo: { phone: `+91-999999999${i}` },
-            organizationType: 'CORPORATE_OFFICE',
-            // FIXED: Removed contractStatus, contractStart, contractEnd, billingPreferences
-            // These fields now belong to the Contract entity
+            contact_email: `client-${i + 1}-${Date.now()}@test.com`,
+            contact_info: { phone: `+91-999999999${i}` },
+            organization_type: 'CORPORATE_OFFICE',
+            updated_at: new Date(),
+            // FIXED: Removed relationship connect, use direct FK instead
           },
         });
         clients.push(client);
@@ -1248,15 +1249,14 @@ export class PropertyTestSetup {
         const client = clients[i];
         const contract = await systemPrisma.contracts.create({
           data: {
-            contractNumber: `CONTRACT-${Date.now()}-${i}`,
+            contract_number: `CONTRACT-${Date.now()}-${i}`,
             title: `Security Contract ${i + 1}`,
             status: 'ACTIVE',
-            startDate: new Date(),
-            endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-            serviceDefinitions: { services: ['security', 'surveillance'] },
-            serviceLevelAgreement: { uptime: '99.5%', responseTime: '15min' },
-            billingPreferences: { cycle: 'monthly', method: 'PORTAL' },
-            clientId: client.id,  // FIXED: Proper foreign key to client
+            start_date: new Date(),
+            end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            client_id: client.id,  // FIXED: Proper foreign key to client
+            created_at: new Date(),
+            updated_at: new Date(),
           },
         });
         contracts.push(contract);
@@ -1269,7 +1269,8 @@ export class PropertyTestSetup {
         const site = await systemPrisma.sites.create({
           data: {
             id: uuidv4(),
-            contractId: contract.id, // FIXED: Link to contract, not client
+            client_id: contract.client_id, // Link to client (required)
+            contract_id: contract.id, // Link to contract (optional but test expects it)
             name: `Test Site ${i + 1} - ${Date.now()}`,
             address: {
               street: `${100 + i} Security Street`,
@@ -1277,11 +1278,12 @@ export class PropertyTestSetup {
               state: 'Test State',
               zipCode: `1234${i}`,
             },
-            operationalStatus: 'ACTIVE',
-            contactInfo: { emergency: `+91-888888888${i}` },
-            minStaffingLevel: 1,
-            maxStaffingLevel: 3,
-            skillRequirements: { required: ['Security'], preferred: ['First Aid'] },
+            operational_status: 'ACTIVE',
+            contact_info: { emergency: `+91-888888888${i}` },
+            min_staffing_level: 1,
+            max_staffing_level: 3,
+            created_at: new Date(),
+            updated_at: new Date(),
           },
         });
         sites.push(site);
@@ -1293,49 +1295,17 @@ export class PropertyTestSetup {
         const employee = await systemPrisma.employees.create({
           data: {
             id: uuidv4(),
-            companyId: company.id,
-            employeeNumber: `EMP-${String(i + 1).padStart(4, '0')}-${Date.now()}`,
-            firstName: `Employee${i + 1}`,
-            lastName: 'Test',
-            email: `employee${i + 1}-${Date.now()}@test.com`,
-            emailIv: 'test-iv-32chars-placeholder-val',
-            emailTag: 'test-tag-32chars-placeholder',
-            phone: `555012${String(i).padStart(4, '0')}`,
-            phoneIv: 'test-iv-32chars-placeholder-val',
-            phoneTag: 'test-tag-32chars-placeholder',
-            employmentStatus: 'ACTIVE',
-            hireDate: new Date(),
-            basicSalary: '45000',
-            basicSalaryIv: 'test-iv-32chars-placeholder-val',
-            basicSalaryTag: 'test-tag-32chars-placeholder',
-            hraAmount: '4500',
-            hraAmountIv: 'test-iv-32chars-placeholder-val',
-            hraAmountTag: 'test-tag-32chars-placeholder',
-            otherAllowances: '1500',
-            otherAllowancesIv: 'test-iv-32chars-placeholder-val',
-            otherAllowancesTag: 'test-tag-32chars-placeholder',
-            grossSalary: '51000',
-            grossSalaryIv: 'test-iv-32chars-placeholder-val',
-            grossSalaryTag: 'test-tag-32chars-placeholder',
-            salaryType: 'MONTHLY',
-            bankName: 'Test Bank Limited',
-            bankNameIv: 'test-iv-32chars-placeholder-val',
-            bankNameTag: 'test-tag-32chars-placeholder',
-            accountNumber: `12345678${String(i).padStart(2, '0')}`,
-            accountNumberIv: 'test-iv-32chars-placeholder-val',
-            accountNumberTag: 'test-tag-32chars-placeholder',
-            ifscCode: 'TEST0123456',
-            ifscCodeIv: 'test-iv-32chars-placeholder-val',
-            ifscCodeTag: 'test-tag-32chars-placeholder',
-            accountType: 'SAVINGS',
-            epfApplicable: true,
-            esicApplicable: true,
-            ptApplicable: true,
-            tdsApplicable: true,
-            dateOfBirth: new Date('1990-01-01'),
-            certifications: [{ name: 'Security Training', issueDate: '2024-01-01' }],
-            skills: ['Security', 'Surveillance', 'First Aid'],
-            metadata: { training: 'completed', clearance: 'active' },
+            company_id: company.id,
+            employee_number: `EMP${String(i + 1).padStart(3, '0')}-${Date.now()}`,
+            first_name: `Emp${i + 1}`,
+            last_name: 'Test',
+            email: `e${i + 1}@test.com`,
+            phone: `55501${String(i).padStart(5, '0')}`,
+            employment_status: 'ACTIVE',
+            hire_date: new Date(),
+            skills: ['Security'],
+            created_at: new Date(),
+            updated_at: new Date(),
           },
         });
         employees.push(employee);
@@ -1602,41 +1572,42 @@ export class PropertyTestSetup {
       // Delete in reverse dependency order to avoid FK constraint violations
       await systemPrisma.attendance.deleteMany({
         where: {
-          employee: { company_id: tenantId },
+          employees: { company_id: tenantId },
         },
       });
 
-      await systemPrisma.shift_notifications.deleteMany({
-        where: {
-          shift: {
-            site: {
-              contract: {
-                client: { company_id: tenantId },
-              },
-            },
-          },
-        },
+      // Delete shift_notifications - find through assignments
+      const assignmentsToDelete = await systemPrisma.assignments.findMany({
+        where: { employees: { company_id: tenantId } },
+        select: { id: true },
       });
+      const assignmentIds = assignmentsToDelete.map(a => a.id);
+      
+      if (assignmentIds.length > 0) {
+        const shiftsToDelete = await systemPrisma.shifts.findMany({
+          where: { assignment_id: { in: assignmentIds } },
+          select: { id: true },
+        });
+        const shiftIds = shiftsToDelete.map(s => s.id);
+        
+        if (shiftIds.length > 0) {
+          await systemPrisma.shift_notifications.deleteMany({
+            where: { shift_id: { in: shiftIds } },
+          });
+        }
+      }
 
-      await systemPrisma.shifts.deleteMany({
-        where: {
-          site: {
-            contract: {
-              client: { company_id: tenantId },
-            },
-          },
-        },
-      });
-
-      await systemPrisma.assignments.deleteMany({
-        where: {
-          employee: { company_id: tenantId },
-        },
+      // Simplified cleanup - delete directly by employee/company relationship
+      // Complex nested deletions commented out to avoid schema relation issues
+      
+      // Most cleanup is handled by cascade deletes from employees
+      await systemPrisma.employees.deleteMany({
+        where: { company_id: tenantId },
       });
 
       await systemPrisma.payroll_items.deleteMany({
         where: {
-          employee: { company_id: tenantId },
+          employees: { company_id: tenantId },
         },
       });
 
@@ -1646,23 +1617,23 @@ export class PropertyTestSetup {
 
       await systemPrisma.invoices.deleteMany({
         where: {
-          contract: {
-            client: { company_id: tenantId },
+          clients: {
+            company_id: tenantId,
           },
         },
       });
 
       await systemPrisma.sites.deleteMany({
         where: {
-          contract: {
-            client: { company_id: tenantId },
+          clients: {
+            company_id: tenantId,
           },
         },
       });
 
       await systemPrisma.contracts.deleteMany({
         where: {
-          client: { company_id: tenantId },
+          clients: { company_id: tenantId },
         },
       });
 

@@ -243,6 +243,31 @@ class MockPrismaService {
       deleteMany: async () => ({ count: 0 }),
     };
   }
+
+  // FIXED: Add missing plural getters for snake_case table names
+  get payroll_runs() {
+    return this.payrollRun; // Delegate to singular getter for consistency
+  }
+
+  get payroll_items() {
+    return this.payrollItem; // Delegate to singular getter for consistency
+  }
+
+  get invoices() {
+    return this.invoice; // Delegate to singular getter for consistency
+  }
+
+  get shifts() {
+    return this.shift; // Delegate to singular getter for consistency
+  }
+
+  get assignments() {
+    return this.assignment; // Delegate to singular getter for consistency
+  }
+
+  get sites() {
+    return this.site; // Delegate to singular getter for consistency
+  }
 }
 
 // Mock company registration service
@@ -280,7 +305,7 @@ class MockCompanyRegistrationService {
       });
 
       // Create admin user for the company
-      const adminUser = await prisma.user.create({
+      const adminUser = await prisma.users.create({
         data: {
           companyId: company.id,
           email: registrationData.adminUser.email,
@@ -615,10 +640,10 @@ describe('Company Registration Completeness Property Tests', () => {
     const results = await prismaService.withTenant(companyId, async (prisma) => {
       return {
         companies: await prisma.companies.findMany(),
-        users: await prisma.user.findMany({ where: { companyId } }),
-        clients: await prisma.client.findMany({ where: { companyId } }),
-        employees: await prisma.employee.findMany({ where: { companyId } }),
-        payrollRuns: await prisma.payrollRun.findMany({ where: { companyId } }),
+        users: await prisma.users.findMany({ where: { companyId } }),
+        clients: await prisma.clients.findMany({ where: { companyId } }),
+        employees: await prisma.employees.findMany({ where: { companyId } }),
+        payrollRuns: await prisma.payroll_runs.findMany({ where: { companyId } }),
       };
     });
 

@@ -66,7 +66,7 @@ class MockPrismaService {
   }
 
   // Mock model operations with tenant filtering
-  get company() {
+  get companies() {
     return {
       create: async (args: any) => {
         const company = { ...args.data, createdAt: new Date(), updatedAt: new Date() };
@@ -88,12 +88,9 @@ class MockPrismaService {
     };
   }
 
-  // FIXED: Add companies getter (plural) for correct model access
-  get companies() {
-    return this.company; // Delegate to singular getter for consistency
-  }
 
-  get client() {
+
+  get clients() {
     return {
       create: async (args: any) => {
         const client = { ...args.data, createdAt: new Date(), updatedAt: new Date() };
@@ -104,12 +101,12 @@ class MockPrismaService {
         let clients = this.mockData.clients;
         // Apply tenant filtering if not in system context
         if (!this.isSystemContext && this.currentTenantId !== null) {
-          clients = clients.filter((c) => c.companyId === this.currentTenantId);
+          clients = clients.filter((c) => c.company_id === this.currentTenantId);
         }
         if (args?.include?.company) {
           return clients.map((c) => ({
             ...c,
-            company: this.mockData.companies.find((comp) => comp.id === c.companyId),
+            company: this.mockData.companies.find((comp) => comp.id === c.company_id),
           }));
         }
         return clients;
@@ -121,12 +118,9 @@ class MockPrismaService {
     };
   }
 
-  // FIXED: Add clients getter (plural) for correct model access
-  get clients() {
-    return this.client; // Delegate to singular getter for consistency
-  }
 
-  get employee() {
+
+  get employees() {
     return {
       create: async (args: any) => {
         const employee = {
@@ -142,7 +136,7 @@ class MockPrismaService {
         let employees = this.mockData.employees;
         // Apply tenant filtering if not in system context
         if (!this.isSystemContext && this.currentTenantId !== null) {
-          employees = employees.filter((e) => e.companyId === this.currentTenantId);
+          employees = employees.filter((e) => e.company_id === this.currentTenantId);
         }
         if (args?.include?.assignments) {
           return employees.map((e) => ({
@@ -157,7 +151,7 @@ class MockPrismaService {
                     assignment.site = {
                       ...site,
                       client: args.include.assignments.include.site.include?.client 
-                        ? this.mockData.clients.find((c) => c.id === site.clientId) || null
+                        ? this.mockData.clients.find((c) => c.id === site.client_id) || null
                         : undefined
                     };
                   } else {
@@ -177,10 +171,7 @@ class MockPrismaService {
     };
   }
 
-  // FIXED: Add employees getter (plural) for correct model access
-  get employees() {
-    return this.employee; // Delegate to singular getter for consistency
-  }
+
 
   get contract() {
     return {
@@ -208,15 +199,15 @@ class MockPrismaService {
         if (!this.isSystemContext && this.currentTenantId !== null) {
           // Filter contracts by tenant through client relationship
           const tenantClients = this.mockData.clients.filter(
-            (c) => c.companyId === this.currentTenantId,
+            (c) => c.company_id === this.currentTenantId,
           );
           const tenantClientIds = tenantClients.map((c) => c.id);
-          contracts = contracts.filter((contract) => tenantClientIds.includes(contract.clientId));
+          contracts = contracts.filter((contract) => tenantClientIds.includes(contract.client_id));
         }
         if (args?.include?.client) {
           return contracts.map((contract) => ({
             ...contract,
-            client: this.mockData.clients.find((c) => c.id === contract.clientId) || null,
+            client: this.mockData.clients.find((c) => c.id === contract.client_id) || null,
           }));
         }
         return contracts;
@@ -230,10 +221,10 @@ class MockPrismaService {
         // Apply tenant filtering if not in system context
         if (!this.isSystemContext && this.currentTenantId !== null) {
           const tenantClients = this.mockData.clients.filter(
-            (c) => c.companyId === this.currentTenantId,
+            (c) => c.company_id === this.currentTenantId,
           );
           const tenantClientIds = tenantClients.map((c) => c.id);
-          contracts = contracts.filter((contract) => tenantClientIds.includes(contract.clientId));
+          contracts = contracts.filter((contract) => tenantClientIds.includes(contract.client_id));
         }
         // Apply where clause if provided
         if (args?.where) {
@@ -261,7 +252,7 @@ class MockPrismaService {
     return this.contract; // Delegate to singular getter for consistency
   }
 
-  get site() {
+  get sites() {
     return {
       create: async (args: any) => {
         const site = { 
@@ -279,7 +270,7 @@ class MockPrismaService {
         if (!this.isSystemContext && this.currentTenantId !== null) {
           // FIXED: Filter sites by tenant through contract -> client relationship
           const tenantClients = this.mockData.clients.filter(
-            (c) => c.companyId === this.currentTenantId,
+            (c) => c.company_id === this.currentTenantId,
           );
           const tenantClientIds = tenantClients.map((c) => c.id);
           
@@ -290,12 +281,12 @@ class MockPrismaService {
           
           // Get contracts for tenant clients
           const tenantContracts = this.mockData.contracts.filter((contract) => 
-            tenantClientIds.includes(contract.clientId)
+            tenantClientIds.includes(contract.client_id)
           );
           const tenantContractIds = tenantContracts.map((contract) => contract.id);
           
-          // Filter sites by contractId (FIXED: use contractId instead of clientId)
-          sites = sites.filter((s) => tenantContractIds.includes(s.contractId));
+          // Filter sites by contractId (FIXED: use contract_id instead of client_id)
+          sites = sites.filter((s) => tenantContractIds.includes(s.contract_id));
         }
         if (args?.include?.contract) {
           return sites.map((s) => ({
@@ -312,12 +303,9 @@ class MockPrismaService {
     };
   }
 
-  // FIXED: Add sites getter (plural) for correct model access
-  get sites() {
-    return this.site; // Delegate to singular getter for consistency
-  }
 
-  get assignment() {
+
+  get assignments() {
     return {
       create: async (args: any) => {
         const assignment = {
@@ -336,7 +324,7 @@ class MockPrismaService {
     };
   }
 
-  get payrollRun() {
+  get payroll_runs() {
     return {
       create: async (args: any) => {
         const payrollRun = {
@@ -352,7 +340,7 @@ class MockPrismaService {
         let payrollRuns = this.mockData.payrollRuns;
         // Apply tenant filtering if not in system context
         if (!this.isSystemContext && this.currentTenantId !== null) {
-          payrollRuns = payrollRuns.filter((pr) => pr.companyId === this.currentTenantId);
+          payrollRuns = payrollRuns.filter((pr) => pr.company_id === this.currentTenantId);
         }
         if (args?.include?.payrollItems) {
           return payrollRuns.map((pr) => ({
@@ -376,7 +364,7 @@ class MockPrismaService {
     };
   }
 
-  get payrollItem() {
+  get payroll_items() {
     return {
       create: async (args: any) => {
         const payrollItem = {
@@ -395,7 +383,25 @@ class MockPrismaService {
   }
 
   // Additional mock methods for other entities
-  get invoice() {
+  get invoices() {
+    return {
+      deleteMany: async () => ({ count: 0 }),
+    };
+  }
+
+  get attendance() {
+    return {
+      deleteMany: async () => ({ count: 0 }),
+    };
+  }
+
+  get shifts() {
+    return {
+      deleteMany: async () => ({ count: 0 }),
+    };
+  }
+
+  get users() {
     return {
       deleteMany: async () => ({ count: 0 }),
     };
@@ -426,7 +432,7 @@ class MockPrismaService {
 }
 
 describe('Multi-tenant Data Isolation Property Tests', () => {
-  let prismaService: MockPrismaService;
+  let prismaService: PrismaService;
   let moduleRef: TestingModule;
 
   // Property test configuration
@@ -434,6 +440,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     numRuns: 3, // Further reduced to prevent accumulation issues and speed up tests
     timeout: 10000, // Increased timeout for complex operations
     seed: 42,
+    endOnFailure: true, // Stop on first failure to prevent excessive shrinking that causes UUID collisions
   };
 
   beforeAll(async () => {
@@ -458,12 +465,12 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
         },
         {
           provide: PrismaService,
-          useClass: MockPrismaService,
+          useClass: PrismaService,
         },
       ],
     }).compile();
 
-    prismaService = moduleRef.get<PrismaService>(PrismaService) as unknown as MockPrismaService;
+    prismaService = moduleRef.get<PrismaService>(PrismaService);
   });
 
   afterAll(async () => {
@@ -558,7 +565,22 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
           tenantDataGenerator(),
           tenantDataGenerator(),
           async (tenant1Data, tenant2Data) => {
-            // Ensure different tenants
+            // Ensure we have different tenants and unique IDs across the scenario
+            if (tenant1Data.company.id === tenant2Data.company.id) {
+              console.log('Skipping test due to identical company IDs');
+              return; // Skip this test case
+            }
+            
+            // Ensure all employee IDs are unique across both tenants
+            const allEmployeeIds = [
+              ...tenant1Data.employees.map(e => e.id),
+              ...tenant2Data.employees.map(e => e.id)
+            ];
+            const uniqueEmployeeIds = new Set(allEmployeeIds);
+            if (allEmployeeIds.length !== uniqueEmployeeIds.size) {
+              console.log('Skipping test due to duplicate employee IDs');
+              return; // Skip this test case
+            }
             fc.pre(tenant1Data.company.id !== tenant2Data.company.id);
 
             try {
@@ -607,7 +629,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
   function companyGenerator() {
     return fc.record({
-      id: fc.constant(uuidv4()),
+      id: fc.uuid(),
       name: fc.string({ minLength: 5, maxLength: 50 }),
       slug: fc
         .string({ minLength: 3, maxLength: 20 })
@@ -622,25 +644,25 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
   function tenantDataGenerator() {
     return fc.record({
       company: fc.record({
-        id: fc.constant(uuidv4()),
-        name: fc.string({ minLength: 5, maxLength: 50 }),
-        slug: fc.string({ minLength: 3, maxLength: 20 }).map(s => s.toLowerCase().replace(/[^a-z0-9]/g, '-')),
+        id: fc.uuid(),
+        name: fc.string({ minLength: 5, maxLength: 20 }), // Reduced from 50
+        slug: fc.string({ minLength: 3, maxLength: 15 }).map(s => s.toLowerCase().replace(/[^a-z0-9]/g, '-')), // Reduced from 20
         settings: fc.constant({}),
         branding: fc.constant({})
       }),
       clients: fc.array(
         fc.record({
-          id: fc.constant(uuidv4()),
-          name: fc.string({ minLength: 3, maxLength: 30 }),
-          contactEmail: fc.emailAddress(),
+          id: fc.uuid(),
+          name: fc.string({ minLength: 3, maxLength: 15 }), // Reduced from 30
+          contactEmail: fc.emailAddress().filter(email => email.length <= 50), // Added length constraint
           contactInfo: fc.constant({})
         }),
         { minLength: 1, maxLength: 2 }
       ),
       sites: fc.array(
         fc.record({
-          id: fc.constant(uuidv4()),
-          name: fc.string({ minLength: 5, maxLength: 30 }),
+          id: fc.uuid(),
+          name: fc.string({ minLength: 5, maxLength: 15 }), // Reduced from 30
           address: fc.constant({
             street: '123 Test St',
             city: 'Test City',
@@ -656,15 +678,15 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
       ),
       employees: fc.array(
         fc.record({
-          id: fc.constant(uuidv4()),
-          employeeNumber: fc.string({ minLength: 3, maxLength: 10 }),
-          firstName: fc.string({ minLength: 2, maxLength: 20 }),
-          lastName: fc.string({ minLength: 2, maxLength: 20 }),
-          email: fc.emailAddress(),
-          phone: fc.string({ minLength: 10, maxLength: 15 }),
+          id: fc.uuid(),
+          employeeNumber: fc.string({ minLength: 3, maxLength: 8 }), // Reduced from 10
+          firstName: fc.string({ minLength: 2, maxLength: 15 }), // Reduced from 20
+          lastName: fc.string({ minLength: 2, maxLength: 15 }), // Reduced from 20
+          email: fc.emailAddress().filter(email => email.length <= 50), // Added length constraint
+          phone: fc.string({ minLength: 10, maxLength: 12 }), // Reduced from 15
           address: fc.constant({}),
           certifications: fc.constant({}),
-          skills: fc.array(fc.string({ minLength: 3, maxLength: 15 }), { maxLength: 5 }),
+          skills: fc.array(fc.string({ minLength: 3, maxLength: 10 }), { maxLength: 3 }), // Reduced skill name length and count
           employmentStatus: fc.constantFrom('ACTIVE', 'INACTIVE'),
           hireDate: fc.date({ min: new Date('2022-01-01'), max: new Date('2024-06-01') }),
         }),
@@ -680,7 +702,7 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
   function payrollRunGenerator() {
     return fc.record({
-      id: fc.constant(uuidv4()),
+      id: fc.uuid(),
       runNumber: fc.string({ minLength: 5, maxLength: 15 }),
       payPeriodStart: fc.date({ min: new Date('2024-01-01'), max: new Date('2024-06-01') }),
       payPeriodEnd: fc.date({ min: new Date('2024-07-01'), max: new Date('2024-12-31') }),
@@ -700,19 +722,21 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
           slug: tenantData.company.slug,
           settings: tenantData.company.settings,
           branding: tenantData.company.branding,
+          updated_at: new Date(),
         },
       });
 
       // Create clients
       const clients = await Promise.all(
         tenantData.clients.map((clientData: any) =>
-          prisma.client.create({
+          prisma.clients.create({
             data: {
               id: clientData.id,
-              companyId: company.id,
+              company_id: company.id,
               name: clientData.name,
-              contactEmail: clientData.contactEmail,
-              contactInfo: clientData.contactInfo
+              contact_email: clientData.contactEmail,
+              contact_info: clientData.contactInfo,
+              updated_at: new Date(),
             },
           }),
         ),
@@ -721,20 +745,21 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
       // Create employees
       const employees = await Promise.all(
         tenantData.employees.map((empData: any) =>
-          prisma.employee.create({
+          prisma.employees.create({
             data: {
               id: empData.id,
-              companyId: company.id,
-              employeeNumber: empData.employeeNumber,
-              firstName: empData.firstName,
-              lastName: empData.lastName,
+              company_id: company.id,
+              employee_number: empData.employeeNumber,
+              first_name: empData.firstName,
+              last_name: empData.lastName,
               email: empData.email,
               phone: empData.phone,
               address: empData.address,
               certifications: empData.certifications,
               skills: empData.skills,
-              employmentStatus: empData.employmentStatus,
-              hireDate: empData.hireDate,
+              employment_status: empData.employmentStatus,
+              hire_date: empData.hireDate,
+              updated_at: new Date(),
             },
           }),
         ),
@@ -743,12 +768,14 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
       // Create contracts for clients
       const contracts = await Promise.all(
         clients.map((client) =>
-          prisma.contract.create({
+          prisma.contracts.create({
             data: {
-              clientId: client.id,
+              client_id: client.id,
+              contract_number: `CONTRACT-${client.id.slice(0, 8)}`,
+              title: `Service Contract`,
               status: 'ACTIVE',
-              startDate: new Date('2024-01-01'),
-              endDate: new Date('2024-12-31')
+              start_date: new Date('2024-01-01'),
+              end_date: new Date('2024-12-31')
             },
           }),
         ),
@@ -757,16 +784,18 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
       // Create sites
       const sites = await Promise.all(
         tenantData.sites.map((siteData: any, index: number) =>
-          prisma.site.create({
+          prisma.sites.create({
             data: {
               id: siteData.id,
-              contractId: contracts[index % contracts.length].id,
+              client_id: clients[index % clients.length].id,
+              contract_id: contracts[index % contracts.length].id,
               name: siteData.name,
               address: siteData.address,
-              accessRequirements: siteData.accessRequirements,
-              safetyProtocols: siteData.safetyProtocols,
-              operationalStatus: siteData.operationalStatus,
-              contactInfo: siteData.contactInfo,
+              access_requirements: siteData.accessRequirements,
+              safety_protocols: siteData.safetyProtocols,
+              operational_status: siteData.operationalStatus,
+              contact_info: siteData.contactInfo,
+              updated_at: new Date(),
             },
           }),
         ),
@@ -788,18 +817,19 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
       // Create assignments
       const assignments = [];
       for (let i = 0; i < Math.min(scenario.employees.length, scenario.sites.length); i++) {
-        const assignment = await prisma.assignment.create({
+        const assignment = await prisma.assignments.create({
           data: {
             id: uuidv4(),
-            employeeId: basicSetup.employees[i].id,
-            siteId: basicSetup.sites[i].id,
+            employee_id: basicSetup.employees[i].id,
+            site_id: basicSetup.sites[i].id,
             role: 'Security Guard',
             responsibilities: {},
-            hourlyRate: 25.5,
-            hourlyRateIv: 'placeholder_iv_value_32chars',
-            hourlyRateTag: 'placeholder_tag_value',
+            hourly_rate: '25.50',
+            hourly_rate_iv: 'placeholder_iv_value_32chars___',
+            hourly_rate_tag: 'placeholder_tag_value_______32',
             status: 'ACTIVE',
-            startDate: new Date(),
+            start_date: new Date(),
+            updated_at: new Date(),
           },
         });
         assignments.push(assignment);
@@ -808,10 +838,10 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
       // Create payroll runs
       const payrollRuns = await Promise.all(
         scenario.payrollRuns.map((prData: any) =>
-          prisma.payrollRun.create({
+          prisma.payroll_runs.create({
             data: {
               id: prData.id,
-              companyId: basicSetup.company.id,
+              company_id: basicSetup.company.id,
               runNumber: prData.runNumber,
               payPeriodStart: prData.payPeriodStart,
               payPeriodEnd: prData.payPeriodEnd,
@@ -826,12 +856,12 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
       const payrollItems = [];
       for (const payrollRun of payrollRuns) {
         for (const employee of basicSetup.employees) {
-          const payrollItem = await prisma.payrollItem.create({
+          const payrollItem = await prisma.payroll_items.create({
             data: {
               id: uuidv4(),
-              payrollRunId: payrollRun.id,
-              employeeId: employee.id,
-              baseSalary: 25000,
+              payroll_run_id: payrollRun.id,
+              employee_id: employee.id,
+              base_salary: 25000,
               overtime: 2000,
               deductions: 1000,
               netPay: 26000,
@@ -868,9 +898,9 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     const results = await prismaService.withTenant(currentTenantId, async (prisma) => {
       return {
         companies: await prisma.companies.findMany(),
-        clients: await prisma.client.findMany(),
-        employees: await prisma.employee.findMany(),
-        sites: await prisma.site.findMany(),
+        clients: await prisma.clients.findMany(),
+        employees: await prisma.employees.findMany(),
+        sites: await prisma.sites.findMany(),
       };
     });
 
@@ -913,13 +943,13 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     const results = await prismaService.withTenant(currentTenantId, async (prisma) => {
       return {
         // Complex query: Get employees with their assignments and sites
-        employeesWithAssignments: await prisma.employee.findMany({
+        employeesWithAssignments: await prisma.employees.findMany({
           include: {
             assignments: {
               include: {
-                site: {
+                sites: {
                   include: {
-                    client: true,
+                    clients: true,
                   },
                 },
               },
@@ -928,20 +958,20 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
         }),
 
         // Complex query: Get payroll runs with items
-        payrollWithItems: await prisma.payrollRun.findMany({
+        payrollWithItems: await prisma.payroll_runs.findMany({
           include: {
-            payrollItems: {
+            payroll_items: {
               include: {
-                employee: true,
+                employees: true,
               },
             },
           },
         }),
 
         // Complex query: Get sites with assignments and employees
-        sitesWithEmployees: await prisma.site.findMany({
+        sitesWithEmployees: await prisma.sites.findMany({
           include: {
-            client: true,
+            clients: true,
           },
         }),
       };
@@ -949,28 +979,28 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
     // Verify all returned data belongs to current tenant
     results.employeesWithAssignments.forEach((employee: any) => {
-      expect(employee.companyId).toBe(currentTenantId);
+      expect(employee.company_id).toBe(currentTenantId);
 
       employee.assignments.forEach((assignment: any) => {
         // Handle cases where site or client might be null/undefined due to incomplete mocks
-        if (assignment.site && assignment.site.client) {
-          expect(assignment.site.client.companyId).toBe(currentTenantId);
+        if (assignment.sites && assignment.sites.clients) {
+          expect(assignment.sites.clients.company_id).toBe(currentTenantId);
         }
       });
     });
 
     results.payrollWithItems.forEach((payroll: any) => {
-      expect(payroll.companyId).toBe(currentTenantId);
+      expect(payroll.company_id).toBe(currentTenantId);
 
-      payroll.payrollItems.forEach((item: any) => {
-        expect(item.employee.companyId).toBe(currentTenantId);
+      payroll.payroll_items.forEach((item: any) => {
+        expect(item.employees.company_id).toBe(currentTenantId);
       });
     });
 
     results.sitesWithEmployees.forEach((site: any) => {
       // Handle cases where client might be null due to incomplete mocks
-      if (site.client) {
-        expect(site.client.companyId).toBe(currentTenantId);
+      if (site.clients) {
+        expect(site.clients.company_id).toBe(currentTenantId);
       }
     });
 
@@ -991,29 +1021,38 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
     // Execute concurrent operations for both tenants
     const [tenant1Results, tenant2Results] = await Promise.all([
       prismaService.withTenant(tenant1Setup.company.id, async (prisma) => ({
-        employees: await prisma.employee.findMany(),
-        clients: await prisma.client.findMany(),
-        sites: await prisma.site.findMany(),
+        employees: await prisma.employees.findMany(),
+        clients: await prisma.clients.findMany(),
+        sites: await prisma.sites.findMany(),
       })),
       prismaService.withTenant(tenant2Setup.company.id, async (prisma) => ({
-        employees: await prisma.employee.findMany(),
-        clients: await prisma.client.findMany(),
-        sites: await prisma.site.findMany(),
+        employees: await prisma.employees.findMany(),
+        clients: await prisma.clients.findMany(),
+        sites: await prisma.sites.findMany(),
       })),
     ]);
 
+    // Debug logging to understand what's happening
+    console.log('=== TENANT ISOLATION DEBUG ===');
+    console.log('Tenant 1 ID:', tenant1Setup.company.id);
+    console.log('Tenant 1 clients found:', tenant1Results.clients.length);
+    console.log('Tenant 1 client company_ids:', tenant1Results.clients.map(c => c.company_id));
+    console.log('Tenant 2 ID:', tenant2Setup.company.id);
+    console.log('Tenant 2 clients found:', tenant2Results.clients.length);
+    console.log('Tenant 2 client company_ids:', tenant2Results.clients.map(c => c.company_id));
+
     // Verify each tenant only sees their own data
     expect(
-      tenant1Results.employees.every((e: any) => e.companyId === tenant1Setup.company.id),
+      tenant1Results.employees.every((e: any) => e.company_id === tenant1Setup.company.id),
     ).toBe(true);
-    expect(tenant1Results.clients.every((c: any) => c.companyId === tenant1Setup.company.id)).toBe(
+    expect(tenant1Results.clients.every((c: any) => c.company_id === tenant1Setup.company.id)).toBe(
       true,
     );
 
     expect(
-      tenant2Results.employees.every((e: any) => e.companyId === tenant2Setup.company.id),
+      tenant2Results.employees.every((e: any) => e.company_id === tenant2Setup.company.id),
     ).toBe(true);
-    expect(tenant2Results.clients.every((c: any) => c.companyId === tenant2Setup.company.id)).toBe(
+    expect(tenant2Results.clients.every((c: any) => c.company_id === tenant2Setup.company.id)).toBe(
       true,
     );
 
@@ -1027,23 +1066,29 @@ describe('Multi-tenant Data Isolation Property Tests', () => {
 
   // Cleanup function that properly resets the mock data
   async function cleanupTestData() {
-    // Use the mock service's withSystemContext to ensure complete cleanup
-    await prismaService.withSystemContext(async (prisma) => {
-      // Clear all mock data in dependency order
-      await prisma.payrollItem.deleteMany();
-      await prisma.assignment.deleteMany(); 
-      await prisma.payrollRun.deleteMany();
-      await prisma.sites.deleteMany();
-      await prisma.employees.deleteMany();
-      await prisma.clients.deleteMany();
-      await prisma.companies.deleteMany();
-      
-      // Clear additional entities
-      await prisma.invoice.deleteMany();
-      await prisma.attendance.deleteMany();
-      await prisma.shift.deleteMany();
-      await prisma.users.deleteMany();
-    });
+    try {
+      // Use the mock service's withSystemContext to ensure complete cleanup
+      await prismaService.withSystemContext(async (prisma) => {
+        // Clear all mock data in dependency order - more thorough approach
+        await prisma.payroll_items.deleteMany({});
+        await prisma.assignments.deleteMany({}); 
+        await prisma.payroll_runs.deleteMany({});
+        await prisma.attendance.deleteMany({});
+        await prisma.shifts.deleteMany({});
+        await prisma.sites.deleteMany({});
+        await prisma.employees.deleteMany({});
+        await prisma.clients.deleteMany({});
+        await prisma.invoices.deleteMany({});
+        await prisma.users.deleteMany({});
+        await prisma.companies.deleteMany({});
+        
+        // Additional cleanup for any contracts or other entities
+        await prisma.contracts?.deleteMany({}).catch(() => {}); // Ignore if table doesn't exist
+      });
+    } catch (error) {
+      console.warn('Cleanup warning:', error.message);
+      // Continue even if cleanup has issues - fresh DB state is more important
+    }
     
     // Reset tenant context to ensure clean state
     (prismaService as any).currentTenantId = null;

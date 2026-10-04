@@ -42,7 +42,7 @@ export default async function globalSetup() {
     execSync('npx prisma db push --schema=./prisma/schema.prisma --accept-data-loss', {
       env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
       stdio: 'pipe',
-      timeout: 30000, // 30 second timeout
+      timeout: 60000, // Increased to 60 second timeout
     });
 
     console.log('✅ Database schema setup completed');

@@ -276,7 +276,7 @@ export class AppController {
           daysDifference,
           changedBy: auditEntry.changedBy
         },
-        payrollImpact: daysDifference <= 3 ? 'WILL_UPDATE_IF_NOT_FINALIZED' : 'REQUIRES_APPROVAL',
+        payrollImpact: daysDifference <= 3 ? 'WILL_UPDATE_IF_NOT_COMPLETED' : 'REQUIRES_APPROVAL',
         realTimeUpdate: true
       };
     }

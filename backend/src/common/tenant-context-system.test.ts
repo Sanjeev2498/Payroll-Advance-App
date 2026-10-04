@@ -227,17 +227,22 @@ describe('Tenant Context Management System', () => {
             create: jest.fn().mockImplementation((data: any) => 
               Promise.resolve({
                 id: 'mock-employee-id',
-                ...data,
-                companyId: mockTenantContextService.tenantId,
+                employee_number: data.employeeNumber,
+                first_name: data.firstName,
+                last_name: data.lastName,
+                email: data.email,
+                hire_date: data.hireDate,
+                skills: data.skills,
+                company_id: mockTenantContextService.tenantId, // FIXED: Use snake_case
               })
             ),
             findMany: jest.fn().mockImplementation(() =>
               Promise.resolve({
                 employees: [{
                   id: 'mock-employee-id',
-                  firstName: 'John',
-                  lastName: 'Doe',
-                  companyId: mockTenantContextService.tenantId,
+                  first_name: 'John', // FIXED: Use snake_case
+                  last_name: 'Doe', // FIXED: Use snake_case
+                  company_id: mockTenantContextService.tenantId, // FIXED: Use snake_case
                 }],
                 total: 1,
                 page: 1,
@@ -247,10 +252,10 @@ describe('Tenant Context Management System', () => {
             findBySkills: jest.fn().mockImplementation((skills: string[]) =>
               Promise.resolve([{
                 id: 'mock-employee-id',
-                firstName: 'Security',
-                lastName: 'Guard',
+                first_name: 'Security', // FIXED: Use snake_case
+                last_name: 'Guard', // FIXED: Use snake_case
                 skills: ['Security', 'Patrol'],
-                companyId: mockTenantContextService.tenantId,
+                company_id: mockTenantContextService.tenantId, // FIXED: Use snake_case
               }])
             ),
           },
@@ -262,7 +267,7 @@ describe('Tenant Context Management System', () => {
               Promise.resolve({
                 id: 'mock-client-id',
                 ...data,
-                companyId: mockTenantContextService.tenantId,
+                company_id: mockTenantContextService.tenantId, // FIXED: Use snake_case
               })
             ),
           },

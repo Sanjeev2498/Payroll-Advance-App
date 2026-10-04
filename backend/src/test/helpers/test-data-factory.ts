@@ -587,6 +587,38 @@ export class TestDataFactory {
   }
 
   /**
+   * Create a test user within a company
+   */
+  async createUser(userData: {
+    companyId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role?: 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'MANAGER' | 'SUPERVISOR' | 'EMPLOYEE';
+    passwordHash?: string;
+  }): Promise<any> {
+    const { v4: uuidv4 } = require('uuid');
+    
+    const defaultUser = {
+      id: uuidv4(),
+      company_id: userData.companyId,
+      email: userData.email,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      password_hash: userData.passwordHash || '$2b$10$defaultHashForTesting',
+      role: userData.role || 'EMPLOYEE',
+      is_active: true,
+      updated_at: new Date(),
+    };
+
+    return await this.prisma.withSystemContext(async (prisma) => {
+      return prisma.users.create({
+        data: defaultUser
+      });
+    });
+  }
+
+  /**
    * Generate random test data for property-based testing
    */
   generateRandomEmployeeData() {

@@ -112,13 +112,13 @@ describe('Property-Based Tests: sites Information Preservation', () => {
         // Setup: Mock contract exists and belongs to tenant
         const mockContract = {
           id: contract.id,
-          clientId: client?.id,
+          client_id: client?.id,
           title: contract.title,
           status: contract.status,
-          client: {
+          clients: {
             id: client?.id,
             name: client?.name,
-            companyId: (workspace as any).company.id,
+            company_id: (workspace as any).company.id,
           },
         };
 
@@ -138,8 +138,8 @@ describe('Property-Based Tests: sites Information Preservation', () => {
           updated_at: new Date(),
         };
 
-        // Mock the contract repository call instead of client repository
-        prismaMock.contract.findFirst.mockResolvedValue(mockContract); // FIXED: Use findFirst not findUnique
+        // Mock the contract repository call - use contracts (plural) table
+        prismaMock.contracts.findFirst.mockResolvedValue(mockContract);
         mockSiteRepository.create.mockResolvedValue(mockCreatedsites);
 
         // Act: Create the site
@@ -176,23 +176,23 @@ describe('Property-Based Tests: sites Information Preservation', () => {
           expect.objectContaining({
             name: siteData.name,
             address: siteData.address,
-            operationalStatus: expectedStatus,
-            contract: { // FIXED: Connect to contract, not client
+            operational_status: expectedStatus,
+            contracts: { // FIXED: Connect to contracts, using snake_case
               connect: { id: siteData.contractId },
             },
           })
         );
 
         // Verify contract relationship validation was performed
-        expect(prismaMock.contract.findFirst).toHaveBeenCalledWith({
+        expect(prismaMock.contracts.findFirst).toHaveBeenCalledWith({
           where: {
             id: siteData.contractId,
-            client: {
-              companyId: expect.any(String),
+            clients: {
+              company_id: expect.any(String),
             },
           },
           include: {
-            client: true,
+            clients: true,
           },
         });
       }
@@ -223,7 +223,7 @@ describe('Property-Based Tests: sites Information Preservation', () => {
           client: { companyId: (workspace as any).company.id },
         };
 
-        prismaMock.contract.findFirst.mockResolvedValue(mockContract); // FIXED: Use findFirst
+        prismaMock.contracts.findFirst.mockResolvedValue(mockContract); // Use contracts (plural) table
         
         // Capture the exact data passed to repository
         let capturedCreateData: any;
@@ -232,9 +232,9 @@ describe('Property-Based Tests: sites Information Preservation', () => {
           return {
             ...data,
             id: fc.sample(fc.uuid(), 1)[0],
-            contractId: contract.id,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            contract_id: contract.id, // FIXED: Use snake_case field name
+            created_at: new Date(),
+            updated_at: new Date(),
           };
         });
 
@@ -251,7 +251,7 @@ describe('Property-Based Tests: sites Information Preservation', () => {
         }
         
         if (siteData.accessRequirements?.requiredCertifications) {
-          expect(capturedCreateData.accessRequirements.requiredCertifications)
+          expect(capturedCreateData.access_requirements.requiredCertifications)
             .toEqual(siteData.accessRequirements.requiredCertifications);
         }
       }
@@ -277,10 +277,10 @@ describe('Property-Based Tests: sites Information Preservation', () => {
         const mockContract = contractStatus === 'not_found' ? null : {
           id: contract.id,
           status: contractStatus,
-          client: { companyId: (workspace as any).company.id },
+          clients: { company_id: (workspace as any).company.id },
         };
 
-        prismaMock.contract.findFirst.mockResolvedValue(mockContract); // FIXED: Use findFirst
+        prismaMock.contracts.findFirst.mockResolvedValue(mockContract); // Use contracts (plural) table
 
         if (!mockContract) {
           // Assert: Should reject if contract doesn't exist
@@ -293,8 +293,9 @@ describe('Property-Based Tests: sites Information Preservation', () => {
           mockSiteRepository.create.mockResolvedValue({
             ...siteData,
             id: fc.sample(fc.uuid(), 1)[0],
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            contract_id: siteData.contractId, // FIXED: Use snake_case field name
+            created_at: new Date(),
+            updated_at: new Date(),
           });
 
           // Assert: Should succeed for valid contracts
@@ -302,15 +303,15 @@ describe('Property-Based Tests: sites Information Preservation', () => {
           expect(result.contract_id).toBe(siteData.contractId);
           
           // Verify contract relationship validation was performed
-          expect(prismaMock.contract.findFirst).toHaveBeenCalledWith({
+          expect(prismaMock.contracts.findFirst).toHaveBeenCalledWith({
             where: {
               id: siteData.contractId,
-              client: {
-                companyId: expect.any(String),
+              clients: {
+                company_id: expect.any(String),
               },
             },
             include: {
-              client: true,
+              clients: true,
             },
           });
         }

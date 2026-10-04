@@ -1,0 +1,631 @@
+{
+  "400": {
+    "statusCode": 400,
+    "category": "Client Errors",
+    "codes": {
+      "VALIDATION_ERROR": {
+        "code": "VALIDATION_ERROR",
+        "message": "Input validation failed",
+        "httpStatus": 400,
+        "description": "One or more input fields failed validation rules",
+        "commonCauses": [
+          "Missing required fields",
+          "Invalid data formats",
+          "Field length violations",
+          "Data type mismatches",
+          "Custom validation rule failures"
+        ],
+        "resolution": "Review validation errors in response details and correct input data.",
+        "category": "Validation"
+      },
+      "REQUIRED_FIELD_MISSING": {
+        "code": "REQUIRED_FIELD_MISSING",
+        "message": "Required field is missing or empty",
+        "httpStatus": 400,
+        "description": "A mandatory field was not provided or was empty",
+        "commonCauses": [
+          "Form submitted with empty required fields",
+          "API client omitting required parameters",
+          "Null or undefined values sent for required fields"
+        ],
+        "resolution": "Provide valid values for all required fields indicated in the error details.",
+        "category": "Validation"
+      },
+      "INVALID_FORMAT": {
+        "code": "INVALID_FORMAT",
+        "message": "Field format is invalid",
+        "httpStatus": 400,
+        "description": "Field value does not match the expected format or pattern",
+        "commonCauses": [
+          "Email address format errors",
+          "Phone number format violations",
+          "Date/time format issues",
+          "ID format mismatches (UUIDs, custom patterns)"
+        ],
+        "resolution": "Ensure field values match the documented format requirements.",
+        "category": "Validation"
+      },
+      "INVALID_DATE_RANGE": {
+        "code": "INVALID_DATE_RANGE",
+        "message": "Date range is invalid or end date is before start date",
+        "httpStatus": 400,
+        "description": "Date range validation failed (end date before start date, or invalid date values)",
+        "commonCauses": [
+          "End date is before start date",
+          "Invalid date format",
+          "Date values outside acceptable range",
+          "Timezone conversion issues"
+        ],
+        "resolution": "Ensure end date is after start date and all dates are valid.",
+        "category": "Validation"
+      },
+      "FILE_TYPE_NOT_ALLOWED": {
+        "code": "FILE_TYPE_NOT_ALLOWED",
+        "message": "File type is not allowed for upload",
+        "httpStatus": 400,
+        "description": "Uploaded file type is not permitted for this endpoint",
+        "commonCauses": [
+          "File extension not in allowed list",
+          "MIME type validation failure",
+          "Malicious file detection",
+          "Security policy restrictions"
+        ],
+        "resolution": "Upload files with allowed extensions (typically: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG).",
+        "category": "File Upload"
+      },
+      "FILE_SIZE_EXCEEDED": {
+        "code": "FILE_SIZE_EXCEEDED",
+        "message": "File size exceeds maximum allowed limit",
+        "httpStatus": 400,
+        "description": "Uploaded file exceeds the maximum allowed size limit",
+        "commonCauses": [
+          "File larger than system limit (typically 10MB)",
+          "Multiple files exceeding combined limit",
+          "Uncompressed large documents or images"
+        ],
+        "resolution": "Reduce file size through compression or splitting, or use alternative file formats.",
+        "category": "File Upload"
+      }
+    }
+  },
+  "401": {
+    "statusCode": 401,
+    "category": "Authentication Errors",
+    "codes": {
+      "AUTHENTICATION_FAILED": {
+        "code": "AUTHENTICATION_FAILED",
+        "message": "Invalid credentials provided",
+        "httpStatus": 401,
+        "description": "User provided invalid login credentials (username/email and password combination)",
+        "commonCauses": [
+          "Incorrect username or password",
+          "Account does not exist",
+          "Password has been changed recently",
+          "Username/email typo"
+        ],
+        "resolution": "Verify credentials and try again. Use password reset if needed.",
+        "category": "Authentication"
+      },
+      "TOKEN_EXPIRED": {
+        "code": "TOKEN_EXPIRED",
+        "message": "Authentication token has expired",
+        "httpStatus": 401,
+        "description": "The JWT authentication token has exceeded its validity period",
+        "commonCauses": [
+          "Token has naturally expired (default 1 hour)",
+          "System time synchronization issues",
+          "Long-running client session without refresh"
+        ],
+        "resolution": "Use refresh token to obtain new access token or re-authenticate.",
+        "category": "Authentication"
+      },
+      "TOKEN_INVALID": {
+        "code": "TOKEN_INVALID",
+        "message": "Authentication token is invalid or malformed",
+        "httpStatus": 401,
+        "description": "The provided JWT token is malformed, corrupted, or has invalid signature",
+        "commonCauses": [
+          "Token tampering or modification",
+          "Incorrect JWT secret configuration",
+          "Token corruption during transmission",
+          "Invalid token format"
+        ],
+        "resolution": "Obtain a fresh token through authentication.",
+        "category": "Authentication"
+      },
+      "TOKEN_MISSING": {
+        "code": "TOKEN_MISSING",
+        "message": "Authentication token is required",
+        "httpStatus": 401,
+        "description": "No authentication token was provided in the request",
+        "commonCauses": [
+          "Authorization header not included",
+          "Incorrect header format (missing \"Bearer \" prefix)",
+          "Client not configured to send auth headers"
+        ],
+        "resolution": "Include valid JWT token in Authorization header as \"Bearer <token>\".",
+        "category": "Authentication"
+      }
+    }
+  },
+  "403": {
+    "statusCode": 403,
+    "category": "Authorization Errors",
+    "codes": {
+      "AUTHORIZATION_FAILED": {
+        "code": "AUTHORIZATION_FAILED",
+        "message": "Insufficient permissions to access this resource",
+        "httpStatus": 403,
+        "description": "User lacks the necessary permissions to perform the requested action",
+        "commonCauses": [
+          "User role does not have required permission",
+          "Permission was revoked or changed",
+          "Attempting to access higher-level functionality",
+          "Role hierarchy restrictions"
+        ],
+        "resolution": "Contact administrator to verify role and permissions, or use an account with appropriate access level.",
+        "category": "Authorization"
+      },
+      "TENANT_ACCESS_DENIED": {
+        "code": "TENANT_ACCESS_DENIED",
+        "message": "Access to this tenant data is not permitted",
+        "httpStatus": 403,
+        "description": "User attempted to access data outside their assigned tenant/organization",
+        "commonCauses": [
+          "Cross-tenant data access attempt",
+          "Incorrect tenant context in request",
+          "User account moved between tenants",
+          "Multi-tenant API misuse"
+        ],
+        "resolution": "Ensure requests target resources within your organization. Verify tenant context.",
+        "category": "Authorization"
+      },
+      "ROLE_PERMISSION_DENIED": {
+        "code": "ROLE_PERMISSION_DENIED",
+        "message": "User role does not have required permissions",
+        "httpStatus": 403,
+        "description": "Specific role-based permission check failed for the current user",
+        "commonCauses": [
+          "User role changed since login",
+          "Permission removed from role configuration",
+          "Temporary permission suspension",
+          "Role hierarchy enforcement"
+        ],
+        "resolution": "Re-authenticate to refresh permissions, or contact administrator for role verification.",
+        "category": "Authorization"
+      },
+      "RESOURCE_OWNER_ONLY": {
+        "code": "RESOURCE_OWNER_ONLY",
+        "message": "Only the resource owner can perform this action",
+        "httpStatus": 403,
+        "description": "Action can only be performed by the resource owner",
+        "commonCauses": [
+          "Attempting to modify another user's personal data",
+          "Accessing private resources without ownership",
+          "Insufficient delegation permissions"
+        ],
+        "resolution": "Only the resource owner or users with elevated permissions can perform this action.",
+        "category": "Authorization"
+      }
+    }
+  },
+  "404": {
+    "statusCode": 404,
+    "category": "Resource Not Found Errors",
+    "codes": {
+      "USER_NOT_FOUND": {
+        "code": "USER_NOT_FOUND",
+        "message": "User not found",
+        "httpStatus": 404,
+        "description": "Requested user account does not exist in the system",
+        "commonCauses": [
+          "Incorrect user ID or email provided",
+          "User account was deleted",
+          "Tenant isolation preventing access",
+          "Typo in user identifier"
+        ],
+        "resolution": "Verify user identifier and ensure user exists in current tenant context.",
+        "category": "Resource Not Found"
+      },
+      "CLIENT_NOT_FOUND": {
+        "code": "CLIENT_NOT_FOUND",
+        "message": "Client not found",
+        "httpStatus": 404,
+        "description": "Specified client organization does not exist",
+        "commonCauses": [
+          "Client was deleted or archived",
+          "Incorrect client ID provided",
+          "Access to client restricted by permissions"
+        ],
+        "resolution": "Verify client ID and check client status with administrator.",
+        "category": "Resource Not Found"
+      },
+      "SITE_NOT_FOUND": {
+        "code": "SITE_NOT_FOUND",
+        "message": "Site not found",
+        "httpStatus": 404,
+        "description": "Requested security site location does not exist",
+        "commonCauses": [
+          "Site was deactivated or removed",
+          "Site transferred to different client",
+          "Incorrect site identifier"
+        ],
+        "resolution": "Confirm site ID and check if site is still active.",
+        "category": "Resource Not Found"
+      },
+      "EMPLOYEE_NOT_FOUND": {
+        "code": "EMPLOYEE_NOT_FOUND",
+        "message": "Employee not found",
+        "httpStatus": 404,
+        "description": "Employee record does not exist in the system",
+        "commonCauses": [
+          "Employee was terminated and archived",
+          "Incorrect employee ID",
+          "Employee moved to different tenant"
+        ],
+        "resolution": "Verify employee ID and employment status.",
+        "category": "Resource Not Found"
+      },
+      "ASSIGNMENT_NOT_FOUND": {
+        "code": "ASSIGNMENT_NOT_FOUND",
+        "message": "Assignment not found",
+        "httpStatus": 404,
+        "description": "Assignment record does not exist in the system",
+        "commonCauses": [
+          "Assignment was cancelled or removed",
+          "Incorrect assignment ID",
+          "Assignment moved to different period",
+          "Temporary assignment expired"
+        ],
+        "resolution": "Verify assignment ID and check assignment status.",
+        "category": "Resource Not Found"
+      },
+      "SHIFT_NOT_FOUND": {
+        "code": "SHIFT_NOT_FOUND",
+        "message": "Shift not found",
+        "httpStatus": 404,
+        "description": "Shift record does not exist in the system",
+        "commonCauses": [
+          "Shift was cancelled or deleted",
+          "Incorrect shift ID",
+          "Shift schedule was modified",
+          "Past shift record archived"
+        ],
+        "resolution": "Verify shift ID and check current shift schedule.",
+        "category": "Resource Not Found"
+      },
+      "ATTENDANCE_NOT_FOUND": {
+        "code": "ATTENDANCE_NOT_FOUND",
+        "message": "Attendance record not found",
+        "httpStatus": 404,
+        "description": "Attendance record does not exist for the specified parameters",
+        "commonCauses": [
+          "No attendance recorded for the date/employee",
+          "Attendance record was deleted",
+          "Incorrect date or employee ID",
+          "Attendance not yet submitted"
+        ],
+        "resolution": "Verify attendance parameters and check if attendance was recorded.",
+        "category": "Resource Not Found"
+      },
+      "PAYROLL_NOT_FOUND": {
+        "code": "PAYROLL_NOT_FOUND",
+        "message": "Payroll run not found",
+        "httpStatus": 404,
+        "description": "Payroll run does not exist for the specified period",
+        "commonCauses": [
+          "Payroll not yet generated for period",
+          "Incorrect payroll run ID",
+          "Payroll was cancelled or deleted",
+          "Wrong pay period specified"
+        ],
+        "resolution": "Verify payroll run ID and pay period dates.",
+        "category": "Resource Not Found"
+      },
+      "INVOICE_NOT_FOUND": {
+        "code": "INVOICE_NOT_FOUND",
+        "message": "Invoice not found",
+        "httpStatus": 404,
+        "description": "Invoice record does not exist in the system",
+        "commonCauses": [
+          "Invoice was voided or deleted",
+          "Incorrect invoice ID or number",
+          "Invoice not yet generated",
+          "Wrong client or period specified"
+        ],
+        "resolution": "Verify invoice ID and check invoice generation status.",
+        "category": "Resource Not Found"
+      }
+    }
+  },
+  "409": {
+    "statusCode": 409,
+    "category": "Conflict Errors",
+    "codes": {
+      "EMAIL_ALREADY_EXISTS": {
+        "code": "EMAIL_ALREADY_EXISTS",
+        "message": "Email address is already registered",
+        "httpStatus": 409,
+        "description": "Email address is already registered in the system",
+        "commonCauses": [
+          "User attempting to register with existing email",
+          "Email used by archived or deactivated account",
+          "Multiple registration attempts",
+          "Email case sensitivity ignored by system"
+        ],
+        "resolution": "Use a different email address or recover existing account.",
+        "category": "Conflict"
+      },
+      "EMPLOYEE_ID_DUPLICATE": {
+        "code": "EMPLOYEE_ID_DUPLICATE",
+        "message": "Employee ID already exists",
+        "httpStatus": 409,
+        "description": "Employee ID already exists in the system",
+        "commonCauses": [
+          "Attempting to create employee with existing ID",
+          "ID format collision with existing employee",
+          "Manual ID assignment conflicts",
+          "Import process with duplicate IDs"
+        ],
+        "resolution": "Use a unique employee ID or update existing employee record.",
+        "category": "Conflict"
+      },
+      "SHIFT_CONFLICT": {
+        "code": "SHIFT_CONFLICT",
+        "message": "Employee is already assigned to another shift at this time",
+        "httpStatus": 409,
+        "description": "Employee is already assigned to another shift at this time",
+        "commonCauses": [
+          "Overlapping shift assignments",
+          "Double-booking employee for same time slot",
+          "Schedule import conflicts",
+          "Manual scheduling errors"
+        ],
+        "resolution": "Resolve scheduling conflict by adjusting shift times or reassigning employee.",
+        "category": "Conflict"
+      },
+      "ATTENDANCE_ALREADY_EXISTS": {
+        "code": "ATTENDANCE_ALREADY_EXISTS",
+        "message": "Attendance record already exists for this shift",
+        "httpStatus": 409,
+        "description": "Attendance record already exists for this shift",
+        "commonCauses": [
+          "Duplicate attendance submission",
+          "Multiple check-in attempts",
+          "System synchronization issues",
+          "Manual attendance override conflicts"
+        ],
+        "resolution": "Update existing attendance record instead of creating new one.",
+        "category": "Conflict"
+      },
+      "PAYROLL_ALREADY_FINALIZED": {
+        "code": "PAYROLL_ALREADY_FINALIZED",
+        "message": "Payroll run is already finalized and cannot be modified",
+        "httpStatus": 409,
+        "description": "Payroll run is already finalized and cannot be modified",
+        "commonCauses": [
+          "Attempting to edit finalized payroll",
+          "Payroll processing already completed",
+          "Approval workflow already finished",
+          "Payment batch already submitted"
+        ],
+        "resolution": "Create adjustment in next payroll period or request payroll reopening.",
+        "category": "Conflict"
+      },
+      "INVOICE_ALREADY_PAID": {
+        "code": "INVOICE_ALREADY_PAID",
+        "message": "Invoice is already marked as paid",
+        "httpStatus": 409,
+        "description": "Invoice is already marked as paid",
+        "commonCauses": [
+          "Multiple payment processing attempts",
+          "Invoice status not updated properly",
+          "Payment recorded in different system",
+          "Manual payment entry conflicts"
+        ],
+        "resolution": "Verify payment status or create credit note if payment reversal needed.",
+        "category": "Conflict"
+      }
+    }
+  },
+  "422": {
+    "statusCode": 422,
+    "category": "Business Logic Errors",
+    "codes": {
+      "SKILL_MISMATCH": {
+        "code": "SKILL_MISMATCH",
+        "message": "Employee skills do not match site requirements",
+        "httpStatus": 422,
+        "description": "Employee skills do not meet the requirements for the assigned site or shift",
+        "commonCauses": [
+          "Site requires certifications employee lacks",
+          "Specialized security clearance needed",
+          "Training requirements not met",
+          "Equipment certification missing"
+        ],
+        "resolution": "Update employee skills/certifications or assign to appropriate site.",
+        "category": "Business Logic"
+      },
+      "INSUFFICIENT_COVERAGE": {
+        "code": "INSUFFICIENT_COVERAGE",
+        "message": "Insufficient guard coverage for site requirements",
+        "httpStatus": 422,
+        "description": "Not enough qualified guards assigned to meet site security requirements",
+        "commonCauses": [
+          "Minimum guard count not met",
+          "Required skill mix not available",
+          "Shift coverage gaps",
+          "Last-minute schedule changes"
+        ],
+        "resolution": "Add more qualified employees to the shift or adjust site requirements.",
+        "category": "Business Logic"
+      },
+      "PAYROLL_CALCULATION_ERROR": {
+        "code": "PAYROLL_CALCULATION_ERROR",
+        "message": "Error occurred during payroll calculation",
+        "httpStatus": 422,
+        "description": "Error occurred during automated payroll processing",
+        "commonCauses": [
+          "Invalid time tracking data",
+          "Missing rate information",
+          "Overtime calculation conflicts",
+          "Tax calculation errors"
+        ],
+        "resolution": "Review employee time records and rate settings, then recalculate payroll.",
+        "category": "Business Logic"
+      },
+      "INVALID_WORK_HOURS": {
+        "code": "INVALID_WORK_HOURS",
+        "message": "Work hours exceed maximum allowed limits",
+        "httpStatus": 422,
+        "description": "Work hours exceed maximum allowed limits",
+        "commonCauses": [
+          "Employee logged more than daily limit",
+          "Weekly work hour limits exceeded",
+          "Overtime rules violation",
+          "Consecutive shift restrictions broken"
+        ],
+        "resolution": "Adjust work hours to comply with labor regulations and company policies.",
+        "category": "Business Logic"
+      },
+      "ATTENDANCE_TIME_INVALID": {
+        "code": "ATTENDANCE_TIME_INVALID",
+        "message": "Clock-out time cannot be before clock-in time",
+        "httpStatus": 422,
+        "description": "Clock-out time cannot be before clock-in time",
+        "commonCauses": [
+          "Incorrect clock-out time entry",
+          "System time zone issues",
+          "Manual time adjustment errors",
+          "Cross-day shift scheduling problems"
+        ],
+        "resolution": "Correct the attendance times to ensure clock-in is before clock-out.",
+        "category": "Business Logic"
+      },
+      "GPS_VERIFICATION_FAILED": {
+        "code": "GPS_VERIFICATION_FAILED",
+        "message": "GPS location verification failed for attendance",
+        "httpStatus": 422,
+        "description": "GPS location verification failed for attendance",
+        "commonCauses": [
+          "Employee not at designated work location",
+          "GPS signal accuracy issues",
+          "Location services disabled",
+          "Geofence boundaries too restrictive"
+        ],
+        "resolution": "Ensure employee is at correct location or adjust geofence settings.",
+        "category": "Business Logic"
+      }
+    }
+  },
+  "429": {
+    "statusCode": 429,
+    "category": "Rate Limiting Errors",
+    "codes": {
+      "RATE_LIMIT_EXCEEDED": {
+        "code": "RATE_LIMIT_EXCEEDED",
+        "message": "Request rate limit exceeded. Please try again later",
+        "httpStatus": 429,
+        "description": "Request rate limit exceeded for the current user or IP address",
+        "commonCauses": [
+          "Too many requests in short time period",
+          "Burst traffic exceeding limits",
+          "Client-side retry loops",
+          "Shared IP address limits"
+        ],
+        "resolution": "Wait for rate limit window to reset or implement exponential backoff.",
+        "category": "Rate Limiting"
+      },
+      "TOO_MANY_LOGIN_ATTEMPTS": {
+        "code": "TOO_MANY_LOGIN_ATTEMPTS",
+        "message": "Too many login attempts. Account temporarily locked",
+        "httpStatus": 429,
+        "description": "Account temporarily locked due to excessive failed login attempts",
+        "commonCauses": [
+          "Multiple incorrect password attempts",
+          "Brute force attack prevention",
+          "Automated login scripts",
+          "User forgetting password"
+        ],
+        "resolution": "Wait for lockout period to expire or use password reset functionality.",
+        "category": "Rate Limiting"
+      }
+    }
+  },
+  "500": {
+    "statusCode": 500,
+    "category": "Server Errors",
+    "codes": {
+      "INTERNAL_SERVER_ERROR": {
+        "code": "INTERNAL_SERVER_ERROR",
+        "message": "An unexpected error occurred. Please try again later",
+        "httpStatus": 500,
+        "description": "Unexpected system error occurred during request processing",
+        "commonCauses": [
+          "Application bug or exception",
+          "Resource exhaustion (memory, CPU)",
+          "Configuration errors",
+          "Unexpected data conditions"
+        ],
+        "resolution": "Try request again later. If problem persists, contact technical support with error ID.",
+        "category": "System Error"
+      },
+      "DATABASE_ERROR": {
+        "code": "DATABASE_ERROR",
+        "message": "Database operation failed",
+        "httpStatus": 500,
+        "description": "Database operation failed due to system or connectivity issues",
+        "commonCauses": [
+          "Database server connectivity issues",
+          "Query timeout or deadlock",
+          "Database maintenance or backup",
+          "Connection pool exhaustion"
+        ],
+        "resolution": "Retry request after brief delay. Check system status or contact support if persistent.",
+        "category": "System Error"
+      },
+      "EXTERNAL_SERVICE_ERROR": {
+        "code": "EXTERNAL_SERVICE_ERROR",
+        "message": "External service integration failed",
+        "httpStatus": 500,
+        "description": "Integration with external service (payment, email, etc.) failed",
+        "commonCauses": [
+          "Third-party service downtime",
+          "Network connectivity issues",
+          "API rate limits exceeded",
+          "Service authentication problems"
+        ],
+        "resolution": "Check service status and retry. May need to use alternative methods temporarily.",
+        "category": "System Error"
+      },
+      "ENCRYPTION_ERROR": {
+        "code": "ENCRYPTION_ERROR",
+        "message": "Data encryption/decryption failed",
+        "httpStatus": 500,
+        "description": "Data encryption or decryption process failed",
+        "commonCauses": [
+          "Invalid encryption keys",
+          "Corrupted encrypted data",
+          "Key rotation conflicts",
+          "Encryption algorithm issues"
+        ],
+        "resolution": "Verify encryption configuration and retry. Contact support if persistent.",
+        "category": "System Error"
+      },
+      "AUDIT_LOG_ERROR": {
+        "code": "AUDIT_LOG_ERROR",
+        "message": "Failed to write audit log entry",
+        "httpStatus": 500,
+        "description": "Failed to write audit log entry for the operation",
+        "commonCauses": [
+          "Audit system unavailable",
+          "Log storage capacity exceeded",
+          "Audit configuration errors",
+          "Database write failures"
+        ],
+        "resolution": "Operation may have succeeded but not logged. Check system status.",
+        "category": "System Error"
+      }
+    }
+  }
+}

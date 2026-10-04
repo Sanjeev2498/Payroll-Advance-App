@@ -108,6 +108,7 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
 
             // Create minimal test data using system context to avoid FK violations
             let createdData;
+            const createdAttendance = []; // Move outside of createWithSystemContext
 
             await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
               // Create complete hierarchy with all required FK relationships
@@ -127,7 +128,6 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
               createdData = hierarchy;
 
               // Create attendance records for each test scenario
-              const createdAttendance = [];
               const testDate = new Date(testData.testDate);
               testDate.setHours(0, 0, 0, 0);
 
@@ -135,25 +135,28 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
                 const attData = testData.attendanceRecords[i];
 
                 // Create shift (using existing shift if available)
-                const shift = createdData.shifts[0] || await systemPrisma.shift.create({
+                const shift = createdData.shifts[0] || await systemPrisma.shifts.create({
                   data: {
-                    shiftDate: testDate,
-                    startTime: new Date(testDate.getTime() + 8 * 60 * 60 * 1000), // 8 AM
-                    endTime: new Date(testDate.getTime() + 16 * 60 * 60 * 1000), // 4 PM
-                    shiftType: 'REGULAR',
+                    id: randomUUID(),
+                    shift_date: testDate,
+                    start_time: new Date(testDate.getTime() + 8 * 60 * 60 * 1000), // 8 AM
+                    end_time: new Date(testDate.getTime() + 16 * 60 * 60 * 1000), // 4 PM
+                    shift_type: 'REGULAR',
                     status: 'SCHEDULED',
-                    siteId: createdData.sites[0].id,
+                    site_id: createdData.sites[0].id,
                     priority: 'NORMAL',
-                    coverageRequired: 1,
-                    coverageAssigned: 1,
+                    coverage_required: 1,
+                    coverage_assigned: 1,
+                    created_at: new Date(),
+                    updated_at: new Date(),
                   }
                 });
 
                 // Calculate actual clock in/out times based on delays
-                const shiftStart = new Date(shift.startTime);
+                const shiftStart = new Date(shift.start_time);
                 const clockInTime = new Date(shiftStart.getTime() + attData.clockInDelay * 60 * 1000);
                 const clockOutTime = attData.hasClockOut ? 
-                  new Date(shift.endTime.getTime() + attData.clockOutDelay * 60 * 1000) : null;
+                  new Date(shift.end_time.getTime() + attData.clockOutDelay * 60 * 1000) : null;
 
                 // Determine GPS verification status
                 const locationData = {
@@ -184,14 +187,17 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
                 // Create attendance record
                 const attendance = await systemPrisma.attendance.create({
                   data: {
-                    clockIn: clockInTime,
-                    clockOut: clockOutTime,
+                    id: randomUUID(),
+                    clock_in: clockInTime,
+                    clock_out: clockOutTime,
                     status: finalStatus,
-                    locationData,
-                    verificationData,
+                    location_data: locationData,
+                    verification_data: verificationData,
                     notes: attData.notes,
-                    employeeId: createdData.employees[0].id,
-                    shiftId: shift.id
+                    employee_id: createdData.employees[0].id,
+                    shift_id: shift.id,
+                    created_at: new Date(),
+                    updated_at: new Date(),
                   }
                 });
 
@@ -206,8 +212,7 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
             });
 
             // Test: Verify attendance monitoring accuracy
-            const createdAttendance: any[] = []; // Temporary fix for compilation
-
+            
             // 1. Test GPS Verification Accuracy
             for (const { record, expectedGPSVerified, expectedWithinGeofence } of createdAttendance) {
               const retrievedRecord = await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
@@ -219,12 +224,12 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
               expect(retrievedRecord).toBeDefined();
               
               // Verify GPS verification data is preserved accurately
-              const verificationData = retrievedRecord!.verificationData as any;
+              const verificationData = retrievedRecord!.verification_data as any;
               expect(verificationData.gpsVerified).toBe(expectedGPSVerified);
               expect(verificationData.withinGeofence).toBe(expectedWithinGeofence);
 
               // Verify location data is preserved
-              const locationData = retrievedRecord!.locationData as any;
+              const locationData = retrievedRecord!.location_data as any;
               expect(locationData.latitude).toBeDefined();
               expect(locationData.longitude).toBeDefined();
               expect(locationData.accuracy).toBeGreaterThan(0);
@@ -234,11 +239,11 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
             const allAttendance = await TestDataFactory.createWithSystemContext(prismaService, async (systemPrisma) => {
               return systemPrisma.attendance.findMany({
                 where: {
-                  employee: { companyId: testTenantId }
+                  employees: { company_id: testTenantId }
                 },
                 include: {
-                  shift: true,
-                  employee: true
+                  shifts: true,
+                  employees: true
                 }
               });
             });
@@ -263,8 +268,8 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
                 });
               });
 
-              if (retrievedRecord && retrievedRecord.verificationData) {
-                const verificationData = retrievedRecord.verificationData as any;
+              if (retrievedRecord && retrievedRecord.verification_data) {
+                const verificationData = retrievedRecord.verification_data as any;
                 
                 // Verify verification flags are set correctly
                 if (expectedRequiresApproval) {
@@ -280,11 +285,11 @@ describe('Property Test: Attendance Monitoring Accuracy', () => {
             // 4. Test Late Arrival Detection Logic
             let lateCount = 0;
             for (const attendance of allAttendance) {
-              if (attendance.shift && attendance.clockIn) {
-                const shiftStart = new Date(attendance.shift.shiftDate);
-                shiftStart.setHours(attendance.shift.startTime.getHours(), attendance.shift.startTime.getMinutes());
+              if (attendance.shifts && attendance.clock_in) {
+                const shiftStart = new Date(attendance.shifts.shift_date);
+                shiftStart.setHours(attendance.shifts.start_time.getHours(), attendance.shifts.start_time.getMinutes());
                 
-                const clockIn = new Date(attendance.clockIn);
+                const clockIn = new Date(attendance.clock_in);
                 const minutesLate = (clockIn.getTime() - shiftStart.getTime()) / (1000 * 60);
                 
                 if (minutesLate > 5) {

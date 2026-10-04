@@ -22,37 +22,37 @@ describe('PayrollService', () => {
 
   const mockAttendanceRecord = {
     id: 'attendance-uuid',
-    employeeId: mockEmployeeId,
-    clockIn: new Date('2024-01-01T09:00:00Z'),
-    clockOut: new Date('2024-01-01T17:00:00Z'), // 8 hours
+    employee_id: mockEmployeeId,
+    clock_in: new Date('2024-01-01T09:00:00Z'),
+    clock_out: new Date('2024-01-01T17:00:00Z'), // 8 hours
     status: AttendanceStatus.PRESENT,
-    shift: {
-      startTime: new Date('2024-01-01T09:00:00Z'),
-      endTime: new Date('2024-01-01T17:00:00Z'),
-      shiftType: 'REGULAR',
-      assignment: {
-        hourlyRate: new Decimal(25.00), // ₹25 per hour
+    shifts: {
+      id: 'shift-uuid',
+      start_time: new Date('2024-01-01T09:00:00Z'),
+      end_time: new Date('2024-01-01T17:00:00Z'),
+      shift_type: 'REGULAR',
+      shift_date: new Date('2024-01-01'),
+      assignments: {
+        hourly_rate: new Decimal(25.00), // ₹25 per hour
       },
     },
-    employee: {
+    employees: {
       id: mockEmployeeId,
-      firstName: 'John',
-      lastName: 'Doe',
-    },
-    assignment: {
-      hourlyRate: new Decimal(25.00),
+      first_name: 'John',
+      last_name: 'Doe',
+      employee_number: 'EMP-001',
     },
   };
 
   const mockPrismaService = {
-    payrollRun: {
+    payrollRuns: {
       create: jest.fn(),
       update: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
     },
-    payrollItem: {
+    payrollItems: {
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
@@ -129,16 +129,16 @@ describe('PayrollService', () => {
 
     beforeEach(() => {
       // Mock no overlapping runs
-      mockPrismaService.payrollRun.findFirst.mockResolvedValue(null);
+      mockPrismaService.payrollRuns.findFirst.mockResolvedValue(null);
       // Mock run number generation
-      mockPrismaService.payrollRun.count.mockResolvedValue(0);
+      mockPrismaService.payrollRuns.count.mockResolvedValue(0);
       // Mock payroll run creation
-      mockPrismaService.payrollRun.create.mockResolvedValue({
+      mockPrismaService.payrollRuns.create.mockResolvedValue({
         id: mockPayrollRunId,
-        runNumber: 'PAY-2024-01-001',
-        companyId: mockCompanyId,
-        payPeriodStart: new Date('2024-01-01'),
-        payPeriodEnd: new Date('2024-01-31'),
+        run_number: 'PAY-2024-01-001',
+        company_id: mockCompanyId,
+        pay_period_start: new Date('2024-01-01'),
+        pay_period_end: new Date('2024-01-31'),
         status: PayrollStatus.PROCESSING,
         totalAmount: new Decimal(0),
       });
@@ -166,24 +166,24 @@ describe('PayrollService', () => {
         netSalary: new Decimal(150.00),
         items: [
           {
-            itemType: PayrollItemType.BASIC_PAY,
+            item_type: PayrollItemType.BASIC_PAY,
             description: 'Basic Pay (8 hours)',
             amount: new Decimal(200.00),
-            calculationData: {
+            calculation_data: {
               hours: 8,
-              hourlyRate: '25.00',
+              hourly_rate: '25.00',
               calculation: '8 × 25.00',
             },
           },
         ],
       });
       // Mock payroll items creation
-      mockPrismaService.payrollItem.createMany.mockResolvedValue({ count: 5 });
+      mockPrismaService.payrollItems.createMany.mockResolvedValue({ count: 5 });
       // Mock payroll run update
-      mockPrismaService.payrollRun.update.mockResolvedValue({
+      mockPrismaService.payrollRuns.update.mockResolvedValue({
         id: mockPayrollRunId,
         status: PayrollStatus.COMPLETED,
-        totalAmount: new Decimal(200.00),
+        total_amount: new Decimal(200.00),
       });
     });
 
@@ -209,7 +209,7 @@ describe('PayrollService', () => {
       // Mock 10-hour attendance (2 hours overtime)
       const overtimeAttendance = {
         ...mockAttendanceRecord,
-        clockOut: new Date('2024-01-01T19:00:00Z'), // 10 hours total
+        clock_out: new Date('2024-01-01T19:00:00Z'), // 10 hours total
       };
       mockPrismaService.attendance.findMany.mockResolvedValue([overtimeAttendance]);
       
@@ -235,12 +235,12 @@ describe('PayrollService', () => {
         netSalary: new Decimal(200.00),
         items: [
           {
-            itemType: PayrollItemType.BASIC_PAY,
+            item_type: PayrollItemType.BASIC_PAY,
             description: 'Basic Pay (8 hours)',
             amount: new Decimal(200.00),
-            calculationData: {
+            calculation_data: {
               hours: 8,
-              hourlyRate: '25.00',
+              hourly_rate: '25.00',
               calculation: '8 × 25.00',
             },
           },
@@ -281,11 +281,11 @@ describe('PayrollService', () => {
 
     it('should prevent overlapping payroll runs', async () => {
       // Mock existing overlapping run
-      mockPrismaService.payrollRun.findFirst.mockResolvedValue({
+      mockPrismaService.payrollRuns.findFirst.mockResolvedValue({
         id: 'existing-run-id',
-        runNumber: 'PAY-2024-01-000',
-        payPeriodStart: new Date('2024-01-15'),
-        payPeriodEnd: new Date('2024-01-31'),
+        run_number: 'PAY-2024-01-000',
+        pay_period_start: new Date('2024-01-15'),
+        pay_period_end: new Date('2024-01-31'),
       });
 
       await expect(service.createPayrollRun(createPayrollRunDto))
@@ -316,12 +316,12 @@ describe('PayrollService', () => {
         netSalary: new Decimal(146.00),
         items: [
           {
-            itemType: PayrollItemType.BASIC_PAY,
+            item_type: PayrollItemType.BASIC_PAY,
             description: 'Basic Pay (8 hours)',
             amount: new Decimal(200.00),
-            calculationData: {
+            calculation_data: {
               hours: 8,
-              hourlyRate: '25.00',
+              hourly_rate: '25.00',
               calculation: '8 × 25.00',
             },
           },
@@ -379,20 +379,20 @@ describe('PayrollService', () => {
 
     it('should handle rollback on calculation error', async () => {
       // Mock error during payroll item creation
-      mockPrismaService.payrollItem.createMany.mockRejectedValue(new Error('Database error'));
+      mockPrismaService.payrollItems.createMany.mockRejectedValue(new Error('Database error'));
 
       await expect(service.createPayrollRun(createPayrollRunDto))
         .rejects
         .toThrow('Database error');
 
       // Verify rollback calls
-      expect(mockPrismaService.payrollRun.update).toHaveBeenCalledWith({
+      expect(mockPrismaService.payrollRuns.update).toHaveBeenCalledWith({
         where: { id: mockPayrollRunId },
         data: { status: PayrollStatus.CANCELLED },
       });
       
-      expect(mockPrismaService.payrollItem.deleteMany).toHaveBeenCalledWith({
-        where: { payrollRunId: mockPayrollRunId },
+      expect(mockPrismaService.payrollItems.deleteMany).toHaveBeenCalledWith({
+        where: { payroll_run_id: mockPayrollRunId },
       });
     });
   });
@@ -401,40 +401,43 @@ describe('PayrollService', () => {
     it('should retrieve payroll run with items', async () => {
       const mockPayrollRun = {
         id: mockPayrollRunId,
-        runNumber: 'PAY-2024-01-001',
-        companyId: mockCompanyId,
+        run_number: 'PAY-2024-01-001',
+        company_id: mockCompanyId,
         status: PayrollStatus.COMPLETED,
-        payrollItems: [
+        payroll_items: [
           {
             id: 'item-1',
-            itemType: PayrollItemType.BASIC_PAY,
+            item_type: PayrollItemType.BASIC_PAY,
             amount: new Decimal(200.00),
             employee: {
               id: mockEmployeeId,
-              firstName: 'John',
-              lastName: 'Doe',
-              employeeNumber: 'EMP-001',
+              first_name: 'John',
+              last_name: 'Doe',
+              employee_number: 'EMP-001',
             },
           },
         ],
       };
 
-      mockPrismaService.payrollRun.findFirst.mockResolvedValue(mockPayrollRun);
+      mockPrismaService.payrollRuns.findFirst.mockResolvedValue(mockPayrollRun);
 
       const result = await service.getPayrollRun(mockPayrollRunId);
 
-      expect(result).toEqual(mockPayrollRun);
-      expect(mockPrismaService.payrollRun.findFirst).toHaveBeenCalledWith({
-        where: { id: mockPayrollRunId, companyId: mockCompanyId },
+      expect(result.id).toBe(mockPayrollRun.id);
+      expect(result.company_id).toBe(mockPayrollRun.company_id);
+      expect(result.payrollItems).toEqual(mockPayrollRun.payroll_items);
+      expect(result.payroll_items).toEqual(mockPayrollRun.payroll_items);
+      expect(mockPrismaService.payrollRuns.findFirst).toHaveBeenCalledWith({
+        where: { id: mockPayrollRunId, company_id: mockCompanyId },
         include: {
-          payrollItems: {
+          payroll_items: {
             include: {
-              employee: {
+              employees: {
                 select: {
                   id: true,
-                  firstName: true,
-                  lastName: true,
-                  employeeNumber: true,
+                  first_name: true,
+                  last_name: true,
+                  employee_number: true,
                 },
               },
             },
@@ -444,7 +447,7 @@ describe('PayrollService', () => {
     });
 
     it('should return null for non-existent payroll run', async () => {
-      mockPrismaService.payrollRun.findFirst.mockResolvedValue(null);
+      mockPrismaService.payrollRuns.findFirst.mockResolvedValue(null);
 
       const result = await service.getPayrollRun('non-existent-id');
 
@@ -457,30 +460,28 @@ describe('PayrollService', () => {
       const mockPayrollRuns = [
         {
           id: 'run-1',
-          runNumber: 'PAY-2024-01-001',
+          run_number: 'PAY-2024-01-001',
           status: PayrollStatus.COMPLETED,
-          _count: { payrollItems: 5 },
+          _count: { payroll_items: 5 },
         },
         {
           id: 'run-2',
-          runNumber: 'PAY-2024-01-002',
+          run_number: 'PAY-2024-01-002',
           status: PayrollStatus.PROCESSING,
-          _count: { payrollItems: 3 },
+          _count: { payroll_items: 3 },
         },
       ];
 
-      mockPrismaService.payrollRun.findMany.mockResolvedValue(mockPayrollRuns);
-      mockPrismaService.payrollRun.count.mockResolvedValue(10);
+      mockPrismaService.payrollRuns.findMany.mockResolvedValue(mockPayrollRuns);
+      mockPrismaService.payrollRuns.count.mockResolvedValue(10);
 
       const result = await service.listPayrollRuns(1, 20);
 
       expect(result.data).toEqual(mockPayrollRuns);
-      expect(result.pagination).toEqual({
-        page: 1,
-        limit: 20,
-        total: 10,
-        pages: 1,
-      });
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(20);
+      expect(result.total).toBe(10);
+      expect(result.pages).toBe(1);
     });
   });
 });

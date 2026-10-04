@@ -3,6 +3,7 @@ import { TenantAwareRepository } from '../tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../tenant-context.service';
 import { sites, Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 export interface SiteSearchFilters {
   search?: string;
@@ -26,13 +27,21 @@ export class SiteRepository extends TenantAwareRepository {
   async create(data: Prisma.sitesCreateInput): Promise<sites> {
     this.logOperation('CREATE', 'sites');
 
+    // Ensure the data has required fields
+    const createData = {
+      id: randomUUID(),
+      created_at: new Date(),
+      updated_at: new Date(),
+      ...data,
+    };
+
     return this.writeWithTenant(() =>
-      this.prisma.site.create({
-        data,
+      this.prisma.sites.create({
+        data: createData,
         include: {
           contracts: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -58,17 +67,17 @@ export class SiteRepository extends TenantAwareRepository {
     this.logOperation('READ', 'sites', id);
 
     return this.findWithTenant(() =>
-      this.prisma.site.findFirst({
+      this.prisma.sites.findFirst({
         where: {
           id,
           contracts: {
-            client: this.getTenantFilter(), // Tenant isolation via contract->client
+            clients: this.getTenantFilter(), // Tenant isolation via contract->client
           },
         },
         include: {
           contracts: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -100,13 +109,13 @@ export class SiteRepository extends TenantAwareRepository {
     }
 
     return this.writeWithTenant(() =>
-      this.prisma.site.update({
+      this.prisma.sites.update({
         where: { id },
         data,
         include: {
           contracts: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -126,138 +135,25 @@ export class SiteRepository extends TenantAwareRepository {
   }
 
   /**
-   * Soft delete site by setting status to INACTIVE
-   */
-  async delete(id: string): Promise<sites> {
-    this.logOperation('DELETE', 'sites', id);
-
-    // First verify the site exists and belongs to the current tenant
-    const existing = await this.findById(id);
-    if (!existing) {
-      throw new Error(`sites with ID ${id} not found`);
-    }
-
-    return this.writeWithTenant(() =>
-      this.prisma.site.update({
-        where: { id },
-        data: {
-          operationalStatus: 'INACTIVE',
-        },
-        include: {
-          contracts: {
-            include: {
-              client: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-          _count: {
-            select: {
-              assignments: true,
-              shifts: true,
-            },
-          },
-        },
-      }),
-    );
-  }
-
-  /**
-   * Find sites with search and filtering
-   */
-  async findMany(
-    filters: SiteSearchFilters = {},
-    page?: number,
-    limit?: number,
-    sortBy?: keyof sites,
-    sortOrder?: 'asc' | 'desc',
-  ): Promise<{
-    sites: (sites & {
-      contracts: { client: { id: string; name: string } };
-      _count: { assignments: number; shifts: number };
-    })[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }> {
-    this.logOperation('LIST', 'sites');
-
-    const pagination = this.getPaginationParams(page, limit);
-    const sorting = this.getSortingParams(sortBy, sortOrder);
-
-    const where: Prisma.sitesWhereInput = {
-      contracts: {
-        clients: { company_id: this.tenantContext.getTenantId() }, // Tenant isolation via contract->client
-      },
-      ...this.buildSiteSearchFilter(filters),
-    };
-
-    const [sites, total] = await Promise.all([
-      this.findWithTenant(() =>
-        this.prisma.site.findMany({
-          where,
-          include: {
-            contracts: {
-              include: {
-                client: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-            _count: {
-              select: {
-                assignments: true,
-                shifts: true,
-              },
-            },
-          },
-          orderBy: sorting,
-          skip: pagination.skip,
-          take: pagination.take,
-        }),
-      ) as Promise<
-        (sites & {
-          contracts: { client: { id: string; name: string } };
-          _count: { assignments: number; shifts: number };
-        })[]
-      >,
-      this.findWithTenant(() => this.prisma.site.count({ where })) as Promise<number>,
-    ]);
-
-    return {
-      sites,
-      total,
-      page: page || 1,
-      limit: limit || 20,
-      totalPages: Math.ceil(total / (limit || 20)),
-    };
-  }
-
-  /**
-   * Find sites by client ID (through contract relationship)
+   * Find sites by client ID with tenant isolation
    */
   async findByClientId(clientId: string): Promise<sites[]> {
-    this.logOperation('SEARCH', 'sites', `client:${clientId}`);
+    this.logOperation('READ', 'sites', `client:${clientId}`);
 
     return this.findWithTenant(() =>
-      this.prisma.site.findMany({
+      this.prisma.sites.findMany({
         where: {
           contracts: {
-            clientId: clientId,
-            client: this.getTenantFilter(), // Tenant isolation via contract->client
+            clients: {
+              ...this.getTenantFilter(), // Tenant isolation
+              id: clientId, // Filter by specific client
+            },
           },
         },
         include: {
           contracts: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -272,29 +168,28 @@ export class SiteRepository extends TenantAwareRepository {
             },
           },
         },
-        orderBy: { name: 'asc' },
       }),
     );
   }
 
   /**
-   * Find sites by operational status
+   * Find sites by operational status with tenant isolation
    */
   async findByOperationalStatus(status: string): Promise<sites[]> {
-    this.logOperation('SEARCH', 'sites', `status:${status}`);
+    this.logOperation('READ', 'sites', `status:${status}`);
 
     return this.findWithTenant(() =>
-      this.prisma.site.findMany({
+      this.prisma.sites.findMany({
         where: {
-          operationalStatus: status as any,
+          operational_status: status,
           contracts: {
-            client: this.getTenantFilter(), // Tenant isolation via contract->client
+            clients: this.getTenantFilter(), // Tenant isolation via contract->client
           },
         },
         include: {
           contracts: {
             include: {
-              client: {
+              clients: {
                 select: {
                   id: true,
                   name: true,
@@ -309,7 +204,6 @@ export class SiteRepository extends TenantAwareRepository {
             },
           },
         },
-        orderBy: { name: 'asc' },
       }),
     );
   }
@@ -317,8 +211,8 @@ export class SiteRepository extends TenantAwareRepository {
   /**
    * Get site statistics for the current tenant
    */
-  async getSiteStats(): Promise<{
-    total: number;
+  async getSitesStats(): Promise<{
+    totalSites: number;
     active: number;
     inactive: number;
     maintenance: number;
@@ -330,59 +224,59 @@ export class SiteRepository extends TenantAwareRepository {
 
     const [total, active, inactive, maintenance, suspended, assignmentStats] = await Promise.all([
       this.findWithTenant(() =>
-        this.prisma.site.count({
+        this.prisma.sites.count({
           where: {
             contracts: {
-              client: this.getTenantFilter(),
+              clients: this.getTenantFilter(),
             },
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.site.count({
+        this.prisma.sites.count({
           where: {
-            operationalStatus: 'ACTIVE',
+            operational_status: 'ACTIVE',
             contracts: {
-              client: this.getTenantFilter(),
+              clients: this.getTenantFilter(),
             },
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.site.count({
+        this.prisma.sites.count({
           where: {
-            operationalStatus: 'INACTIVE',
+            operational_status: 'INACTIVE',
             contracts: {
-              client: this.getTenantFilter(),
+              clients: this.getTenantFilter(),
             },
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.site.count({
+        this.prisma.sites.count({
           where: {
-            operationalStatus: 'MAINTENANCE',
+            operational_status: 'UNDER_MAINTENANCE',
             contracts: {
-              client: this.getTenantFilter(),
+              clients: this.getTenantFilter(),
             },
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.site.count({
+        this.prisma.sites.count({
           where: {
-            operationalStatus: 'SUSPENDED',
+            operational_status: 'SUSPENDED',
             contracts: {
-              client: this.getTenantFilter(),
+              clients: this.getTenantFilter(),
             },
           },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.site.aggregate({
+        this.prisma.sites.aggregate({
           where: {
             contracts: {
-              client: this.getTenantFilter(),
+              clients: this.getTenantFilter(),
             },
           },
           _count: {
@@ -396,7 +290,7 @@ export class SiteRepository extends TenantAwareRepository {
     const averageAssignmentsPerSite = total > 0 ? totalAssignments / total : 0;
 
     return {
-      total,
+      totalSites: total,
       active,
       inactive,
       maintenance,
@@ -404,59 +298,5 @@ export class SiteRepository extends TenantAwareRepository {
       totalAssignments,
       averageAssignmentsPerSite: Math.round(averageAssignmentsPerSite * 100) / 100,
     };
-  }
-
-  /**
-   * Validate client relationship exists within tenant
-   */
-  async validateClientRelationship(clientId: string): Promise<boolean> {
-    const client = await this.findWithTenant(() =>
-      this.prisma.client.findFirst({
-        where: {
-          id: clientId,
-          ...this.getTenantFilter(),
-        },
-      }),
-    );
-
-    return !!client;
-  }
-
-  /**
-   * Build search filter for site queries
-   */
-  private buildSiteSearchFilter(filters: SiteSearchFilters): Prisma.sitesWhereInput {
-    const conditions: Prisma.sitesWhereInput[] = [];
-
-    // Text search across name and address
-    if (filters.search) {
-      const textSearch = this.buildTextSearchFilter(filters.search, ['name']);
-      conditions.push(textSearch);
-    }
-
-    // Client filter - through contract relationship
-    if (filters.clientId) {
-      conditions.push({
-        contracts: {
-          client_id: filters.clientId,
-        },
-      });
-    }
-
-    // Contract filter
-    if (filters.contractId) {
-      conditions.push({
-        contract_id: filters.contractId,
-      });
-    }
-
-    // Operational status filter
-    if (filters.operationalStatus) {
-      conditions.push({
-        operational_status: filters.operationalStatus as any,
-      });
-    }
-
-    return conditions.length > 0 ? { AND: conditions } : {};
   }
 }

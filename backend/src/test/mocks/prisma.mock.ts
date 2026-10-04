@@ -13,7 +13,7 @@ export const createPrismaMock = () => ({
   $executeRaw: jest.fn(),
   $queryRaw: jest.fn(),
 
-  // Employee model
+  // Employee model (kept for compatibility)
   employee: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -27,7 +27,7 @@ export const createPrismaMock = () => ({
     aggregate: jest.fn(),
   },
 
-  // Client model
+  // Client model (kept for compatibility)
   client: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -41,7 +41,7 @@ export const createPrismaMock = () => ({
     aggregate: jest.fn(),
   },
 
-  // Contract model
+  // Contract model (kept for compatibility)
   contract: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -55,8 +55,8 @@ export const createPrismaMock = () => ({
     aggregate: jest.fn(),
   },
 
-  // Site model
-  site: {
+  // Sites model (Updated to match schema)
+  sites: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
     findMany: jest.fn(),
@@ -69,8 +69,8 @@ export const createPrismaMock = () => ({
     aggregate: jest.fn(),
   },
 
-  // Assignment model
-  assignment: {
+  // Contracts model (Updated to match schema)
+  contracts: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
     findMany: jest.fn(),
@@ -83,8 +83,50 @@ export const createPrismaMock = () => ({
     aggregate: jest.fn(),
   },
 
-  // Shift model
-  shift: {
+  // Clients model (Updated to match schema)
+  clients: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+    count: jest.fn(),
+    aggregate: jest.fn(),
+  },
+
+  // Employees model (Updated to match schema)
+  employees: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+    count: jest.fn(),
+    aggregate: jest.fn(),
+  },
+
+  // Assignments model (Updated to match schema)
+  assignments: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+    count: jest.fn(),
+    aggregate: jest.fn(),
+  },
+
+  // Shifts model (Updated to match schema)
+  shifts: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
     findMany: jest.fn(),

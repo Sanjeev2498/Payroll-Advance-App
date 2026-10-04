@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { TenantAwareRepository } from '../tenant-aware.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContextService } from '../tenant-context.service';
-import { clients, contracts, sites, Prisma, ClientOrganizationType } from '@prisma/client';
+import { clients, contracts, sites, Prisma, ClientOrganizationType, ContractStatus } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 export interface CreateClientDto {
   name: string;
@@ -57,25 +58,29 @@ export class ClientRepository extends TenantAwareRepository {
     this.logOperation('CREATE', 'clients');
 
     const createData = {
+      id: randomUUID(),
+      company_id: this.tenantContext.getTenantId(),
       name: data.name,
       contact_email: data.contactEmail,
       contact_info: data.contactInfo ? (data.contactInfo as unknown as Prisma.JsonValue) : undefined,
       organization_type: data.organizationType || 'CORPORATE_OFFICE',
       industry: data.industry,
       company_size: data.companySize,
+      billing_preferences: data.billingPreferences ? (data.billingPreferences as unknown as Prisma.JsonValue) : undefined,
+      contract_status: data.contractStatus || ContractStatus.PENDING,
       updated_at: new Date(),
       tags: data.tags || [],
     } as Prisma.clientsCreateInput;
 
     return this.writeWithTenant(() =>
-      this.prisma.client.create({
+      this.prisma.clients.create({
         data: createData,
         include: {
-          accountManager: true,
+          companies: true,
           _count: {
             select: {
               contracts: true,
-              clientUsers: true,
+              client_users: true,
             },
           },
         },
@@ -90,7 +95,7 @@ export class ClientRepository extends TenantAwareRepository {
     this.logOperation('READ', 'clients', id);
 
     return this.findWithTenant(() =>
-      this.prisma.client.findFirst({
+      this.prisma.clients.findFirst({
         where: {
           id,
           ...this.getTenantFilter(),
@@ -178,7 +183,7 @@ export class ClientRepository extends TenantAwareRepository {
     };
 
     return this.writeWithTenant(() =>
-      this.prisma.client.update({
+      this.prisma.clients.update({
         where: { id },
         data: updateData,
         include: {
@@ -209,7 +214,7 @@ export class ClientRepository extends TenantAwareRepository {
     // For now, we'll mark client as archived by adding a tag
     // In a real implementation, you might want to add an 'isActive' field
     return this.writeWithTenant(() =>
-      this.prisma.client.update({
+      this.prisma.clients.update({
         where: { id },
         data: {
           tags: {
@@ -255,7 +260,7 @@ export class ClientRepository extends TenantAwareRepository {
 
     const [clients, total] = await Promise.all([
       this.findWithTenant(() =>
-        this.prisma.client.findMany({
+        this.prisma.clients.findMany({
           where,
           include: {
             accountManager: {
@@ -278,7 +283,7 @@ export class ClientRepository extends TenantAwareRepository {
           take: pagination.take,
         }),
       ) as Promise<(clients & { accountManager?: any; _count: { contracts: number; clientUsers: number } })[]>,
-      this.findWithTenant(() => this.prisma.client.count({ where })) as Promise<number>,
+      this.findWithTenant(() => this.prisma.clients.count({ where })) as Promise<number>,
     ]);
 
     return {
@@ -300,7 +305,7 @@ export class ClientRepository extends TenantAwareRepository {
     expiryDate.setDate(expiryDate.getDate() + daysUntilExpiry);
 
     return this.findWithTenant(() =>
-      this.prisma.client.findMany({
+      this.prisma.clients.findMany({
         where: {
           ...this.getTenantFilter(),
           contracts: {
@@ -361,7 +366,7 @@ export class ClientRepository extends TenantAwareRepository {
     ] = await Promise.all([
       // Total clients
       this.findWithTenant(() =>
-        this.prisma.client.count({
+        this.prisma.clients.count({
           where: {
             ...this.getTenantFilter(),
             tags: { none: { equals: 'ARCHIVED' } },
@@ -371,7 +376,7 @@ export class ClientRepository extends TenantAwareRepository {
 
       // By organization type
       this.findWithTenant(() =>
-        this.prisma.client.groupBy({
+        this.prisma.clients.groupBy({
           by: ['organizationType'],
           where: {
             ...this.getTenantFilter(),
@@ -383,7 +388,7 @@ export class ClientRepository extends TenantAwareRepository {
 
       // With active contracts
       this.findWithTenant(() =>
-        this.prisma.client.count({
+        this.prisma.clients.count({
           where: {
             ...this.getTenantFilter(),
             tags: { none: { equals: 'ARCHIVED' } },
@@ -398,7 +403,7 @@ export class ClientRepository extends TenantAwareRepository {
 
       // With expiring contracts
       this.findWithTenant(() =>
-        this.prisma.client.count({
+        this.prisma.clients.count({
           where: {
             ...this.getTenantFilter(),
             tags: { none: { equals: 'ARCHIVED' } },
@@ -417,7 +422,7 @@ export class ClientRepository extends TenantAwareRepository {
 
       // With multiple contracts
       this.findWithTenant(() =>
-        this.prisma.client.count({
+        this.prisma.clients.count({
           where: {
             ...this.getTenantFilter(),
             tags: { none: { equals: 'ARCHIVED' } },
@@ -432,7 +437,7 @@ export class ClientRepository extends TenantAwareRepository {
 
       // With client users
       this.findWithTenant(() =>
-        this.prisma.client.count({
+        this.prisma.clients.count({
           where: {
             ...this.getTenantFilter(),
             tags: { none: { equals: 'ARCHIVED' } },
@@ -469,7 +474,7 @@ export class ClientRepository extends TenantAwareRepository {
     this.logOperation('SEARCH', 'clients', `contractStatus:${status}`);
 
     return this.findWithTenant(() =>
-      this.prisma.client.findMany({
+      this.prisma.clients.findMany({
         where: {
           ...this.getTenantFilter(),
           contracts: {
@@ -515,7 +520,7 @@ export class ClientRepository extends TenantAwareRepository {
     this.logOperation('SEARCH', 'clients', `orgType:${organizationType}`);
 
     return this.findWithTenant(() =>
-      this.prisma.client.findMany({
+      this.prisma.clients.findMany({
         where: {
           ...this.getTenantFilter(),
           organizationType,
@@ -595,7 +600,7 @@ export class ClientRepository extends TenantAwareRepository {
     this.logOperation('METRICS', 'clients', clientId);
 
     const client = await this.findWithTenant(() =>
-      this.prisma.client.findFirst({
+      this.prisma.clients.findFirst({
         where: {
           id: clientId,
           ...this.getTenantFilter(),
@@ -650,7 +655,7 @@ export class ClientRepository extends TenantAwareRepository {
     this.logOperation('RENEWAL', 'clients', clientId);
 
     const client = await this.findWithTenant(() =>
-      this.prisma.client.findFirst({
+      this.prisma.clients.findFirst({
         where: {
           id: clientId,
           ...this.getTenantFilter(),
@@ -733,7 +738,7 @@ export class ClientRepository extends TenantAwareRepository {
     this.logOperation('ONBOARDING', 'clients', clientId);
 
     const client = await this.findWithTenant(() =>
-      this.prisma.client.findFirst({
+      this.prisma.clients.findFirst({
         where: {
           id: clientId,
           ...this.getTenantFilter(),

@@ -106,7 +106,7 @@ export class AssignmentRepository extends TenantAwareRepository {
     };
 
     return this.writeWithTenant(() =>
-      this.prisma.assignment.create({
+      this.prisma.assignments.create({
         data: assignmentData,
         include: {
           employees: true,
@@ -136,7 +136,7 @@ export class AssignmentRepository extends TenantAwareRepository {
     this.logOperation('READ', 'Assignment', id);
 
     const assignment = await this.findWithTenant(() =>
-      this.prisma.assignment.findFirst({
+      this.prisma.assignments.findFirst({
         where: { id },
         include: {
           employees: true,
@@ -179,7 +179,7 @@ export class AssignmentRepository extends TenantAwareRepository {
     }
 
     return this.writeWithTenant(() =>
-      this.prisma.assignment.update({
+      this.prisma.assignments.update({
         where: { id },
         data,
         include: {
@@ -216,7 +216,7 @@ export class AssignmentRepository extends TenantAwareRepository {
     }
 
     return this.writeWithTenant(() =>
-      this.prisma.assignment.update({
+      this.prisma.assignments.update({
         where: { id },
         data: {
           status: 'CANCELLED',
@@ -268,7 +268,7 @@ export class AssignmentRepository extends TenantAwareRepository {
 
     const [assignments, total] = await Promise.all([
       this.findWithTenant(() =>
-        this.prisma.assignment.findMany({
+        this.prisma.assignments.findMany({
           where,
           include: {
             employees: true,
@@ -292,7 +292,7 @@ export class AssignmentRepository extends TenantAwareRepository {
           take: pagination.take,
         }),
       ) as Promise<AssignmentWithRelations[]>,
-      this.findWithTenant(() => this.prisma.assignment.count({ where })) as Promise<number>,
+      this.findWithTenant(() => this.prisma.assignments.count({ where })) as Promise<number>,
     ]);
 
     return {
@@ -394,7 +394,7 @@ export class AssignmentRepository extends TenantAwareRepository {
       this.prisma.assignment.findMany({
         where: {
           employees: {
-            companyId: this.getTenantFilter().companyId,
+            company_id: this.getTenantFilter().company_id,
             employmentStatus: 'ACTIVE',
           },
           status: 'ACTIVE',
@@ -565,34 +565,34 @@ export class AssignmentRepository extends TenantAwareRepository {
     this.logOperation('STATS', 'Assignment');
 
     const tenantFilter = {
-      employee: {
-        companyId: this.getTenantFilter().companyId,
+      employees: {
+        company_id: this.getTenantFilter().company_id,
       },
     };
 
     const [total, active, inactive, completed, cancelled] = await Promise.all([
       this.findWithTenant(() =>
-        this.prisma.assignment.count({
+        this.prisma.assignments.count({
           where: tenantFilter,
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.assignment.count({
+        this.prisma.assignments.count({
           where: { ...tenantFilter, status: 'ACTIVE' },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.assignment.count({
+        this.prisma.assignments.count({
           where: { ...tenantFilter, status: 'INACTIVE' },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.assignment.count({
+        this.prisma.assignments.count({
           where: { ...tenantFilter, status: 'COMPLETED' },
         }),
       ) as Promise<number>,
       this.findWithTenant(() =>
-        this.prisma.assignment.count({
+        this.prisma.assignments.count({
           where: { ...tenantFilter, status: 'CANCELLED' },
         }),
       ) as Promise<number>,
@@ -648,7 +648,7 @@ export class AssignmentRepository extends TenantAwareRepository {
     // Add tenant filter through employee relationship
     conditions.push({
       employees: {
-        company_id: this.getTenantFilter().companyId,
+        company_id: this.getTenantFilter().company_id,
       },
     });
 
@@ -758,15 +758,15 @@ export class AssignmentRepository extends TenantAwareRepository {
     const employee = await this.findWithTenant(() =>
       this.prisma.employee.findUnique({
         where: { id: employeeId },
-        select: { companyId: true },
+        select: { company_id: true },
       }),
-    ) as { companyId: string } | null;
+    ) as { company_id: string } | null;
 
     if (!employee) {
       throw new NotFoundException(`Employee with ID ${employeeId} not found`);
     }
 
-    this.validateTenantOwnership(employee.companyId);
+    this.validateTenantOwnership(employee.company_id);
   }
 
   /**
@@ -774,25 +774,25 @@ export class AssignmentRepository extends TenantAwareRepository {
    */
   private async validateSiteBelongsToTenant(siteId: string): Promise<void> {
     const site = await this.findWithTenant(() =>
-      this.prisma.site.findUnique({
+      this.prisma.sites.findUnique({
         where: { id: siteId },
         include: {
           contract: {
             include: {
               client: {
-                select: { companyId: true },
+                select: { company_id: true },
               },
             },
           },
         },
       }),
-    ) as { contract: { client: { companyId: string } } } | null;
+    ) as { contract: { client: { company_id: string } } } | null;
 
     if (!site) {
       throw new NotFoundException(`Site with ID ${siteId} not found`);
     }
 
-    this.validateTenantOwnership(site.contract.client.companyId);
+    this.validateTenantOwnership(site.contract.client.company_id);
   }
 
   /**

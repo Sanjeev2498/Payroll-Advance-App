@@ -3,20 +3,48 @@ import { getErrorMessage, getErrorStack, formatError } from '../common/utils/err
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+// Global pool management to prevent multiple pools in tests
+let globalPool: Pool | null = null;
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
   private prismaClient: any;
+  private pool: Pool;
+  private static instanceCount = 0;
 
   constructor() {
+    PrismaService.instanceCount++;
+    this.logger.log(`Creating PrismaService instance #${PrismaService.instanceCount}`);
+    
     // Prisma 7.x requires an adapter for database connections
     const { PrismaClient } = require('@prisma/client');
     
-    // Create PostgreSQL connection pool
+    // Create or reuse PostgreSQL connection pool
     const connectionString = process.env.DATABASE_URL || 'postgresql://payroll_user:payroll_pass_dev_123@localhost:5432/payroll_system_dev';
-    const pool = new Pool({ connectionString });
-    const adapter = new PrismaPg(pool);
+    
+    // In test environment, reuse global pool to prevent conflicts
+    if (process.env.NODE_ENV === 'test' && globalPool && !globalPool.ended) {
+      this.pool = globalPool;
+      this.logger.log('Reusing existing global pool for tests');
+    } else {
+      this.pool = new Pool({ 
+        connectionString,
+        // Configure pool settings for better cleanup and less interference
+        max: process.env.NODE_ENV === 'test' ? 2 : 20, // Very small pool size in tests
+        idleTimeoutMillis: process.env.NODE_ENV === 'test' ? 5000 : 30000,
+        connectionTimeoutMillis: 15000, // Increased timeout to avoid conflicts
+        allowExitOnIdle: true,
+        statement_timeout: process.env.NODE_ENV === 'test' ? 10000 : 60000
+      });
+      
+      if (process.env.NODE_ENV === 'test') {
+        globalPool = this.pool;
+        this.logger.log('Created new global pool for tests');
+      }
+    }
+    
+    const adapter = new PrismaPg(this.pool);
     
     this.prismaClient = new PrismaClient({ 
       adapter,
@@ -159,7 +187,23 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    PrismaService.instanceCount--;
+    this.logger.log(`Destroying PrismaService instance, ${PrismaService.instanceCount} remaining`);
+    
+    try {
+      // Always disconnect Prisma client
+      await this.$disconnect();
+      this.logger.log('Prisma client disconnected successfully');
+      
+      // Only close the global pool when all instances are destroyed and in test environment
+      if (process.env.NODE_ENV === 'test' && PrismaService.instanceCount === 0 && globalPool && !globalPool.ended) {
+        await globalPool.end();
+        globalPool = null;
+        this.logger.log('Global test pool closed');
+      }
+    } catch (error) {
+      this.logger.error('Error during Prisma client disconnect:', error);
+    }
   }
 
   /**

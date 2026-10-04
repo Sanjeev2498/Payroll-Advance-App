@@ -170,7 +170,7 @@ describe('Property Test: Employee Search and Filtering Correctness', () => {
               const take = testData.searchQuery.limit || 10;
 
               const [employees, total] = await Promise.all([
-                prisma.employee.findMany({
+                prisma.employees.findMany({
                   where,
                   skip,
                   take,
@@ -178,7 +178,7 @@ describe('Property Test: Employee Search and Filtering Correctness', () => {
                     [testData.searchQuery.sortBy || 'createdAt']: testData.searchQuery.sortOrder || 'desc',
                   },
                 }),
-                prisma.employee.count({ where }),
+                prisma.employees.count({ where }),
               ]);
 
               return {

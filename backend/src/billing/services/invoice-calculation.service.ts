@@ -447,15 +447,20 @@ export class InvoiceCalculationService {
       },
     });
 
+    // Handle case where contract is not found
+    if (!contract) {
+      throw new Error(`Contract not found: ${contractId}`);
+    }
+
     const clientCode = contract?.clients?.name
-      .replace(/[^A-Z0-9]/gi, '')
-      .substring(0, 3)
-      .toUpperCase() || 'CLI';
+      ?.replace(/[^A-Z0-9]/gi, '')
+      ?.substring(0, 3)
+      ?.toUpperCase() || 'CLI';
 
     // Count invoices for this client in current month
     const count = await this.prisma.invoices.count({
       where: {
-        client_id: contract!.client_id, // Use the client_id from the contract
+        client_id: contract.client_id, // Use the client_id from the contract
         created_at: {
           gte: new Date(year, now.getMonth(), 1),
           lt: new Date(year, now.getMonth() + 1, 1),

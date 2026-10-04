@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as fc from 'fast-check';
+import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../common/tenant-context.service';
 import { DataTransformService } from '../common/services/data-transform.service';
@@ -40,7 +41,7 @@ describe('Employee Data Integrity Property Tests', () => {
             setTenantContext: jest.fn(),
             $executeRaw: jest.fn(),
             $queryRaw: jest.fn(),
-            employee: {
+            employees: {
               findUnique: jest.fn(),
               findMany: jest.fn(),
               create: jest.fn().mockImplementation((data) => ({
@@ -58,7 +59,7 @@ describe('Employee Data Integrity Property Tests', () => {
               delete: jest.fn(),
               deleteMany: jest.fn(),
             },
-            company: {
+            companies: {
               upsert: jest.fn(),
               delete: jest.fn(),
             },
@@ -228,9 +229,9 @@ describe('Employee Data Integrity Property Tests', () => {
 
   const complianceStatusGenerator = () => fc.record({
     backgroundCheck: fc.constantFrom('PENDING', 'APPROVED', 'REJECTED'),
-    backgroundCheckDate: fc.option(fc.date({ max: new Date() })),
+    backgroundCheckDate: fc.option(fc.date({ max: new Date() }).filter(date => !isNaN(date.getTime()))),
     medicalClearance: fc.constantFrom('PENDING', 'APPROVED', 'REJECTED'),
-    medicalClearanceDate: fc.option(fc.date({ max: new Date() })),
+    medicalClearanceDate: fc.option(fc.date({ max: new Date() }).filter(date => !isNaN(date.getTime()))),
     securityClearance: fc.option(fc.string()),
     drugTestStatus: fc.option(fc.constantFrom('PENDING', 'PASSED', 'FAILED')),
     drugTestDate: fc.option(fc.date({ max: new Date() })),
@@ -263,7 +264,7 @@ describe('Employee Data Integrity Property Tests', () => {
       async (employeeData) => {
         try {
           // Act: Create employee
-          const createdEmployee = await employeesService.create(employeeData as any, 'ADMIN');
+          const createdEmployee = await employeesService.create(employeeData as any, UserRole.COMPANY_ADMIN);
 
           // Assert: All required fields are preserved
           expect(createdEmployee.employeeNumber).toBe(employeeData.employeeNumber);
@@ -297,12 +298,12 @@ describe('Employee Data Integrity Property Tests', () => {
           }
 
           // Assert: Employee can be retrieved with same data
-          const retrievedEmployee = await employeesService.findOne(createdEmployee.id, 'ADMIN');
+          const retrievedEmployee = await employeesService.findOne(createdEmployee.id, UserRole.COMPANY_ADMIN);
           expect(retrievedEmployee.id).toBe(createdEmployee.id);
           expect(retrievedEmployee.employeeNumber).toBe(employeeData.employeeNumber);
 
           // Clean up: Delete the created employee
-          await employeesService.remove(createdEmployee.id, 'ADMIN');
+          await employeesService.remove(createdEmployee.id, UserRole.COMPANY_ADMIN);
 
         } catch (error) {
           // Only accept known validation errors for invalid data
@@ -363,7 +364,7 @@ describe('Employee Data Integrity Property Tests', () => {
           expect(foundEmployee).toBeDefined();
 
           // Clean up
-          await employeesService.remove(createdEmployee.id, 'ADMIN');
+          await employeesService.remove(createdEmployee.id, UserRole.COMPANY_ADMIN);
 
         } catch (error) {
           if (getErrorMessage(error).includes('already exists')) {
@@ -395,7 +396,7 @@ describe('Employee Data Integrity Property Tests', () => {
 
           // Act: Update employee with new data (excluding employeeNumber to avoid conflicts)
           const { employeeNumber: _, ...updateFields } = updateData;
-          const updatedEmployee = await employeesService.update(employee.id, updateFields as any, 'ADMIN');
+          const updatedEmployee = await employeesService.update(employee.id, updateFields as any, UserRole.COMPANY_ADMIN);
 
           // Assert: Updated fields are correctly applied
           if (updateFields.firstName) {
@@ -459,7 +460,9 @@ describe('Employee Data Integrity Property Tests', () => {
           expect(storedCompliance.backgroundCheck).toBe(employeeData.complianceStatus!.backgroundCheck);
           expect(storedCompliance.medicalClearance).toBe(employeeData.complianceStatus!.medicalClearance);
 
-          if (employeeData.complianceStatus!.backgroundCheckDate) {
+          if (employeeData.complianceStatus!.backgroundCheckDate && 
+              employeeData.complianceStatus!.backgroundCheckDate instanceof Date && 
+              !isNaN(employeeData.complianceStatus!.backgroundCheckDate.getTime())) {
             expect(new Date(storedCompliance.backgroundCheckDate))
               .toEqual(employeeData.complianceStatus!.backgroundCheckDate);
           }
@@ -545,7 +548,7 @@ describe('Employee Data Integrity Property Tests', () => {
           expect(retrievedEmployee.firstName).toBe(originalData.firstName);
 
           // Clean up (hard delete for test cleanup)
-          await prisma.employees.delete({ where: { id: employee.id } });
+          await (prisma as any).employees.deleteMany({ where: { id: employee.id } });;
 
         } catch (error) {
           if (getErrorMessage(error).includes('already exists')) {

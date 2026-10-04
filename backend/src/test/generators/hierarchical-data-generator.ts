@@ -18,10 +18,10 @@ const validDateRange = () => fc.date({
 // Base entity generators with proper validation
 export const companyGenerator = () => fc.record({
   id: fc.uuid(),
-  name: fc.string({ minLength: 3, maxLength: 100 }),
-  slug: fc.string({ minLength: 3, maxLength: 50 }).map(s => 
-    s.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 50)
-  ),
+  name: fc.string({ minLength: 3, maxLength: 20 }), // Reduced from 100
+  slug: fc.string({ minLength: 3, maxLength: 15 }).map(s => 
+    s.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 15)
+  ), // Reduced from 50
   settings: fc.record({
     timeZone: fc.constantFrom('UTC', 'EST', 'PST', 'MST'),
     dateFormat: fc.constantFrom('YYYY-MM-DD', 'DD/MM/YYYY', 'MM/DD/YYYY'),
@@ -55,15 +55,15 @@ export const companyGenerator = () => fc.record({
 export const clientGenerator = (companyId: string) => fc.record({
   id: fc.uuid(),
   companyId: fc.constant(companyId), // Ensure proper tenant relationship
-  name: fc.string({ minLength: 3, maxLength: 100 }),
-  contactEmail: fc.emailAddress(),
+  name: fc.string({ minLength: 3, maxLength: 20 }), // Reduced from 100
+  contactEmail: fc.emailAddress().filter(email => email.length <= 50), // Added length constraint
   contactInfo: fc.record({
-    phone: fc.string({ minLength: 10, maxLength: 15 }),
+    phone: fc.string({ minLength: 10, maxLength: 12 }), // Reduced from 15
     address: fc.record({
-      street: fc.string({ minLength: 5, maxLength: 100 }),
-      city: fc.string({ minLength: 2, maxLength: 50 }),
-      state: fc.string({ minLength: 2, maxLength: 50 }),
-      zipCode: fc.string({ minLength: 5, maxLength: 10 }),
+      street: fc.string({ minLength: 5, maxLength: 30 }), // Reduced from 100
+      city: fc.string({ minLength: 2, maxLength: 20 }), // Reduced from 50
+      state: fc.string({ minLength: 2, maxLength: 20 }), // Reduced from 50
+      zipCode: fc.string({ minLength: 5, maxLength: 8 }), // Reduced from 10
       country: fc.constantFrom('USA', 'Canada', 'UK', 'India'),
     }),
   }),
@@ -71,9 +71,9 @@ export const clientGenerator = (companyId: string) => fc.record({
     'CORPORATE_OFFICE', 'RESIDENTIAL_SOCIETY', 'HOSPITAL', 
     'SHOPPING_MALL', 'FACTORY', 'WAREHOUSE', 'EDUCATIONAL_INSTITUTION'
   ),
-  industry: fc.option(fc.string({ minLength: 3, maxLength: 100 }), { nil: null }),
+  industry: fc.option(fc.string({ minLength: 3, maxLength: 20 }), { nil: null }), // Reduced from 100
   companySize: fc.option(fc.constantFrom('SMALL', 'MEDIUM', 'LARGE', 'ENTERPRISE'), { nil: null }),
-  tags: fc.array(fc.string({ minLength: 2, maxLength: 20 }), { maxLength: 5 }),
+  tags: fc.array(fc.string({ minLength: 2, maxLength: 10 }), { maxLength: 3 }), // Reduced lengths and count
   createdAt: validDateRange(),
   updatedAt: validDateRange(),
 });
@@ -152,18 +152,18 @@ export const siteGenerator = (contractId: string) => fc.record({
 export const employeeGenerator = (companyId: string) => fc.record({
   id: fc.uuid(),
   companyId: fc.constant(companyId), // Ensure proper tenant relationship
-  employeeNumber: fc.string({ minLength: 5, maxLength: 20 }).map(s => `EMP-${s}`),
-  firstName: fc.string({ minLength: 2, maxLength: 50 }),
-  lastName: fc.string({ minLength: 2, maxLength: 50 }),
-  email: fc.option(fc.emailAddress(), { nil: null }),
-  phone: fc.option(fc.string({ minLength: 10, maxLength: 20 }), { nil: null }),
+  employeeNumber: fc.integer({ min: 10000, max: 99999 }).map(n => `EMP-${n}`), // Use numbers to ensure uniqueness
+  firstName: fc.string({ minLength: 2, maxLength: 15 }), // Reduced from 50
+  lastName: fc.string({ minLength: 2, maxLength: 15 }), // Reduced from 50
+  email: fc.option(fc.emailAddress().filter(email => email.length <= 50), { nil: null }), // Added length constraint
+  phone: fc.option(fc.string({ minLength: 10, maxLength: 12 }), { nil: null }), // Reduced from 20
   employmentStatus: fc.constantFrom('ACTIVE', 'INACTIVE', 'TERMINATED', 'ON_LEAVE'),
   hireDate: validDateRange(),
   terminationDate: fc.option(validDateRange(), { nil: null }),
-  skills: fc.array(fc.string({ minLength: 3, maxLength: 20 }), { maxLength: 10 }),
+  skills: fc.array(fc.string({ minLength: 3, maxLength: 10 }), { maxLength: 5 }), // Reduced skill name length and count
   certifications: fc.option(fc.record({
-    security: fc.array(fc.string({ minLength: 5, maxLength: 50 }), { maxLength: 5 }),
-    safety: fc.array(fc.string({ minLength: 5, maxLength: 50 }), { maxLength: 3 }),
+    security: fc.array(fc.string({ minLength: 5, maxLength: 20 }), { maxLength: 3 }), // Reduced lengths and counts
+    safety: fc.array(fc.string({ minLength: 5, maxLength: 20 }), { maxLength: 2 }), // Reduced lengths and counts
   }), { nil: null }),
   createdAt: validDateRange(),
   updatedAt: validDateRange(),
