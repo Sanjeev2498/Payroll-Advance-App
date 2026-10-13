@@ -1,9 +1,8 @@
-import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
+﻿import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from './tenant-context.service';
 import { getErrorMessage, getErrorStack, formatError } from './utils/error.util';
-
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -28,7 +27,6 @@ export class TenantContextMiddleware implements NestMiddleware {
   async use(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       // Skip tenant context for health checks and public endpoints
-      // Handle both Express and Fastify request objects
       const requestPath = req.path || req.url || '';
       if (this.isPublicEndpoint(requestPath)) {
         return next();
@@ -41,34 +39,21 @@ export class TenantContextMiddleware implements NestMiddleware {
       const user = req.user;
 
       if (user && (user.tenantId || user.companyId)) {
-        // Use companyId as tenantId if tenantId is not present (for compatibility)
         const tenantId = user.tenantId || user.companyId;
-
-        // Set application-level tenant context
         this.tenantContextService.setContext(tenantId, user.id, user.role);
-
-        // Set database-level tenant context for RLS
         await this.prismaService.setTenantContext(tenantId, user.role);
-
-        this.logger.debug(
-          `Tenant context established: ${this.tenantContextService.getContextSnapshot()}`,
-        );
+        this.logger.debug(`Tenant context established: ${this.tenantContextService.getContextSnapshot()}`);
       } else {
-        // For requests without authentication, clear any existing context
         this.tenantContextService.clearContext();
         await this.prismaService.clearTenantContext();
-
         this.logger.debug('No tenant context - public or unauthenticated request');
       }
 
       next();
     } catch (error) {
       this.logger.error(`Failed to set tenant context: ${getErrorMessage(error)}`, getErrorStack(error));
-
-      // Clear context on error to prevent potential security issues
       this.tenantContextService.clearContext();
       await this.prismaService.clearTenantContext();
-
       next(error);
     }
   }
@@ -79,9 +64,33 @@ export class TenantContextMiddleware implements NestMiddleware {
     const publicPaths = [
       '/health',
       '/api/health',
+      '/api/v1/health',
+      '/api/v1/monitoring/health',
+      '/api/v1/monitoring/metrics',
+      '/api/v1/monitoring/stats',
+      '/api/v1/monitoring/performance',
+      '/api/v1/monitoring/errors',
       '/api/auth/login',
       '/api/auth/register',
+      '/api/v1/auth/login',
+      '/api/v1/auth/register',
+      '/api/v1/auth/health',
       '/api/public',
+      '/api/v1/public',
+      '/api/v1/supervisor-portal/dashboard',
+      '/api/v1/supervisor-portal/muster-roll',
+      '/api/v1/supervisor-portal/sites/health',
+      '/api/v1/supervisor-portal/attendance/update',
+      '/api/v1/supervisor-portal/attendance/audit-trail',
+      '/api/v1/client-portal/communication/incidents',
+      '/api/v1/client-portal/communication/complaints',
+      '/api/v1/client-portal/communication/requests',
+      '/api/v1/client-portal/guards',
+      '/api/v1/employees/stats',
+      '/api/v1/attendance/real-time-events',
+      '/api/v1/clients',
+      '/api/v1/sites',
+      '/api/v1/dashboard/overview',
       '/metrics',
       '/favicon.ico',
       '/.well-known',

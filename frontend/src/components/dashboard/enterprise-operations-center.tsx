@@ -229,10 +229,10 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Active Guards</p>
-                <p className="text-2xl font-bold text-blue-600">{kpis?.activeGuards}</p>
+                <p className="text-2xl font-bold text-blue-600">{(kpis?.activeGuards ?? 0)}</p>
                 <p className="text-xs text-blue-600 flex items-center mt-1">
                   <Users className="w-3 h-3 mr-1" />
-                  {kpis?.guardsOnDuty} currently on duty
+                  {(kpis?.guardsOnDuty ?? 0)} currently on duty
                 </p>
               </div>
               <div className="text-2xl">🛡️</div>
@@ -246,10 +246,10 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Active Sites</p>
-                <p className="text-2xl font-bold text-green-600">{kpis?.activeSites}</p>
+                <p className="text-2xl font-bold text-green-600">{(kpis?.activeSites ?? 0)}</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <Building2 className="w-3 h-3 mr-1" />
-                  {deploymentMetrics?.optimalSites} operating optimally
+                  {(deploymentMetrics?.optimalSites ?? 0)} operating optimally
                 </p>
               </div>
               <div className="text-2xl">🏢</div>
@@ -264,7 +264,7 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
               <div>
                 <p className="text-sm text-gray-600">Vacant Positions</p>
                 <p className={`text-2xl font-bold ${(kpis?.vacantPositions || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {kpis?.vacantPositions}
+                  {(kpis?.vacantPositions ?? 0)}
                 </p>
                 <p className={`text-xs flex items-center mt-1 ${(kpis?.vacantPositions || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
                   <Shield className="w-3 h-3 mr-1" />
@@ -282,12 +282,12 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Pending Approvals</p>
-                <p className={`text-2xl font-bold ${(kpis?.pendingApprovals.total || 0) > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-                  {kpis?.pendingApprovals.total}
+                <p className={`text-2xl font-bold ${((kpis?.pendingApprovals?.total ?? 0) || 0) > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                  {(kpis?.pendingApprovals?.total ?? 0)}
                 </p>
                 <p className="text-xs text-yellow-600 flex items-center mt-1">
                   <FileText className="w-3 h-3 mr-1" />
-                  {kpis?.pendingApprovals.payroll} payroll, {kpis?.pendingApprovals.attendance} attendance
+                  {(kpis?.pendingApprovals?.payroll ?? 0)} payroll, {(kpis?.pendingApprovals?.attendance ?? 0)} attendance
                 </p>
               </div>
               <div className="text-2xl">📋</div>
@@ -321,9 +321,9 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
                     <CheckCircle2 className="w-4 h-4 text-green-500" />
                     <span className="text-sm text-gray-600">Present</span>
                   </div>
-                  <p className="text-2xl font-bold text-green-600">{kpis?.attendanceStatus.present}</p>
+                  <p className="text-2xl font-bold text-green-600">{(kpis?.attendanceStatus?.present ?? 0)}</p>
                   <Progress 
-                    value={(kpis?.attendanceStatus.present || 0) / (kpis?.attendanceStatus.totalScheduled || 1) * 100} 
+                    value={((kpis?.attendanceStatus?.present ?? 0) || 0) / ((kpis?.attendanceStatus?.totalScheduled ?? 1) || 1) * 100} 
                     className="h-2 mt-2" 
                   />
                 </div>
@@ -332,9 +332,9 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
                     <Clock className="w-4 h-4 text-yellow-500" />
                     <span className="text-sm text-gray-600">Late</span>
                   </div>
-                  <p className="text-2xl font-bold text-yellow-600">{kpis?.attendanceStatus.late}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{(kpis?.attendanceStatus?.late ?? 0)}</p>
                   <Progress 
-                    value={(kpis?.attendanceStatus.late || 0) / (kpis?.attendanceStatus.totalScheduled || 1) * 100} 
+                    value={((kpis?.attendanceStatus?.late ?? 0) || 0) / ((kpis?.attendanceStatus?.totalScheduled ?? 1) || 1) * 100} 
                     className="h-2 mt-2" 
                   />
                 </div>
@@ -343,9 +343,9 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
                     <AlertTriangle className="w-4 h-4 text-red-500" />
                     <span className="text-sm text-gray-600">Absent</span>
                   </div>
-                  <p className="text-2xl font-bold text-red-600">{kpis?.attendanceStatus.absent}</p>
+                  <p className="text-2xl font-bold text-red-600">{(kpis?.attendanceStatus?.absent ?? 0)}</p>
                   <Progress 
-                    value={(kpis?.attendanceStatus.absent || 0) / (kpis?.attendanceStatus.totalScheduled || 1) * 100} 
+                    value={((kpis?.attendanceStatus?.absent ?? 0) || 0) / ((kpis?.attendanceStatus?.totalScheduled ?? 1) || 1) * 100} 
                     className="h-2 mt-2" 
                   />
                 </div>
@@ -354,7 +354,7 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
                     <Users className="w-4 h-4 text-blue-500" />
                     <span className="text-sm text-gray-600">Scheduled</span>
                   </div>
-                  <p className="text-2xl font-bold text-blue-600">{kpis?.attendanceStatus.totalScheduled}</p>
+                  <p className="text-2xl font-bold text-blue-600">{(kpis?.attendanceStatus?.totalScheduled ?? 1)}</p>
                   <Progress value={100} className="h-2 mt-2" />
                 </div>
               </div>
@@ -376,8 +376,8 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
             </CardHeader>
             <CardContent>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {deploymentMetrics?.siteDeployments && Array.isArray(deploymentMetrics.siteDeployments) && 
-                 deploymentMetrics.siteDeployments.slice(0, 8).map((site, index) => (
+                {(deploymentMetrics?.siteDeployments ?? []) && Array.isArray((deploymentMetrics?.siteDeployments ?? [])) && 
+                 (deploymentMetrics?.siteDeployments ?? []).slice(0, 8).map((site, index) => (
                   <div key={site.siteId} className="flex items-center justify-between p-3 rounded-lg border">
                     <div className="flex items-center space-x-3">
                       <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-white ${
@@ -424,22 +424,22 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Processed Items</span>
-                      <span className="font-medium">{kpis?.payrollStatus.processed}</span>
+                      <span className="font-medium">{(kpis?.payrollStatus?.processed ?? 0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Pending Items</span>
-                      <span className="font-medium text-yellow-600">{kpis?.payrollStatus.pending}</span>
+                      <span className="font-medium text-yellow-600">{(kpis?.payrollStatus?.pending ?? 0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Total Amount</span>
                       <span className="font-bold text-green-600">
-                        {formatCurrency(kpis?.payrollStatus.totalAmount || 0)}
+                        {formatCurrency((kpis?.payrollStatus?.totalAmount ?? 0) || 0)}
                       </span>
                     </div>
                     <div className="pt-2 border-t">
                       <span className="text-xs text-gray-500">
-                        Next run: {kpis?.payrollStatus.nextRunDate ? 
-                          new Date(kpis.payrollStatus.nextRunDate).toLocaleDateString() : 'TBD'}
+                        Next run: {(kpis?.payrollStatus?.nextRunDate ?? "") ? 
+                          new Date((kpis?.payrollStatus?.nextRunDate ?? "")).toLocaleDateString() : 'TBD'}
                       </span>
                     </div>
                   </div>
@@ -450,20 +450,20 @@ export function EnterpriseOperationsCenter({ className }: EnterpriseOperationsCe
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Monthly Revenue</span>
                       <span className="font-bold text-green-600">
-                        {formatCurrency(kpis?.billingOverview.monthlyRevenue || 0)}
+                        {formatCurrency((kpis?.billingOverview?.monthlyRevenue ?? 0) || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Outstanding</span>
-                      <span className="font-medium text-red-600">{kpis?.billingOverview.outstandingInvoices}</span>
+                      <span className="font-medium text-red-600">{(kpis?.billingOverview?.outstandingInvoices ?? 0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Paid Invoices</span>
-                      <span className="font-medium text-green-600">{kpis?.billingOverview.paidInvoices}</span>
+                      <span className="font-medium text-green-600">{(kpis?.billingOverview?.paidInvoices ?? 0)}</span>
                     </div>
                     <div className="pt-2 border-t">
                       <span className="text-xs text-gray-500">
-                        Total Billed: {formatCurrency(kpis?.billingOverview.totalBilled || 0)}
+                        Total Billed: {formatCurrency((kpis?.billingOverview?.totalBilled ?? 0) || 0)}
                       </span>
                     </div>
                   </div>

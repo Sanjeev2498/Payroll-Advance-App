@@ -53,36 +53,85 @@ async function bootstrap() {
   }));
 
   // Security middleware - order matters (apply after Helmet)
-  app.use(new RequestSizeLimitMiddleware().use);
-  app.use(new SecurityMiddleware().use);
-  app.use(new RequestIdMiddleware().use);
+  const requestSizeLimitMiddleware = new RequestSizeLimitMiddleware();
+  app.use(requestSizeLimitMiddleware.use.bind(requestSizeLimitMiddleware));
+  const securityMiddleware = new SecurityMiddleware();
+  app.use(securityMiddleware.use.bind(securityMiddleware));
+  const requestIdMiddleware = new RequestIdMiddleware();
+  app.use(requestIdMiddleware.use.bind(requestIdMiddleware));
 
   // Global logging interceptor for audit trails
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  // CORS configuration for development and production
-  app.enableCors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? process.env.FRONTEND_URLS?.split(',') || ['https://your-domain.com']
-      : ['http://localhost:3002', 'http://localhost:3000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  // Enhanced CORS configuration for development and production
+  // with dynamic origin detection and improved authentication support
+  const corsOptions = {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (process.env.NODE_ENV === 'production') {
+        // Production: Use configured frontend URLs
+        const allowedOrigins = process.env.FRONTEND_URLS?.split(',') || ['https://your-domain.com'];
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'), false);
+        }
+      } else {
+        // Development: Dynamic origin detection for multiple frontend ports
+        const developmentOrigins = [
+          'http://localhost:3000',  // Default Next.js dev server
+          'http://localhost:3002',  // Alternative frontend port
+          'http://localhost:3001',  // Additional dev port
+          'http://127.0.0.1:3000',  // IPv4 localhost variant
+          'http://127.0.0.1:3002',  // IPv4 localhost variant
+        ];
+        
+        // Allow requests with no origin (e.g., mobile apps, Postman)
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        
+        if (developmentOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          // Log unknown origins for debugging
+          console.warn(`⚠️  Unknown origin attempted: ${origin}`);
+          callback(null, false);
+        }
+      }
+    },
+    credentials: true, // Essential for authentication cookies and Authorization headers
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
     allowedHeaders: [
-      'Content-Type', 
-      'Authorization', 
+      'Content-Type',
+      'Authorization',      // Critical for JWT tokens
       'X-Requested-With',
       'X-Request-ID',
-      'X-Correlation-ID'
+      'X-Correlation-ID',
+      'Accept',
+      'Accept-Language',
+      'Accept-Encoding',
+      'Cache-Control',
+      'Connection',
+      'Host',
+      'Origin',
+      'Referer',
+      'User-Agent'
     ],
     exposedHeaders: [
       'X-Request-ID',
       'X-Correlation-ID',
       'X-RateLimit-Limit',
       'X-RateLimit-Remaining',
-      'X-RateLimit-Reset'
+      'X-RateLimit-Reset',
+      'Set-Cookie'          // Expose cookie headers for frontend
     ],
-    maxAge: 86400, // 24 hours
-  });
+    maxAge: 86400,          // 24 hours preflight cache
+    optionsSuccessStatus: 200, // Legacy browser support
+    preflightContinue: false,  // Handle preflight internally
+  };
+
+  app.enableCors(corsOptions);
 
   // API versioning
   app.enableVersioning({

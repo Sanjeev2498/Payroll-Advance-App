@@ -102,10 +102,40 @@ export default function LoginPage() {
                       </svg>
                     </div>
                     <div className="ml-2">
-                      {loginError?.response?.data?.error?.message || 
-                       loginError?.response?.data?.message ||
-                       loginError?.message || 
-                       'Invalid email or password. Please check your credentials and try again.'}
+                      <div className="font-medium">Authentication Failed</div>
+                      <div className="mt-1">
+                        {/* Enhanced error message extraction */}
+                        {(() => {
+                          const error = loginError as any
+                          
+                          // Use enhanced error message if available
+                          if (error?.userMessage) {
+                            return error.userMessage
+                          }
+                          
+                          // Try to extract from response data
+                          if (error?.response?.data?.error?.message) {
+                            return error.response.data.error.message
+                          } else if (error?.response?.data?.message) {
+                            return error.response.data.message
+                          }
+                          
+                          // Use direct error message
+                          if (error?.message) {
+                            return error.message
+                          }
+                          
+                          // Prevent empty error objects
+                          return 'An unexpected error occurred. Please check your credentials and try again.'
+                        })()}
+                      </div>
+                      
+                      {/* Show retry indicator for retryable errors */}
+                      {(loginError as any)?.isRetryable && (
+                        <div className="mt-2 text-xs text-red-500">
+                          This appears to be a temporary issue. The system will retry automatically.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

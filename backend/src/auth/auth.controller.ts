@@ -250,7 +250,7 @@ export class AuthController {
     const fullUser = await this.prisma.user.findUnique({
       where: { id: user.id },
       include: {
-        company: {
+        companies: {
           select: {
             id: true,
             name: true,
@@ -269,16 +269,16 @@ export class AuthController {
       data: {
         id: fullUser.id,
         email: fullUser.email,
-        firstName: fullUser.firstName,
-        lastName: fullUser.lastName,
+        firstName: fullUser.first_name,
+        lastName: fullUser.last_name,
         role: fullUser.role,
-        companyId: fullUser.companyId,
+        companyId: fullUser.company_id,
         // Add tenant fields for frontend compatibility
-        tenantId: fullUser.companyId,
-        tenantName: fullUser.company?.name || 'Unknown Company',
-        status: fullUser.isActive ? 'ACTIVE' : 'INACTIVE',
-        createdAt: fullUser.createdAt.toISOString(),
-        updatedAt: fullUser.updatedAt.toISOString(),
+        tenantId: fullUser.company_id,
+        tenantName: fullUser.companies?.name || 'Unknown Company',
+        status: fullUser.is_active ? 'ACTIVE' : 'INACTIVE',
+        createdAt: fullUser.created_at.toISOString(),
+        updatedAt: fullUser.updated_at.toISOString(),
       },
     };
   }
