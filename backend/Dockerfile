@@ -1,15 +1,15 @@
-# Backend Dockerfile for Security Workforce & Payroll Management System
-FROM node:18-alpine AS base
+﻿# Backend Dockerfile for Security Workforce & Payroll Management System
+FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+# Use npm install instead of npm ci to handle lock file inconsistencies
+RUN npm install --omit=dev
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -18,18 +18,16 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Generate Prisma Client
-RUN npm run prisma:generate
+RUN npx prisma generate
 
 # Build the application
 RUN npm run build
 
-# Production image, copy all the files and run next
+# Production image, copy all the files and run
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
@@ -47,7 +45,8 @@ USER nestjs
 
 EXPOSE 3001
 
-ENV PORT 3001
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3001
+ENV HOSTNAME="0.0.0.0"
 
-CMD ["npm", "run", "start:prod"]
+# Use the correct path to the built main file
+CMD ["node", "dist/src/main.js"]
