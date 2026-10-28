@@ -37,10 +37,10 @@ export class PermissionsGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    console.log('🔍 PermissionsGuard - Route isPublic:', isPublic);
+    // console.log temporarily disabled
 
     if (isPublic) {
-      console.log('✅ PermissionsGuard - Allowing public route');
+      // console.log temporarily disabled
       return true;
     }
 
@@ -250,3 +250,4 @@ export class ResourceOwnershipGuard implements CanActivate {
     return true;
   }
 }
+

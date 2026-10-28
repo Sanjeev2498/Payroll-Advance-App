@@ -283,19 +283,19 @@ export interface PayrollProcessingError {
 
 export interface PayrollRunWithDetails {
   id: string;
-  companyId: string;
-  runNumber: string;
-  payPeriodStart: Date;
-  payPeriodEnd: Date;
+  company_id: string;
+  run_number: string;
+  pay_period_start: Date;
+  pay_period_end: Date;
   status: string;
-  totalAmount: any; // Decimal
-  processedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  payrollItems: any[];
+  total_amount: any; // Decimal
+  processed_at?: Date;
+  created_at: Date;
+  updated_at: Date;
+  payroll_items: any[];
   _count: {
-    payrollItems: number;
+    payroll_items: number;
   };
-  approvalHistory?: any[];
-  correctionHistory?: any[];
+  approval_history?: any[];
+  correction_history?: any[];
 }

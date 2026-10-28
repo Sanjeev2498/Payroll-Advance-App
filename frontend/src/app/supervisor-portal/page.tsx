@@ -324,7 +324,7 @@ export default function SupervisorPortalPage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Client</span>
-                      <span className="font-medium">{site.client?.name || 'N/A'}</span>
+                      <span className="font-medium">{site.client?.name || (site as any)?.contracts?.client?.name || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Status</span>

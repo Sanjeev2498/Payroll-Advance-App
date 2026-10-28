@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Auth State</title>
+</head>
+<body>
+    <h1>Clear Authentication State</h1>
+    <button onclick="clearAuth()">Clear Auth</button>
+    <div id="result"></div>
+    
+    <script>
+        function clearAuth() {
+            // Clear localStorage
+            localStorage.removeItem('auth-storage');
+            
+            // Clear all cookies
+            document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+            document.cookie = 'refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+            
+            // Clear sessionStorage too
+            sessionStorage.clear();
+            
+            document.getElementById('result').innerHTML = 'Authentication state cleared. <a href="http://localhost:3000/debug-login">Go to Debug Login</a>';
+        }
+    </script>
+</body>
+</html>

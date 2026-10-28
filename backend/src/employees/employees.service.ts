@@ -5,7 +5,6 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../common/tenant-context.service';
 import { DataTransformService } from '../common/services/data-transform.service';
 import { EncryptionUtil } from '../common/utils/encryption.util';
@@ -17,8 +16,10 @@ import {
   EmploymentStatus 
 } from './dto';
 import { EmployeeRoleResponse } from '../common/dto/encrypted-field.dto';
-import { employees } from '@prisma/client';
+import { EmployeeRepository } from './repositories/employee.repository';
+import { EmployeeResponseDto } from './dto/employee-response.dto';
 import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
+
 
 
 @Injectable()
@@ -26,7 +27,7 @@ export class EmployeesService {
   private readonly logger = new Logger(EmployeesService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly employeeRepository: EmployeeRepository,
     private readonly tenantContext: TenantContextService,
     private readonly dataTransform: DataTransformService,
     private readonly encryptionUtil: EncryptionUtil,
@@ -38,117 +39,37 @@ export class EmployeesService {
   async create(createEmployeeDto: CreateEmployeeDto, userRole: string): Promise<EmployeeRoleResponse> {
     this.logger.log(`Creating new employee: ${createEmployeeDto.firstName} ${createEmployeeDto.lastName}`);
 
-    let tenantId: string;
-    
-    // Try to get tenant context, fall back to demo mode
-    try {
-      tenantId = this.tenantContext.getTenantId();
-    } catch (error) {
-      this.logger.warn('No tenant context found, using demo mode');
-      // In demo mode, try to find or create a company
-      try {
-        let company = await this.prisma.companies.findFirst();
-        if (!company) {
-          // Create a demo company if none exists
-          company = await this.prisma.companies.create({
-            data: {
-              name: 'Demo Security Company',
-              code: 'DEMO001',
-              metadata: {
-                isDemo: true,
-                createdAt: new Date().toISOString()
-              }
-            }
-          });
-        }
-        tenantId = company.id;
-      } catch (dbError) {
-        // If database is not available, use a mock tenant ID for now
-        this.logger.error('Database not available, using mock demo mode');
-        tenantId = 'demo-tenant-id';
-      }
-    }
-
-    // Validate hire date
-    if (new Date(createEmployeeDto.hireDate) > new Date()) {
-      throw new BadRequestException('Hire date cannot be in the future');
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     // Check for duplicate employee number within tenant
-    await this.validateUniqueemployeesNumber(createEmployeeDto.employeeNumber);
+    await this.validateUniqueEmployeeNumber(createEmployeeDto.employeeNumber, tenantId);
+
+    // Validate conditional field requirements
+    if (createEmployeeDto.employmentStatus === EmploymentStatus.TERMINATED) {
+      if (!createEmployeeDto.terminationDate) {
+        throw new BadRequestException('Termination date is required when employment status is TERMINATED');
+      }
+    }
 
     try {
       // Encrypt sensitive data before storing
       const encryptedData = this.dataTransform.encryptEmployeeData(createEmployeeDto);
 
-      // Prepare employee data
-      const employeeData = {
-        companyId: tenantId,
-        employeeNumber: createEmployeeDto.employeeNumber,
-        firstName: createEmployeeDto.firstName,
-        lastName: createEmployeeDto.lastName,
-        hireDate: new Date(createEmployeeDto.hireDate),
-        skills: createEmployeeDto.skills?.map(skill => skill.name) || [], // Extract skill names
-        employmentStatus: 'ACTIVE', // Default status
-        certifications: createEmployeeDto.certifications as any,
-        address: createEmployeeDto.contactInfo?.address as any,
-        contactInfo: createEmployeeDto.contactInfo as any,
-        // Direct fields (not in metadata)
-        department: createEmployeeDto.department,
-        jobTitle: createEmployeeDto.jobTitle,
-        employmentType: createEmployeeDto.employmentType,
-        hourlyRate: createEmployeeDto.hourlyRate,
-        metadata: {
-          complianceStatus: createEmployeeDto.complianceStatus,
-          availability: createEmployeeDto.availability,
-          performanceMetrics: createEmployeeDto.performanceMetrics,
-          ...createEmployeeDto.metadata,
-        } as any,
-        // Encrypted fields
+      // Prepare employee data with camelCase (repository handles conversion)
+      const employeeData: CreateEmployeeDto = {
+        ...createEmployeeDto,
         ...encryptedData,
+        companyId: tenantId,
+        employmentStatus: createEmployeeDto.employmentStatus || EmploymentStatus.ACTIVE, // Default status
       };
 
-      // If database is not available (demo tenant), return mock response
-      if (tenantId === 'demo-tenant-id') {
-        this.logger.warn('Database not available, returning mock employee response');
-        const mockEmployee = {
-          id: `emp-${Date.now()}`,
-          companyId: tenantId,
-          employeeNumber: createEmployeeDto.employeeNumber,
-          firstName: createEmployeeDto.firstName,
-          lastName: createEmployeeDto.lastName,
-          hireDate: new Date(createEmployeeDto.hireDate),
-          employmentStatus: 'ACTIVE',
-          skills: createEmployeeDto.skills?.map(skill => skill.name) || [],
-          certifications: createEmployeeDto.certifications || [],
-          // Direct fields
-          department: createEmployeeDto.department,
-          jobTitle: createEmployeeDto.jobTitle,
-          employmentType: createEmployeeDto.employmentType,
-          hourlyRate: createEmployeeDto.hourlyRate,
-          contactInfo: createEmployeeDto.contactInfo,
-          metadata: employeeData.metadata,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          // Encrypted fields will be set by dataTransform
-          email: encryptedData.email || null,
-          phone: encryptedData.phone || null,
-          aadhaarNumber: encryptedData.aadhaarNumber || null,
-          panNumber: encryptedData.panNumber || null,
-          address: encryptedData.address || null,
-          terminationDate: null
-        };
-        return this.dataTransform.transformEmployeeForRole(mockEmployee, userRole, false);
-      }
-
-      const employee = await this.prisma.employees.create({
-        data: employeeData,
-      });
+      // Use repository to create employee
+      const employee = await this.employeeRepository.create(employeeData);
 
       this.logger.log(`Successfully created employee: ${employee.id}`);
 
       // Return role-based view of the employee data
-      return this.dataTransform.transformEmployeeForRole(employee, userRole, false);
+      return this.dataTransform.transformEmployeeForRole(employee as any, userRole, false);
     } catch (error) {
       const errorInfo = formatError(error);
       this.logger.error(`${errorInfo.message}`, errorInfo.stack);
@@ -162,26 +83,13 @@ export class EmployeesService {
   async findAll(queryDto: EmployeeQueryDto, userRole: string, requestingUserId?: string) {
     this.logger.log('Fetching employees list with filters', { queryDto });
 
-    let tenantId: string;
-    
-    // Try to get tenant context, fall back to demo mode
-    try {
-      tenantId = this.tenantContext.getTenantId();
-    } catch (error) {
-      this.logger.warn('No tenant context found, using demo mode');
-      // In demo mode, use the first available company
-      const company = await this.prisma.companies.findFirst();
-      if (!company) {
-        throw new BadRequestException('No company found in demo mode');
-      }
-      tenantId = company.id;
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     const where: any = {
       companyId: tenantId,
     };
 
-    // Apply filters
+    // Apply filters (using camelCase - repository handles conversion)
     if (queryDto.search) {
       where.OR = [
         { firstName: { contains: queryDto.search, mode: 'insensitive' } },
@@ -212,25 +120,25 @@ export class EmployeesService {
     }
 
     try {
-      const skip = ((queryDto.page || 1) - 1) * (queryDto.limit || 10);
-      const take = queryDto.limit || 10;
+      const page = queryDto.page || 1;
+      const limit = queryDto.limit || 10;
+      const skip = (page - 1) * limit;
 
-      const [employees, total] = await Promise.all([
-        this.prisma.employee.findMany({
-          where,
-          skip,
-          take,
-          orderBy: {
-            [queryDto.sortBy || 'createdAt']: queryDto.sortOrder || 'desc',
-          },
-        }),
-        this.prisma.employee.count({ where }),
-      ]);
+      // Use repository's findMany with options
+      const employees = await this.employeeRepository.findMany(where, {
+        skip,
+        take: limit,
+        orderBy: {
+          [queryDto.sortBy || 'createdAt']: queryDto.sortOrder || 'desc',
+        },
+      });
+
+      const total = await this.employeeRepository.count(where);
 
       // Transform each employee based on user role
       const transformedEmployees = employees.map((employee) => {
         const isOwnData = requestingUserId === employee.id;
-        return this.dataTransform.transformEmployeeForRole(employee, userRole, isOwnData);
+        return this.dataTransform.transformEmployeeForRole(employee as any, userRole, isOwnData);
       });
 
       this.logger.log(`Found ${total} employees`);
@@ -238,9 +146,9 @@ export class EmployeesService {
       return {
         employees: transformedEmployees,
         total,
-        page: queryDto.page || 1,
-        limit: queryDto.limit || 10,
-        pages: Math.ceil(total / (queryDto.limit || 10)),
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
       };
     } catch (error) {
       const errorInfo = formatError(error);
@@ -255,24 +163,16 @@ export class EmployeesService {
   async findOne(id: string, userRole: string, requestingUserId?: string): Promise<EmployeeRoleResponse> {
     this.logger.log(`Fetching employee: ${id}`);
 
-    const tenantId = this.tenantContext.getTenantId();
-    if (!tenantId) {
-      throw new BadRequestException('Tenant context not found');
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
-    const employee = await this.prisma.employee.findFirst({
-      where: {
-        id,
-        companyId: tenantId,
-      },
-    });
+    const employee = await this.employeeRepository.findById(id);
 
-    if (!employee) {
-      throw new NotFoundException(`employees with ID ${id} not found`);
+    if (!employee || employee.companyId !== tenantId) {
+      throw new NotFoundException(`Employee with ID ${id} not found`);
     }
 
     const isOwnData = requestingUserId === employee.id;
-    return this.dataTransform.transformEmployeeForRole(employee, userRole, isOwnData);
+    return this.dataTransform.transformEmployeeForRole(employee as any, userRole, isOwnData);
   }
 
   /**
@@ -280,87 +180,68 @@ export class EmployeesService {
    */
   async update(
     id: string, 
-    updateemployeesDto: UpdateEmployeeDto, 
+    updateEmployeeDto: UpdateEmployeeDto, 
     userRole: string,
     requestingUserId?: string
   ): Promise<EmployeeRoleResponse> {
     this.logger.log(`Updating employee: ${id}`);
 
-    let tenantId: string;
-    
-    // Try to get tenant context, fall back to demo mode
-    try {
-      tenantId = this.tenantContext.getTenantId();
-    } catch (error) {
-      this.logger.warn('No tenant context found, using demo mode');
-      // In demo mode, use the first available company
-      const company = await this.prisma.companies.findFirst();
-      if (!company) {
-        throw new BadRequestException('No company found in demo mode');
-      }
-      tenantId = company.id;
-    }
-
-    // Validate hire date if being updated
-    if (updateemployeesDto.hireDate && new Date(updateemployeesDto.hireDate) > new Date()) {
-      throw new BadRequestException('Hire date cannot be in the future');
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     // Check for duplicate employee number if being updated
-    if (updateemployeesDto.employeeNumber) {
-      await this.validateUniqueemployeesNumber(updateemployeesDto.employeeNumber, id);
+    if (updateEmployeeDto.employeeNumber) {
+      await this.validateUniqueEmployeeNumber(updateEmployeeDto.employeeNumber, tenantId, id);
     }
 
     try {
       // Get current employee first
-      const currentemployees = await this.prisma.employee.findFirst({
-        where: { id, companyId: tenantId },
-      });
+      const currentEmployee = await this.employeeRepository.findById(id);
 
-      if (!currentemployees) {
-        throw new NotFoundException(`employees with ID ${id} not found`);
+      if (!currentEmployee || currentEmployee.companyId !== tenantId) {
+        throw new NotFoundException(`Employee with ID ${id} not found`);
+      }
+
+      // Validate employment status transition if status is being changed
+      if (updateEmployeeDto.employmentStatus && 
+          updateEmployeeDto.employmentStatus !== currentEmployee.employmentStatus) {
+        this.validateEmploymentStatusTransition(
+          currentEmployee.employmentStatus,
+          updateEmployeeDto.employmentStatus
+        );
+      }
+
+      // Validate conditional field requirements
+      if (updateEmployeeDto.employmentStatus === EmploymentStatus.TERMINATED) {
+        if (!updateEmployeeDto.terminationDate && !currentEmployee.terminationDate) {
+          throw new BadRequestException('Termination date is required when employment status is TERMINATED');
+        }
       }
 
       // Encrypt sensitive data in the update
-      const encryptedUpdateData = this.dataTransform.encryptEmployeeData(updateemployeesDto);
+      const encryptedUpdateData = this.dataTransform.encryptEmployeeData(updateEmployeeDto);
 
-      // Prepare update data
-      const updateData: any = {
-        ...updateemployeesDto,
+      // Prepare update data (repository handles field mapping)
+      const updateData: UpdateEmployeeDto = {
+        ...updateEmployeeDto,
         ...encryptedUpdateData,
       };
 
-      // Handle metadata updates
-      if (updateemployeesDto.employmentType || updateemployeesDto.department || 
-          updateemployeesDto.jobTitle || updateemployeesDto.metadata) {
-        
-        const currentMetadata = (currentemployees.metadata as any) || {};
-        
-        updateData.metadata = {
-          ...currentMetadata,
-          ...(updateemployeesDto.employmentType && { employmentType: updateemployeesDto.employmentType }),
-          ...(updateemployeesDto.department && { department: updateemployeesDto.department }),
-          ...(updateemployeesDto.jobTitle && { jobTitle: updateemployeesDto.jobTitle }),
-          ...updateemployeesDto.metadata,
-        };
-      }
-
-      const updatedemployees = await this.prisma.employee.update({
-        where: { id },
-        data: updateData,
-      });
+      const updatedEmployee = await this.employeeRepository.update(id, updateData);
 
       this.logger.log(`Successfully updated employee: ${id}`);
 
       // Handle employment status changes
-      if (updateemployeesDto.employmentStatus) {
-        await this.handleEmploymentStatusChange(updatedemployees, updateemployeesDto.employmentStatus);
+      if (updateEmployeeDto.employmentStatus) {
+        await this.handleEmploymentStatusChange(updatedEmployee as any, updateEmployeeDto.employmentStatus);
       }
 
-      const isOwnData = requestingUserId === updatedemployees.id;
-      return this.dataTransform.transformEmployeeForRole(updatedemployees, userRole, isOwnData);
+      const isOwnData = requestingUserId === updatedEmployee.id;
+      return this.dataTransform.transformEmployeeForRole(updatedEmployee as any, userRole, isOwnData);
     } catch (error) {
       if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error instanceof BadRequestException) {
         throw error;
       }
       this.logger.error(`Failed to update employee: ${getErrorMessage(error)}`, getErrorStack(error));
@@ -374,39 +255,31 @@ export class EmployeesService {
   async remove(id: string, userRole: string): Promise<EmployeeRoleResponse> {
     this.logger.log(`Soft deleting employee: ${id}`);
 
-    let tenantId: string;
-    
-    // Try to get tenant context, fall back to demo mode
-    try {
-      tenantId = this.tenantContext.getTenantId();
-    } catch (error) {
-      this.logger.warn('No tenant context found, using demo mode');
-      // In demo mode, use the first available company
-      const company = await this.prisma.companies.findFirst();
-      if (!company) {
-        throw new BadRequestException('No company found in demo mode');
-      }
-      tenantId = company.id;
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     try {
-      const deletedemployees = await this.prisma.employee.update({
-        where: { 
-          id,
-          companyId: tenantId,
-        },
-        data: {
-          employmentStatus: 'TERMINATED',
-          terminationDate: new Date(),
-        },
+      // First get the employee to verify it exists
+      const employee = await this.employeeRepository.findById(id);
+      
+      if (!employee) {
+        throw new NotFoundException(`Employee with ID ${id} not found`);
+      }
+
+      // Update to TERMINATED status and set termination date
+      const terminatedEmployee = await this.employeeRepository.update(id, {
+        employmentStatus: EmploymentStatus.TERMINATED,
+        terminationDate: new Date(),
       });
+
+      // Also perform soft delete (sets deleted_at)
+      await this.employeeRepository.delete(id);
 
       this.logger.log(`Successfully soft deleted employee: ${id}`);
 
       // Handle termination workflow
-      await this.handleemployeesTermination(deletedemployees);
+      await this.handleEmployeeTermination(terminatedEmployee as any);
 
-      return this.dataTransform.transformEmployeeForRole(deletedemployees, userRole, false);
+      return this.dataTransform.transformEmployeeForRole(terminatedEmployee as any, userRole, false);
     } catch (error) {
       const errorInfo = formatError(error);
       this.logger.error(`${errorInfo.message}`, errorInfo.stack);
@@ -420,15 +293,12 @@ export class EmployeesService {
   async searchEmployees(searchDto: EmployeeSearchDto, userRole: string) {
     this.logger.log('Performing advanced employee search', { searchDto });
 
-    const tenantId = this.tenantContext.getTenantId();
-    if (!tenantId) {
-      throw new BadRequestException('Tenant context not found');
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     try {
       const where: any = {
         companyId: tenantId,
-        employmentStatus: 'ACTIVE',
+        employmentStatus: EmploymentStatus.ACTIVE,
       };
 
       if (searchDto.requiredSkills && searchDto.requiredSkills.length > 0) {
@@ -437,23 +307,28 @@ export class EmployeesService {
         };
       }
 
-      const employees = await this.prisma.employee.findMany({
-        where,
+      const employees = await this.employeeRepository.findMany(where, {
         take: 50, // Limit results
       });
 
       const results = employees.map(employee => {
-        const transformedEmployee = this.dataTransform.transformEmployeeForRole(employee, userRole, false);
+        const transformedEmployee = this.dataTransform.transformEmployeeForRole(employee as any, userRole, false);
         
         // Calculate match percentage (simplified)
+        const empSkills = Array.isArray(employee.skills) ? employee.skills : [];
+        // Extract skill names from skill objects or use strings directly
+        const skillNames = empSkills.map((skill: any) => 
+          typeof skill === 'string' ? skill : skill.name || skill
+        );
+        
         const matchPercentage = searchDto.requiredSkills 
-          ? Math.min(100, (employee.skills.length / searchDto.requiredSkills.length) * 100)
+          ? Math.min(100, (skillNames.length / searchDto.requiredSkills.length) * 100)
           : 100;
 
         return {
           employee: transformedEmployee,
           matchPercentage,
-          matchedSkills: employee.skills,
+          matchedSkills: skillNames,
           missingSkills: [],
           availabilityScore: 75, // Default score
         };
@@ -474,24 +349,13 @@ export class EmployeesService {
   async findBySkills(skills: string[], userRole: string) {
     this.logger.log(`Finding employees with skills: ${skills.join(', ')}`);
 
-    const tenantId = this.tenantContext.getTenantId();
-    if (!tenantId) {
-      throw new BadRequestException('Tenant context not found');
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     try {
-      const employees = await this.prisma.employee.findMany({
-        where: {
-          companyId: tenantId,
-          employmentStatus: 'ACTIVE',
-          skills: {
-            hasEvery: skills,
-          },
-        },
-      });
+      const employees = await this.employeeRepository.findBySkills(skills, tenantId);
 
       const transformedEmployees = employees.map(employee => 
-        this.dataTransform.transformEmployeeForRole(employee, userRole, false)
+        this.dataTransform.transformEmployeeForRole(employee as any, userRole, false)
       );
 
       this.logger.log(`Found ${transformedEmployees.length} employees with required skills`);
@@ -509,15 +373,12 @@ export class EmployeesService {
   async findAvailable(startDate?: string, endDate?: string, requiredSkills?: string[], userRole?: string) {
     this.logger.log('Finding available employees for scheduling');
 
-    const tenantId = this.tenantContext.getTenantId();
-    if (!tenantId) {
-      throw new BadRequestException('Tenant context not found');
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     try {
       const where: any = {
         companyId: tenantId,
-        employmentStatus: 'ACTIVE',
+        employmentStatus: EmploymentStatus.ACTIVE,
       };
 
       if (requiredSkills && requiredSkills.length > 0) {
@@ -526,13 +387,11 @@ export class EmployeesService {
         };
       }
 
-      const employees = await this.prisma.employee.findMany({
-        where,
-      });
+      const employees = await this.employeeRepository.findMany(where);
 
       if (userRole) {
         return employees.map(employee => 
-          this.dataTransform.transformEmployeeForRole(employee, userRole, false)
+          this.dataTransform.transformEmployeeForRole(employee as any, userRole, false)
         );
       }
 
@@ -550,40 +409,10 @@ export class EmployeesService {
   async getStats(userRole: string) {
     this.logger.log('Fetching employee statistics');
 
-    let tenantId: string;
-    
-    // Try to get tenant context, fall back to demo mode
-    try {
-      tenantId = this.tenantContext.getTenantId();
-    } catch (error) {
-      this.logger.warn('No tenant context found, using demo mode');
-      // In demo mode, use the first available company
-      const company = await this.prisma.companies.findFirst();
-      if (!company) {
-        throw new BadRequestException('No company found in demo mode');
-      }
-      tenantId = company.id;
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     try {
-      const [total, active, inactive, onLeave, terminated] = await Promise.all([
-        this.prisma.employee.count({ where: { companyId: tenantId } }),
-        this.prisma.employee.count({ where: { companyId: tenantId, employmentStatus: 'ACTIVE' } }),
-        this.prisma.employee.count({ where: { companyId: tenantId, employmentStatus: 'INACTIVE' } }),
-        this.prisma.employee.count({ where: { companyId: tenantId, employmentStatus: 'ON_LEAVE' } }),
-        this.prisma.employee.count({ where: { companyId: tenantId, employmentStatus: 'TERMINATED' } }),
-      ]);
-
-      const stats = {
-        total,
-        active,
-        inactive,
-        onLeave,
-        terminated,
-        certificationsExpiringSoon: 0, // TODO: Implement when certification tracking is added
-        complianceIssues: 0, // TODO: Implement when compliance tracking is added
-        averagePerformanceRating: 0, // TODO: Implement when performance tracking is added
-      };
+      const stats = await this.employeeRepository.getStats(tenantId);
 
       this.logger.log('Successfully fetched employee statistics', stats);
       return stats;
@@ -600,25 +429,13 @@ export class EmployeesService {
   async findExpiringCertifications(days: number = 30, userRole: string) {
     this.logger.log(`Finding employees with certifications expiring in ${days} days`);
 
-    const tenantId = this.tenantContext.getTenantId();
-    if (!tenantId) {
-      throw new BadRequestException('Tenant context not found');
-    }
+    const tenantId = this.getTenantIdOrThrow();
 
     try {
-      // This is a simplified version - would need more complex logic for actual certification tracking
-      const employees = await this.prisma.employee.findMany({
-        where: {
-          companyId: tenantId,
-          employmentStatus: 'ACTIVE',
-          certifications: {
-            not: null,
-          },
-        },
-      });
+      const employees = await this.employeeRepository.findExpiringCertifications(days, tenantId);
 
       const transformedEmployees = employees.map(employee => 
-        this.dataTransform.transformEmployeeForRole(employee, userRole, false)
+        this.dataTransform.transformEmployeeForRole(employee as any, userRole, false)
       );
 
       this.logger.log(`Found ${transformedEmployees.length} employees with certifications`);
@@ -669,9 +486,57 @@ export class EmployeesService {
   }
 
   /**
-   * employees onboarding workflow
+   * Assign employee to client with business rule validation
    */
-  private async initiateemployeesOnboarding(employee: employees): Promise<void> {
+  async assignToClient(employeeId: string, clientId: string): Promise<void> {
+    this.logger.log(`Assigning employee ${employeeId} to client ${clientId}`);
+
+    const tenantId = this.getTenantIdOrThrow();
+
+    // Validate employee exists and belongs to tenant
+    const employee = await this.employeeRepository.findById(employeeId);
+    if (!employee || employee.companyId !== tenantId) {
+      throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+
+    // Validate employee status is ACTIVE
+    if (employee.employmentStatus === EmploymentStatus.TERMINATED) {
+      throw new BadRequestException('Cannot assign terminated employee to client');
+    }
+
+    if (employee.employmentStatus !== EmploymentStatus.ACTIVE) {
+      throw new BadRequestException(`Cannot assign employee with status ${employee.employmentStatus} to client`);
+    }
+
+    // Validate client exists (would need ClientRepository injected)
+    // For now, we'll implement basic validation
+    // TODO: Inject ClientRepository and validate client exists
+    
+    this.logger.log(`Successfully validated assignment of employee ${employeeId} to client ${clientId}`);
+    
+    // TODO: Implement actual assignment logic when assignment entity is available
+    // await this.assignmentRepository.create({ employeeId, clientId, ... });
+  }
+
+  /**
+   * Get tenant ID or throw exception
+   */
+  private getTenantIdOrThrow(): string {
+    try {
+      const tenantId = this.tenantContext.getTenantId();
+      if (!tenantId) {
+        throw new BadRequestException('Tenant context not found');
+      }
+      return tenantId;
+    } catch (error) {
+      throw new BadRequestException('Tenant context not found');
+    }
+  }
+
+  /**
+   * Employee onboarding workflow
+   */
+  private async initiateEmployeeOnboarding(employee: EmployeeResponseDto): Promise<void> {
     this.logger.log(`Initiating onboarding workflow for employee: ${employee.id}`);
 
     try {
@@ -694,7 +559,7 @@ export class EmployeesService {
    * Handle employment status changes
    */
   private async handleEmploymentStatusChange(
-    employee: employees,
+    employee: EmployeeResponseDto,
     newStatus: EmploymentStatus,
   ): Promise<void> {
     this.logger.log(`Handling status change for employee ${employee.id}: ${newStatus}`);
@@ -723,7 +588,7 @@ export class EmployeesService {
   /**
    * Handle employee termination workflow
    */
-  private async handleemployeesTermination(employee: employees): Promise<void> {
+  private async handleEmployeeTermination(employee: EmployeeResponseDto): Promise<void> {
     this.logger.log(`Handling termination workflow for employee: ${employee.id}`);
 
     try {
@@ -745,40 +610,51 @@ export class EmployeesService {
   /**
    * Validate employee number uniqueness within tenant
    */
-  private async validateUniqueemployeesNumber(employeeNumber: string, excludeId?: string): Promise<void> {
-    let tenantId: string;
-    
+  private async validateUniqueEmployeeNumber(employeeNumber: string, tenantId: string, excludeId?: string): Promise<void> {
     try {
-      tenantId = this.tenantContext.getTenantId();
-    } catch (error) {
-      // In demo mode without database, skip validation
-      this.logger.warn('No tenant context for validation, skipping duplicate check in demo mode');
-      return;
-    }
-
-    const where: any = {
-      companyId: tenantId,
-      employeeNumber,
-    };
-
-    if (excludeId) {
-      where.id = { not: excludeId };
-    }
-
-    try {
-      const existing = await this.prisma.employee.findFirst({ where });
-      if (existing) {
-        throw new ConflictException(`employees number ${employeeNumber} already exists`);
+      const existing = await this.employeeRepository.findByEmployeeNumber(employeeNumber, tenantId);
+      
+      if (existing && existing.id !== excludeId) {
+        throw new ConflictException(`Employee number ${employeeNumber} already exists`);
       }
-    } catch (dbError) {
-      // Re-throw ConflictExceptions - they are business logic errors, not database connectivity errors
-      if (dbError instanceof ConflictException) {
-        throw dbError;
+    } catch (error) {
+      // Re-throw ConflictExceptions - they are business logic errors
+      if (error instanceof ConflictException) {
+        throw error;
       }
       
-      // Only catch database connectivity errors and skip validation for demo mode
-      this.logger.warn('Database not available for validation, skipping in demo mode');
-      return;
+      // Log other errors but don't throw
+      this.logger.error(`Error validating employee number uniqueness: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Validate employment status transition rules
+   */
+  private validateEmploymentStatusTransition(
+    currentStatus: EmploymentStatus,
+    newStatus: EmploymentStatus
+  ): void {
+    // Define invalid status transitions
+    const invalidTransitions = [
+      { from: EmploymentStatus.TERMINATED, to: EmploymentStatus.ACTIVE, reason: 'Cannot reactivate a terminated employee' },
+      { from: EmploymentStatus.TERMINATED, to: EmploymentStatus.ON_LEAVE, reason: 'Terminated employees cannot go on leave' },
+      { from: EmploymentStatus.TERMINATED, to: EmploymentStatus.INACTIVE, reason: 'Terminated employees cannot be set to inactive' },
+    ];
+
+    const invalidTransition = invalidTransitions.find(
+      t => t.from === currentStatus && t.to === newStatus
+    );
+
+    if (invalidTransition) {
+      throw new BadRequestException(
+        `Invalid employment status transition: ${invalidTransition.reason}`
+      );
     }
   }
 }
+
+
+
+
+

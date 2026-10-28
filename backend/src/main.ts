@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+﻿import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -7,6 +7,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { SecurityMiddleware } from './common/middleware/security.middleware';
 import { RequestSizeLimitMiddleware } from './common/middleware/request-size-limit.middleware';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import * as express from 'express';
 import helmet from 'helmet';
 import * as fs from 'fs';
@@ -162,8 +164,29 @@ async function bootstrap() {
     }),
   );
 
+  // Global exception filters for database and application errors
+  // Order matters: specific filters (Prisma) before catch-all (Global)
+  app.useGlobalFilters(
+    new PrismaExceptionFilter(),  // Handle Prisma database errors with camelCase field names
+    new GlobalExceptionFilter(),  // Catch-all for other exceptions
+  );
+
   // Global prefix for API routes
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: ['/health'], // Exclude root health endpoint from global prefix
+  });
+
+  // Manual health endpoint at root level (bypasses /api prefix)
+  // This is required for load balancers and monitoring tools
+  const appInstance = app.getHttpAdapter().getInstance();
+  appInstance.get('/health', (req: any, res: any) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      service: 'Security Workforce & Payroll Management System',
+      version: '1.0.0',
+    });
+  });
 
   // Swagger API documentation with comprehensive security and documentation
   if (process.env.NODE_ENV !== 'production') {
@@ -218,6 +241,7 @@ async function bootstrap() {
   console.log(`⚡ Rate limiting enabled`);
   console.log(`🔐 CORS configured for secure cross-origin requests`);
   console.log(`🔒 Input validation and sanitization enabled`);
+  console.log(`🛡️  Global exception filters registered (Prisma + Global)`);
 }
 
 bootstrap().catch(error => {

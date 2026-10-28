@@ -296,7 +296,7 @@ describe('Property Test: Client Portal Monitoring Accuracy', () => {
                   }
                 });
               } catch (contractError) {
-                console.warn('Contract creation failed, skipping contract-dependent operations:', contractError.message);
+                console.warn('Contract creation failed, skipping contract-dependent operations:', (contractError as Error).message);
                 // Skip contract creation but continue with other operations
                 createdContract = null;
               }
@@ -605,7 +605,7 @@ describe('Property Test: Client Portal Monitoring Accuracy', () => {
                 await prisma.clients.deleteMany({});
               } catch (cleanupError) {
                 // Log but don't throw - cleanup errors shouldn't fail the test
-                console.warn('Cleanup failed:', cleanupError.message);
+                console.warn('Cleanup failed:', (cleanupError as Error).message);
               }
             });
           }

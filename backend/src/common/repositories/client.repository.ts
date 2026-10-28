@@ -9,6 +9,8 @@ export interface CreateClientDto {
   name: string;
   contactEmail: string;
   contactInfo?: any;
+  billingPreferences?: any;
+  contractStatus?: ContractStatus;
   organizationType?: ClientOrganizationType;
   industry?: string;
   companySize?: string;
@@ -59,7 +61,9 @@ export class ClientRepository extends TenantAwareRepository {
 
     const createData = {
       id: randomUUID(),
-      company_id: this.tenantContext.getTenantId(),
+      companies: {
+        connect: { id: this.tenantContext.getTenantId() }
+      },
       name: data.name,
       contact_email: data.contactEmail,
       contact_info: data.contactInfo ? (data.contactInfo as unknown as Prisma.JsonValue) : undefined,
@@ -143,6 +147,22 @@ export class ClientRepository extends TenantAwareRepository {
               clientDocuments: true,
             },
           },
+        },
+      }),
+    );
+  }
+
+  /**
+   * Find client by contact email with tenant isolation
+   */
+  async findByEmail(email: string): Promise<clients | null> {
+    this.logOperation('READ', 'clients', `email:${email}`);
+
+    return this.findWithTenant(() =>
+      this.prisma.clients.findFirst({
+        where: {
+          contact_email: email,
+          ...this.getTenantFilter(),
         },
       }),
     );

@@ -102,7 +102,7 @@ export class ShiftRepository extends TenantAwareRepository {
         throw new Error('Shift creation failed - Prisma returned undefined');
       }
       
-      this.logger.log(`Successfully created shift with ID: ${result.id}`);
+      this.logger.log(`Successfully created shift with ID: ${(result as any)?.id || 'unknown'}`);
       return result;
     } catch (error) {
       this.logger.error('Database write operation failed:', error);

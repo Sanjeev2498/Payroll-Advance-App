@@ -77,7 +77,6 @@ const shiftGenerator = fc.record({
 }).chain(base => 
   timeStringGenerator.map(endTime => ({
     ...base,
-    endTime,
     // Ensure end time is after start time
     startTime: base.startTime < endTime ? base.startTime : '08:00',
     endTime: base.startTime < endTime ? endTime : '16:00'

@@ -201,7 +201,7 @@ class TestSecurityController {
       }
     }
   }))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(@UploadedFile() file: any) {
     if (!file) {
       throw new HttpException({
         success: false,
@@ -980,9 +980,9 @@ describe('Property Test: API Security Consistency', () => {
       expect([413, 400]).toContain(response2.status); // Payload too large or bad request
     } catch (error) {
       // Handle connection errors from file size rejection
-      if (error.code === 'ECONNRESET') {
+      if ((error as any).code === 'ECONNRESET') {
         // This is expected when file exceeds Multer limits - connection gets reset
-        expect(error.code).toBe('ECONNRESET');
+        expect((error as any).code).toBe('ECONNRESET');
       } else {
         throw error; // Re-throw unexpected errors
       }

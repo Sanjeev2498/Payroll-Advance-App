@@ -379,9 +379,11 @@ export class ClientsService {
    * Validate email uniqueness within tenant
    */
   private async validateUniqueEmail(email: string, excludeId?: string): Promise<void> {
-    // TODO: Implement email uniqueness check
-    // This would require adding a method to the repository
-    // For now, we'll rely on database constraints to catch duplicates
+    const existing = await this.clientRepository.findByEmail(email);
+    
+    if (existing && existing.id !== excludeId) {
+      throw new ConflictException(`Client with email ${email} already exists`);
+    }
   }
 
   /**

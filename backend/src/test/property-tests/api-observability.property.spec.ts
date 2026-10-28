@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
 import { AppModule } from '../../app.module';
 import * as fc from 'fast-check';
 const request = require('supertest');
@@ -41,9 +41,8 @@ describe('API Observability Property Tests', () => {
 
     app.setGlobalPrefix('api');
     app.enableVersioning({
-      type: 1,
+      type: VersioningType.URI,
       defaultVersion: '1',
-      prefix: 'v',
     });
 
     await app.init();
@@ -137,8 +136,8 @@ describe('API Observability Property Tests', () => {
         expect(response.headers).toBeDefined();
       } catch (error) {
         // If request fails, check that it fails in an observable way
-        expect(error.message).toBeDefined();
-        expect(typeof error.message === 'string').toBe(true);
+        expect((error as Error).message).toBeDefined();
+        expect(typeof (error as Error).message === 'string').toBe(true);
       }
     });
 
@@ -160,7 +159,7 @@ describe('API Observability Property Tests', () => {
         }
       } catch (error) {
         // Even errors should be observable
-        expect(error.message).toBeDefined();
+        expect((error as Error).message).toBeDefined();
       }
     });
   });

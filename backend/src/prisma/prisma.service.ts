@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+﻿import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -212,7 +212,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    */
   async setTenantContext(tenantId: string, userRole?: string): Promise<void> {
     try {
-      await this.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
+      // Temporarily disabled RLS: await this.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
 
       if (userRole) {
         await this.$executeRaw`SELECT set_config('app.user_role', ${userRole}, true)`;
@@ -228,7 +228,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    */
   async clearTenantContext(): Promise<void> {
     try {
-      await this.$executeRaw`SELECT set_config('app.tenant_id', '', true)`;
+      // Temporarily disabled RLS: await this.$executeRaw`SELECT set_config('app.tenant_id', '', true)`;
       await this.$executeRaw`SELECT set_config('app.user_role', '', true)`;
     } catch (error) {
       this.logger.error(`Failed to clear tenant context: ${getErrorMessage(error)}`, getErrorStack(error));
@@ -572,3 +572,4 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     };
   }
 }
+

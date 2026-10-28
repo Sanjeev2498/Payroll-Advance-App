@@ -61,11 +61,7 @@ export class AuthResponseDto {
 
   @ApiProperty({
     description: 'Authentication response data',
-    type: 'object',
-    properties: {
-      user: { $ref: '#/components/schemas/UserDataDto' },
-      tokens: { $ref: '#/components/schemas/TokensDto' },
-    },
+    type: Object,
   })
   data: {
     user: UserDataDto;

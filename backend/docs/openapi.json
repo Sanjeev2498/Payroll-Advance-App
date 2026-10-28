@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/api": {
+    "/api/v1": {
       "get": {
-        "operationId": "AppController_getHello_1",
+        "operationId": "AppController_getHello_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -13,13 +13,13 @@
         "tags": [
           "App"
         ],
-        "summary": "Get api",
-        "description": "Retrieve a list of api with optional filtering, sorting, and pagination."
+        "summary": "Get v1",
+        "description": "Retrieve a list of v1 with optional filtering, sorting, and pagination."
       }
     },
-    "/api/health": {
+    "/api/v1/health": {
       "get": {
-        "operationId": "AppController_getHealth_1",
+        "operationId": "AppController_getHealth_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -33,9 +33,9 @@
         "description": "Retrieve a list of health with optional filtering, sorting, and pagination."
       }
     },
-    "/api/health/database": {
+    "/api/v1/health/database": {
       "get": {
-        "operationId": "AppController_getDatabaseHealth_1",
+        "operationId": "AppController_getDatabaseHealth_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -49,9 +49,9 @@
         "description": "Retrieve a list of database with optional filtering, sorting, and pagination."
       }
     },
-    "/api/supervisor-portal/dashboard": {
+    "/api/v1/supervisor-portal/dashboard": {
       "get": {
-        "operationId": "AppController_getSupervisorDashboard_1",
+        "operationId": "AppController_getSupervisorDashboard_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -65,9 +65,9 @@
         "description": "Retrieve a list of dashboard with optional filtering, sorting, and pagination."
       }
     },
-    "/api/supervisor-portal/muster-roll": {
+    "/api/v1/supervisor-portal/muster-roll": {
       "get": {
-        "operationId": "AppController_getSupervisorMusterRoll_1",
+        "operationId": "AppController_getSupervisorMusterRoll_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -81,9 +81,9 @@
         "description": "Retrieve a list of muster-roll with optional filtering, sorting, and pagination."
       }
     },
-    "/api/supervisor-portal/sites/health": {
+    "/api/v1/supervisor-portal/sites/health": {
       "get": {
-        "operationId": "AppController_getSupervisorSiteHealth_1",
+        "operationId": "AppController_getSupervisorSiteHealth_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -97,9 +97,9 @@
         "description": "Retrieve a list of health with optional filtering, sorting, and pagination."
       }
     },
-    "/api/supervisor-portal/attendance/update": {
+    "/api/v1/supervisor-portal/attendance/update": {
       "post": {
-        "operationId": "AppController_updateAttendance_1",
+        "operationId": "AppController_updateAttendance_v1",
         "parameters": [],
         "responses": {
           "201": {
@@ -113,9 +113,9 @@
         "description": "Create a new update with the provided data and return the created resource."
       }
     },
-    "/api/supervisor-portal/attendance/audit-trail": {
+    "/api/v1/supervisor-portal/attendance/audit-trail": {
       "get": {
-        "operationId": "AppController_getAttendanceAuditTrail_1",
+        "operationId": "AppController_getAttendanceAuditTrail_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -129,9 +129,9 @@
         "description": "Retrieve a list of audit-trail with optional filtering, sorting, and pagination."
       }
     },
-    "/api/client-portal/communication/incidents": {
+    "/api/v1/client-portal/communication/incidents": {
       "get": {
-        "operationId": "AppController_getClientIncidents_1",
+        "operationId": "AppController_getClientIncidents_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -145,9 +145,9 @@
         "description": "Retrieve a list of incidents with optional filtering, sorting, and pagination."
       }
     },
-    "/api/client-portal/communication/complaints": {
+    "/api/v1/client-portal/communication/complaints": {
       "get": {
-        "operationId": "AppController_getClientComplaints_1",
+        "operationId": "AppController_getClientComplaints_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -161,9 +161,9 @@
         "description": "Retrieve a list of complaints with optional filtering, sorting, and pagination."
       }
     },
-    "/api/client-portal/communication/requests": {
+    "/api/v1/client-portal/communication/requests": {
       "get": {
-        "operationId": "AppController_getClientRequests_1",
+        "operationId": "AppController_getClientRequests_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -177,9 +177,9 @@
         "description": "Retrieve a list of requests with optional filtering, sorting, and pagination."
       }
     },
-    "/api/client-portal/guards": {
+    "/api/v1/client-portal/guards": {
       "get": {
-        "operationId": "AppController_getClientGuards_1",
+        "operationId": "AppController_getClientGuards_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -193,10 +193,10 @@
         "description": "Retrieve a list of guards with optional filtering, sorting, and pagination."
       }
     },
-    "/api/employees/stats": {
+    "/api/v1/employees/stats": {
       "get": {
         "description": "Retrieve aggregated statistics about employees (counts by status, performance metrics, etc.)",
-        "operationId": "EmployeesController_getStats_1",
+        "operationId": "EmployeesController_getStats_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -221,9 +221,9 @@
         ]
       }
     },
-    "/api/attendance/real-time-events": {
+    "/api/v1/attendance/real-time-events": {
       "get": {
-        "operationId": "AppController_getRealTimeAttendanceEvents_1",
+        "operationId": "AppController_getRealTimeAttendanceEvents_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -237,10 +237,10 @@
         "description": "Retrieve a list of real-time-events with optional filtering, sorting, and pagination."
       }
     },
-    "/api/clients": {
+    "/api/v1/clients": {
       "get": {
         "description": "Retrieve a paginated list of clients with optional filtering and search",
-        "operationId": "ClientsController_findAll_1",
+        "operationId": "ClientsController_findAll_v1",
         "parameters": [
           {
             "name": "search",
@@ -369,7 +369,7 @@
       },
       "post": {
         "description": "Create a new client with contract information and initiate onboarding workflow",
-        "operationId": "ClientsController_create_1",
+        "operationId": "ClientsController_create_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -410,10 +410,10 @@
         ]
       }
     },
-    "/api/auth/login": {
+    "/api/v1/auth/login": {
       "post": {
         "description": "Authenticate user with email and password to receive JWT tokens",
-        "operationId": "AuthController_login_1",
+        "operationId": "AuthController_login_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -464,10 +464,10 @@
         ]
       }
     },
-    "/api/auth/refresh": {
+    "/api/v1/auth/refresh": {
       "post": {
         "description": "Exchange a valid refresh token for a new access token",
-        "operationId": "AuthController_refreshToken_1",
+        "operationId": "AuthController_refreshToken_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -518,10 +518,10 @@
         ]
       }
     },
-    "/api/auth/logout": {
+    "/api/v1/auth/logout": {
       "post": {
         "description": "Logout user and invalidate refresh token",
-        "operationId": "AuthController_logout_1",
+        "operationId": "AuthController_logout_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -566,10 +566,10 @@
         ]
       }
     },
-    "/api/auth/change-password": {
+    "/api/v1/auth/change-password": {
       "post": {
         "description": "Change the authenticated user password",
-        "operationId": "AuthController_changePassword_1",
+        "operationId": "AuthController_changePassword_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -635,10 +635,10 @@
         ]
       }
     },
-    "/api/auth/profile": {
+    "/api/v1/auth/profile": {
       "get": {
         "description": "Retrieve the authenticated user profile information",
-        "operationId": "AuthController_getProfile_1",
+        "operationId": "AuthController_getProfile_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -682,10 +682,10 @@
         ]
       }
     },
-    "/api/auth/health": {
+    "/api/v1/auth/health": {
       "get": {
         "description": "Check if the authentication service is operational",
-        "operationId": "AuthController_healthCheck_1",
+        "operationId": "AuthController_healthCheck_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -715,9 +715,9 @@
         ]
       }
     },
-    "/api/users": {
+    "/api/v1/users": {
       "post": {
-        "operationId": "UserManagementController_createUser_1",
+        "operationId": "UserManagementController_createUser_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -741,7 +741,7 @@
         "description": "Create a new users with the provided data and return the created resource."
       },
       "get": {
-        "operationId": "UserManagementController_getAllUsers_1",
+        "operationId": "UserManagementController_getAllUsers_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -755,9 +755,9 @@
         "description": "Retrieve a list of users with optional filtering, sorting, and pagination."
       }
     },
-    "/api/users/create-with-temp-password": {
+    "/api/v1/users/create-with-temp-password": {
       "post": {
-        "operationId": "UserManagementController_createUserWithTempPassword_1",
+        "operationId": "UserManagementController_createUserWithTempPassword_v1",
         "parameters": [],
         "responses": {
           "201": {
@@ -771,9 +771,9 @@
         "description": "Create a new create-with-temp-password with the provided data and return the created resource."
       }
     },
-    "/api/users/register": {
+    "/api/v1/users/register": {
       "post": {
-        "operationId": "UserManagementController_registerUser_1",
+        "operationId": "UserManagementController_registerUser_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -797,9 +797,9 @@
         "description": "Create a new register with the provided data and return the created resource."
       }
     },
-    "/api/users/stats": {
+    "/api/v1/users/stats": {
       "get": {
-        "operationId": "UserManagementController_getUserStats_1",
+        "operationId": "UserManagementController_getUserStats_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -813,9 +813,9 @@
         "description": "Retrieve a list of stats with optional filtering, sorting, and pagination."
       }
     },
-    "/api/users/profile": {
+    "/api/v1/users/profile": {
       "get": {
-        "operationId": "UserManagementController_getCurrentUserProfile_1",
+        "operationId": "UserManagementController_getCurrentUserProfile_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -829,9 +829,9 @@
         "description": "Retrieve a list of profile with optional filtering, sorting, and pagination."
       }
     },
-    "/api/users/{id}": {
+    "/api/v1/users/{id}": {
       "get": {
-        "operationId": "UserManagementController_getUserById_1",
+        "operationId": "UserManagementController_getUserById_v1",
         "parameters": [
           {
             "name": "id",
@@ -854,7 +854,7 @@
         "description": "Retrieve detailed information for a specific users by their unique identifier."
       },
       "put": {
-        "operationId": "UserManagementController_updateUser_1",
+        "operationId": "UserManagementController_updateUser_v1",
         "parameters": [
           {
             "name": "id",
@@ -887,7 +887,7 @@
         "description": "Replace all properties of an existing users with the provided data."
       },
       "delete": {
-        "operationId": "UserManagementController_deleteUser_1",
+        "operationId": "UserManagementController_deleteUser_v1",
         "parameters": [
           {
             "name": "id",
@@ -910,9 +910,9 @@
         "description": "Remove an existing users from the system (may be soft delete for audit purposes)."
       }
     },
-    "/api/users/profile/{id}": {
+    "/api/v1/users/profile/{id}": {
       "put": {
-        "operationId": "UserManagementController_updateUserProfile_1",
+        "operationId": "UserManagementController_updateUserProfile_v1",
         "parameters": [
           {
             "name": "id",
@@ -945,9 +945,9 @@
         "description": "Replace all properties of an existing profile with the provided data."
       }
     },
-    "/api/users/{id}/password": {
+    "/api/v1/users/{id}/password": {
       "put": {
-        "operationId": "UserManagementController_changeUserPassword_1",
+        "operationId": "UserManagementController_changeUserPassword_v1",
         "parameters": [
           {
             "name": "id",
@@ -980,9 +980,9 @@
         "description": "Replace all properties of an existing password with the provided data."
       }
     },
-    "/api/users/{id}/reset-password": {
+    "/api/v1/users/{id}/reset-password": {
       "post": {
-        "operationId": "UserManagementController_resetUserPassword_1",
+        "operationId": "UserManagementController_resetUserPassword_v1",
         "parameters": [
           {
             "name": "id",
@@ -1005,9 +1005,9 @@
         "description": "Create a new reset-password with the provided data and return the created resource."
       }
     },
-    "/api/users/{id}/deactivate": {
+    "/api/v1/users/{id}/deactivate": {
       "put": {
-        "operationId": "UserManagementController_deactivateUser_1",
+        "operationId": "UserManagementController_deactivateUser_v1",
         "parameters": [
           {
             "name": "id",
@@ -1030,9 +1030,9 @@
         "description": "Replace all properties of an existing deactivate with the provided data."
       }
     },
-    "/api/users/{id}/reactivate": {
+    "/api/v1/users/{id}/reactivate": {
       "put": {
-        "operationId": "UserManagementController_reactivateUser_1",
+        "operationId": "UserManagementController_reactivateUser_v1",
         "parameters": [
           {
             "name": "id",
@@ -1055,10 +1055,10 @@
         "description": "Replace all properties of an existing reactivate with the provided data."
       }
     },
-    "/api/clients/stats": {
+    "/api/v1/clients/stats": {
       "get": {
         "description": "Retrieve aggregated statistics about clients (counts by status, expiring contracts, etc.)",
-        "operationId": "ClientsController_getStats_1",
+        "operationId": "ClientsController_getStats_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -1083,10 +1083,10 @@
         ]
       }
     },
-    "/api/clients/expiring": {
+    "/api/v1/clients/expiring": {
       "get": {
         "description": "Retrieve clients whose contracts are expiring within the specified number of days",
-        "operationId": "ClientsController_findExpiringContracts_1",
+        "operationId": "ClientsController_findExpiringContracts_v1",
         "parameters": [
           {
             "name": "days",
@@ -1124,10 +1124,10 @@
         ]
       }
     },
-    "/api/clients/by-status/{status}": {
+    "/api/v1/clients/by-status/{status}": {
       "get": {
         "description": "Retrieve all clients with a specific contract status",
-        "operationId": "ClientsController_findByStatus_1",
+        "operationId": "ClientsController_findByStatus_v1",
         "parameters": [
           {
             "name": "status",
@@ -1171,10 +1171,10 @@
         ]
       }
     },
-    "/api/clients/{id}": {
+    "/api/v1/clients/{id}": {
       "get": {
         "description": "Retrieve detailed information about a specific client including related sites",
-        "operationId": "ClientsController_findOne_1",
+        "operationId": "ClientsController_findOne_v1",
         "parameters": [
           {
             "name": "id",
@@ -1213,7 +1213,7 @@
       },
       "patch": {
         "description": "Update client information and contract details",
-        "operationId": "ClientsController_update_1",
+        "operationId": "ClientsController_update_v1",
         "parameters": [
           {
             "name": "id",
@@ -1265,7 +1265,7 @@
       },
       "delete": {
         "description": "Soft delete a client by setting contract status to TERMINATED",
-        "operationId": "ClientsController_remove_1",
+        "operationId": "ClientsController_remove_v1",
         "parameters": [
           {
             "name": "id",
@@ -1303,10 +1303,10 @@
         ]
       }
     },
-    "/api/clients/{id}/performance": {
+    "/api/v1/clients/{id}/performance": {
       "get": {
         "description": "Retrieve detailed performance metrics and KPIs for a specific client",
-        "operationId": "ClientsController_getPerformanceMetrics_1",
+        "operationId": "ClientsController_getPerformanceMetrics_v1",
         "parameters": [
           {
             "name": "id",
@@ -1341,10 +1341,10 @@
         ]
       }
     },
-    "/api/clients/{id}/renewal": {
+    "/api/v1/clients/{id}/renewal": {
       "get": {
         "description": "Retrieve contract renewal status and recommendations for a client",
-        "operationId": "ClientsController_getContractRenewalInfo_1",
+        "operationId": "ClientsController_getContractRenewalInfo_v1",
         "parameters": [
           {
             "name": "id",
@@ -1379,10 +1379,10 @@
         ]
       }
     },
-    "/api/clients/{id}/onboarding": {
+    "/api/v1/clients/{id}/onboarding": {
       "get": {
         "description": "Retrieve onboarding progress and checklist status for a client",
-        "operationId": "ClientsController_getOnboardingStatus_1",
+        "operationId": "ClientsController_getOnboardingStatus_v1",
         "parameters": [
           {
             "name": "id",
@@ -1417,10 +1417,10 @@
         ]
       }
     },
-    "/api/clients/{id}/dashboard": {
+    "/api/v1/clients/{id}/dashboard": {
       "get": {
         "description": "Retrieve all client information including metrics, renewal info, and onboarding status",
-        "operationId": "ClientsController_getClientDashboard_1",
+        "operationId": "ClientsController_getClientDashboard_v1",
         "parameters": [
           {
             "name": "id",
@@ -1448,10 +1448,10 @@
         ]
       }
     },
-    "/api/clients/{id}/notes": {
+    "/api/v1/clients/{id}/notes": {
       "patch": {
         "description": "Add or update relationship notes and contact history for a client",
-        "operationId": "ClientsController_updateRelationshipNotes_1",
+        "operationId": "ClientsController_updateRelationshipNotes_v1",
         "parameters": [
           {
             "name": "id",
@@ -1498,10 +1498,10 @@
         ]
       }
     },
-    "/api/clients/{id}/follow-up": {
+    "/api/v1/clients/{id}/follow-up": {
       "post": {
         "description": "Schedule next follow-up date and add notes for client relationship management",
-        "operationId": "ClientsController_scheduleFollowUp_1",
+        "operationId": "ClientsController_scheduleFollowUp_v1",
         "parameters": [
           {
             "name": "id",
@@ -1553,10 +1553,10 @@
         ]
       }
     },
-    "/api/sites": {
+    "/api/v1/sites": {
       "post": {
         "description": "Create a new site with location details, operational specifications, and client relationship",
-        "operationId": "SitesController_create_1",
+        "operationId": "SitesController_create_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1593,7 +1593,7 @@
       },
       "get": {
         "description": "Retrieve a paginated list of sites with optional filtering and search",
-        "operationId": "SitesController_findAll_1",
+        "operationId": "SitesController_findAll_v1",
         "parameters": [
           {
             "name": "search",
@@ -1757,10 +1757,10 @@
         ]
       }
     },
-    "/api/sites/stats": {
+    "/api/v1/sites/stats": {
       "get": {
         "description": "Retrieve aggregated statistics about sites (counts by status, assignments, etc.)",
-        "operationId": "SitesController_getStats_1",
+        "operationId": "SitesController_getStats_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -1780,10 +1780,10 @@
         ]
       }
     },
-    "/api/sites/by-client/{clientId}": {
+    "/api/v1/sites/by-client/{clientId}": {
       "get": {
         "description": "Retrieve all sites belonging to a specific client",
-        "operationId": "SitesController_findByClientId_1",
+        "operationId": "SitesController_findByClientId_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -1819,10 +1819,10 @@
         ]
       }
     },
-    "/api/sites/by-status/{status}": {
+    "/api/v1/sites/by-status/{status}": {
       "get": {
         "description": "Retrieve all sites with a specific operational status",
-        "operationId": "SitesController_findByStatus_1",
+        "operationId": "SitesController_findByStatus_v1",
         "parameters": [
           {
             "name": "status",
@@ -1861,10 +1861,10 @@
         ]
       }
     },
-    "/api/sites/{id}": {
+    "/api/v1/sites/{id}": {
       "get": {
         "description": "Retrieve detailed information about a specific site including client and assignment data",
-        "operationId": "SitesController_findOne_1",
+        "operationId": "SitesController_findOne_v1",
         "parameters": [
           {
             "name": "id",
@@ -1898,7 +1898,7 @@
       },
       "patch": {
         "description": "Update site information, operational specifications, and status",
-        "operationId": "SitesController_update_1",
+        "operationId": "SitesController_update_v1",
         "parameters": [
           {
             "name": "id",
@@ -1945,7 +1945,7 @@
       },
       "delete": {
         "description": "Soft delete a site by setting operational status to INACTIVE",
-        "operationId": "SitesController_remove_1",
+        "operationId": "SitesController_remove_v1",
         "parameters": [
           {
             "name": "id",
@@ -1978,10 +1978,10 @@
         ]
       }
     },
-    "/api/sites/{id}/employees": {
+    "/api/v1/sites/{id}/employees": {
       "get": {
         "description": "Retrieve all employees currently assigned to a specific site with their assignment details",
-        "operationId": "SitesController_getSiteEmployees_1",
+        "operationId": "SitesController_getSiteEmployees_v1",
         "parameters": [
           {
             "name": "id",
@@ -2007,10 +2007,10 @@
         ]
       }
     },
-    "/api/sites/{id}/attendance": {
+    "/api/v1/sites/{id}/attendance": {
       "get": {
         "description": "Retrieve attendance records for all employees assigned to a specific site",
-        "operationId": "SitesController_getSiteAttendance_1",
+        "operationId": "SitesController_getSiteAttendance_v1",
         "parameters": [
           {
             "name": "id",
@@ -2042,10 +2042,10 @@
         ]
       }
     },
-    "/api/sites/{id}/assignments": {
+    "/api/v1/sites/{id}/assignments": {
       "get": {
         "description": "Retrieve all active assignments for a specific site",
-        "operationId": "SitesController_getSiteAssignments_1",
+        "operationId": "SitesController_getSiteAssignments_v1",
         "parameters": [
           {
             "name": "id",
@@ -2068,10 +2068,10 @@
         ]
       }
     },
-    "/api/sites/{id}/shifts": {
+    "/api/v1/sites/{id}/shifts": {
       "get": {
         "description": "Retrieve shifts scheduled for a specific site",
-        "operationId": "SitesController_getSiteShifts_1",
+        "operationId": "SitesController_getSiteShifts_v1",
         "parameters": [
           {
             "name": "id",
@@ -2103,10 +2103,10 @@
         ]
       }
     },
-    "/api/sites/{id}/performance": {
+    "/api/v1/sites/{id}/performance": {
       "get": {
         "description": "Retrieve performance KPIs and metrics for a specific site",
-        "operationId": "SitesController_getSitePerformance_1",
+        "operationId": "SitesController_getSitePerformance_v1",
         "parameters": [
           {
             "name": "id",
@@ -2129,10 +2129,10 @@
         ]
       }
     },
-    "/api/employees": {
+    "/api/v1/employees": {
       "post": {
         "description": "Create a new employee with skills, certifications, and compliance tracking",
-        "operationId": "EmployeesController_create_1",
+        "operationId": "EmployeesController_create_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2174,7 +2174,7 @@
       },
       "get": {
         "description": "Retrieve a paginated list of employees with advanced filtering and search capabilities",
-        "operationId": "EmployeesController_findAll_1",
+        "operationId": "EmployeesController_findAll_v1",
         "parameters": [
           {
             "name": "search",
@@ -2365,10 +2365,10 @@
         ]
       }
     },
-    "/api/employees/search": {
+    "/api/v1/employees/search": {
       "get": {
         "description": "Search employees by skills, availability, location, and performance criteria",
-        "operationId": "EmployeesController_searchEmployees_1",
+        "operationId": "EmployeesController_searchEmployees_v1",
         "parameters": [
           {
             "name": "requiredSkills",
@@ -2456,10 +2456,10 @@
         ]
       }
     },
-    "/api/employees/by-skills": {
+    "/api/v1/employees/by-skills": {
       "get": {
         "description": "Retrieve employees that have specific skills for assignment matching",
-        "operationId": "EmployeesController_findBySkills_1",
+        "operationId": "EmployeesController_findBySkills_v1",
         "parameters": [
           {
             "name": "skills",
@@ -2497,10 +2497,10 @@
         ]
       }
     },
-    "/api/employees/available": {
+    "/api/v1/employees/available": {
       "get": {
         "description": "Get employees available for scheduling within a specific time range",
-        "operationId": "EmployeesController_findAvailable_1",
+        "operationId": "EmployeesController_findAvailable_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -2556,10 +2556,10 @@
         ]
       }
     },
-    "/api/employees/expiring-certifications": {
+    "/api/v1/employees/expiring-certifications": {
       "get": {
         "description": "Retrieve employees whose certifications are expiring within the specified number of days",
-        "operationId": "EmployeesController_findExpiringCertifications_1",
+        "operationId": "EmployeesController_findExpiringCertifications_v1",
         "parameters": [
           {
             "name": "days",
@@ -2597,10 +2597,10 @@
         ]
       }
     },
-    "/api/employees/{id}": {
+    "/api/v1/employees/{id}": {
       "get": {
         "description": "Retrieve detailed information about a specific employee including skills, certifications, and performance data",
-        "operationId": "EmployeesController_findOne_1",
+        "operationId": "EmployeesController_findOne_v1",
         "parameters": [
           {
             "name": "id",
@@ -2639,7 +2639,7 @@
       },
       "patch": {
         "description": "Update employee information including skills, certifications, and employment status",
-        "operationId": "EmployeesController_update_1",
+        "operationId": "EmployeesController_update_v1",
         "parameters": [
           {
             "name": "id",
@@ -2691,7 +2691,7 @@
       },
       "delete": {
         "description": "Soft delete an employee by setting employment status to TERMINATED",
-        "operationId": "EmployeesController_remove_1",
+        "operationId": "EmployeesController_remove_v1",
         "parameters": [
           {
             "name": "id",
@@ -2729,10 +2729,10 @@
         ]
       }
     },
-    "/api/employees/{id}/documents": {
+    "/api/v1/employees/{id}/documents": {
       "get": {
         "description": "Retrieve all documents associated with an employee (licenses, certificates, etc.)",
-        "operationId": "EmployeesController_getDocuments_1",
+        "operationId": "EmployeesController_getDocuments_v1",
         "parameters": [
           {
             "name": "id",
@@ -2809,7 +2809,7 @@
       },
       "post": {
         "description": "Upload a new document for an employee (license, certificate, ID copy, etc.)",
-        "operationId": "EmployeesController_uploadDocument_1",
+        "operationId": "EmployeesController_uploadDocument_v1",
         "parameters": [
           {
             "name": "id",
@@ -2854,10 +2854,10 @@
         ]
       }
     },
-    "/api/employee-portal/dashboard": {
+    "/api/v1/employee-portal/dashboard": {
       "get": {
         "description": "Retrieve dashboard data including current shift, attendance summary, recent payslips, and notifications",
-        "operationId": "EmployeePortalController_getDashboard_1",
+        "operationId": "EmployeePortalController_getDashboard_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -2882,10 +2882,10 @@
         ]
       }
     },
-    "/api/employee-portal/attendance": {
+    "/api/v1/employee-portal/attendance": {
       "get": {
         "description": "Retrieve attendance records with filtering and search capabilities",
-        "operationId": "EmployeePortalController_getAttendance_1",
+        "operationId": "EmployeePortalController_getAttendance_v1",
         "parameters": [
           {
             "name": "filter",
@@ -2944,10 +2944,10 @@
         ]
       }
     },
-    "/api/employee-portal/shifts": {
+    "/api/v1/employee-portal/shifts": {
       "get": {
         "description": "Retrieve shift schedules (current, upcoming, past) with calendar view support",
-        "operationId": "EmployeePortalController_getShifts_1",
+        "operationId": "EmployeePortalController_getShifts_v1",
         "parameters": [
           {
             "name": "filter",
@@ -3010,10 +3010,10 @@
         ]
       }
     },
-    "/api/employee-portal/payroll": {
+    "/api/v1/employee-portal/payroll": {
       "get": {
         "description": "Retrieve payslips and salary information with download capability",
-        "operationId": "EmployeePortalController_getPayroll_1",
+        "operationId": "EmployeePortalController_getPayroll_v1",
         "parameters": [
           {
             "name": "year",
@@ -3060,10 +3060,10 @@
         ]
       }
     },
-    "/api/employee-portal/payroll/{payrollId}/download": {
+    "/api/v1/employee-portal/payroll/{payrollId}/download": {
       "get": {
         "description": "Download a specific payslip as PDF",
-        "operationId": "EmployeePortalController_downloadPayslip_1",
+        "operationId": "EmployeePortalController_downloadPayslip_v1",
         "parameters": [
           {
             "name": "payrollId",
@@ -3091,10 +3091,10 @@
         ]
       }
     },
-    "/api/employee-portal/documents": {
+    "/api/v1/employee-portal/documents": {
       "get": {
         "description": "Retrieve all documents associated with the employee (contracts, certifications, etc.)",
-        "operationId": "EmployeePortalController_getDocuments_1",
+        "operationId": "EmployeePortalController_getDocuments_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -3122,10 +3122,10 @@
         ]
       }
     },
-    "/api/employee-portal/notifications": {
+    "/api/v1/employee-portal/notifications": {
       "get": {
         "description": "Retrieve notifications for the employee with read/unread status",
-        "operationId": "EmployeePortalController_getNotifications_1",
+        "operationId": "EmployeePortalController_getNotifications_v1",
         "parameters": [
           {
             "name": "unreadOnly",
@@ -3163,10 +3163,10 @@
         ]
       }
     },
-    "/api/employee-portal/notifications/{notificationId}/mark-read": {
+    "/api/v1/employee-portal/notifications/{notificationId}/mark-read": {
       "post": {
         "description": "Mark a specific notification as read",
-        "operationId": "EmployeePortalController_markNotificationRead_1",
+        "operationId": "EmployeePortalController_markNotificationRead_v1",
         "parameters": [
           {
             "name": "notificationId",
@@ -3194,10 +3194,10 @@
         ]
       }
     },
-    "/api/employee-portal/profile": {
+    "/api/v1/employee-portal/profile": {
       "get": {
         "description": "Retrieve employee profile information (editable fields only)",
-        "operationId": "EmployeePortalController_getProfile_1",
+        "operationId": "EmployeePortalController_getProfile_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -3216,7 +3216,7 @@
       },
       "patch": {
         "description": "Update basic profile information (limited fields that employees can modify)",
-        "operationId": "EmployeePortalController_updateProfile_1",
+        "operationId": "EmployeePortalController_updateProfile_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3244,10 +3244,10 @@
         ]
       }
     },
-    "/api/employee-portal/clock-in": {
+    "/api/v1/employee-portal/clock-in": {
       "post": {
         "description": "Clock in for current shift with location verification",
-        "operationId": "EmployeePortalController_clockIn_1",
+        "operationId": "EmployeePortalController_clockIn_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3298,10 +3298,10 @@
         ]
       }
     },
-    "/api/employee-portal/clock-out": {
+    "/api/v1/employee-portal/clock-out": {
       "post": {
         "description": "Clock out from current shift with location verification",
-        "operationId": "EmployeePortalController_clockOut_1",
+        "operationId": "EmployeePortalController_clockOut_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3352,10 +3352,10 @@
         ]
       }
     },
-    "/api/assignments": {
+    "/api/v1/assignments": {
       "post": {
         "description": "Create a new employee-to-site assignment with skill matching and conflict detection",
-        "operationId": "AssignmentsController_create_1",
+        "operationId": "AssignmentsController_create_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3397,7 +3397,7 @@
       },
       "get": {
         "description": "Retrieve a paginated list of assignments with advanced filtering capabilities",
-        "operationId": "AssignmentsController_findAll_1",
+        "operationId": "AssignmentsController_findAll_v1",
         "parameters": [
           {
             "name": "page",
@@ -3651,10 +3651,10 @@
         ]
       }
     },
-    "/api/assignments/stats": {
+    "/api/v1/assignments/stats": {
       "get": {
         "description": "Retrieve aggregated statistics about assignments (counts by status, performance metrics, etc.)",
-        "operationId": "AssignmentsController_getStats_1",
+        "operationId": "AssignmentsController_getStats_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -3679,10 +3679,10 @@
         ]
       }
     },
-    "/api/assignments/recommend": {
+    "/api/v1/assignments/recommend": {
       "post": {
         "description": "Get skill-matched employee recommendations for a site assignment using intelligent matching algorithms",
-        "operationId": "AssignmentsController_getRecommendations_1",
+        "operationId": "AssignmentsController_getRecommendations_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3717,10 +3717,10 @@
         ]
       }
     },
-    "/api/assignments/conflicts": {
+    "/api/v1/assignments/conflicts": {
       "post": {
         "description": "Detect scheduling conflicts, capacity issues, and validation problems for assignment scenarios",
-        "operationId": "AssignmentsController_detectConflicts_1",
+        "operationId": "AssignmentsController_detectConflicts_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3755,10 +3755,10 @@
         ]
       }
     },
-    "/api/assignments/by-employee/{employeeId}": {
+    "/api/v1/assignments/by-employee/{employeeId}": {
       "get": {
         "description": "Retrieve all assignments for a specific employee including historical data",
-        "operationId": "AssignmentsController_findByEmployee_1",
+        "operationId": "AssignmentsController_findByEmployee_v1",
         "parameters": [
           {
             "name": "employeeId",
@@ -3799,10 +3799,10 @@
         ]
       }
     },
-    "/api/assignments/by-site/{siteId}": {
+    "/api/v1/assignments/by-site/{siteId}": {
       "get": {
         "description": "Retrieve all assignments for a specific site including current and historical data",
-        "operationId": "AssignmentsController_findBySite_1",
+        "operationId": "AssignmentsController_findBySite_v1",
         "parameters": [
           {
             "name": "siteId",
@@ -3843,10 +3843,10 @@
         ]
       }
     },
-    "/api/assignments/{id}": {
+    "/api/v1/assignments/{id}": {
       "get": {
         "description": "Retrieve detailed information about a specific assignment including employee and site details",
-        "operationId": "AssignmentsController_findOne_1",
+        "operationId": "AssignmentsController_findOne_v1",
         "parameters": [
           {
             "name": "id",
@@ -3885,7 +3885,7 @@
       },
       "patch": {
         "description": "Update assignment information including status, rates, and requirements",
-        "operationId": "AssignmentsController_update_1",
+        "operationId": "AssignmentsController_update_v1",
         "parameters": [
           {
             "name": "id",
@@ -3937,7 +3937,7 @@
       },
       "delete": {
         "description": "Cancel an assignment by setting status to CANCELLED (soft delete)",
-        "operationId": "AssignmentsController_remove_1",
+        "operationId": "AssignmentsController_remove_v1",
         "parameters": [
           {
             "name": "id",
@@ -3975,9 +3975,9 @@
         ]
       }
     },
-    "/api/contracts": {
+    "/api/v1/contracts": {
       "post": {
-        "operationId": "ContractsController_create_1",
+        "operationId": "ContractsController_create_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -4012,7 +4012,7 @@
         "description": "Create a new contracts with the provided data and return the created resource."
       },
       "get": {
-        "operationId": "ContractsController_findAll_1",
+        "operationId": "ContractsController_findAll_v1",
         "parameters": [
           {
             "name": "page",
@@ -4074,9 +4074,9 @@
         "description": "Retrieve a list of contracts with optional filtering, sorting, and pagination."
       }
     },
-    "/api/contracts/{id}": {
+    "/api/v1/contracts/{id}": {
       "get": {
-        "operationId": "ContractsController_findOne_1",
+        "operationId": "ContractsController_findOne_v1",
         "parameters": [
           {
             "name": "id",
@@ -4108,7 +4108,7 @@
         "description": "Retrieve detailed information for a specific contracts by their unique identifier."
       },
       "patch": {
-        "operationId": "ContractsController_update_1",
+        "operationId": "ContractsController_update_v1",
         "parameters": [
           {
             "name": "id",
@@ -4150,7 +4150,7 @@
         "description": "Update specific properties of an existing contracts without affecting other fields."
       },
       "delete": {
-        "operationId": "ContractsController_remove_1",
+        "operationId": "ContractsController_remove_v1",
         "parameters": [
           {
             "name": "id",
@@ -4185,9 +4185,9 @@
         "description": "Remove an existing contracts from the system (may be soft delete for audit purposes)."
       }
     },
-    "/api/contracts/{id}/amendments": {
+    "/api/v1/contracts/{id}/amendments": {
       "post": {
-        "operationId": "ContractsController_createAmendment_1",
+        "operationId": "ContractsController_createAmendment_v1",
         "parameters": [
           {
             "name": "id",
@@ -4216,9 +4216,9 @@
         "description": "Create a new amendments with the provided data and return the created resource."
       }
     },
-    "/api/contracts/{id}/amendments/{amendmentId}/approve": {
+    "/api/v1/contracts/{id}/amendments/{amendmentId}/approve": {
       "patch": {
-        "operationId": "ContractsController_approveAmendment_1",
+        "operationId": "ContractsController_approveAmendment_v1",
         "parameters": [
           {
             "name": "id",
@@ -4266,9 +4266,9 @@
         "description": "Update specific properties of an existing approve without affecting other fields."
       }
     },
-    "/api/contracts/{id}/renewals": {
+    "/api/v1/contracts/{id}/renewals": {
       "post": {
-        "operationId": "ContractsController_initiateRenewal_1",
+        "operationId": "ContractsController_initiateRenewal_v1",
         "parameters": [
           {
             "name": "id",
@@ -4297,9 +4297,9 @@
         "description": "Create a new renewals with the provided data and return the created resource."
       }
     },
-    "/api/contracts/{id}/renewals/{renewalId}/approve": {
+    "/api/v1/contracts/{id}/renewals/{renewalId}/approve": {
       "patch": {
-        "operationId": "ContractsController_approveRenewal_1",
+        "operationId": "ContractsController_approveRenewal_v1",
         "parameters": [
           {
             "name": "id",
@@ -4347,9 +4347,9 @@
         "description": "Update specific properties of an existing approve without affecting other fields."
       }
     },
-    "/api/contracts/{id}/sla-reports": {
+    "/api/v1/contracts/{id}/sla-reports": {
       "post": {
-        "operationId": "ContractsController_createSLAReport_1",
+        "operationId": "ContractsController_createSLAReport_v1",
         "parameters": [
           {
             "name": "id",
@@ -4378,9 +4378,9 @@
         "description": "Create a new sla-reports with the provided data and return the created resource."
       }
     },
-    "/api/contracts/{id}/sla-compliance": {
+    "/api/v1/contracts/{id}/sla-compliance": {
       "get": {
-        "operationId": "ContractsController_getSLACompliance_1",
+        "operationId": "ContractsController_getSLACompliance_v1",
         "parameters": [
           {
             "name": "id",
@@ -4480,9 +4480,9 @@
         "description": "Retrieve a list of sla-compliance with optional filtering, sorting, and pagination."
       }
     },
-    "/api/contracts/{id}/performance-metrics": {
+    "/api/v1/contracts/{id}/performance-metrics": {
       "get": {
-        "operationId": "ContractsController_getPerformanceMetrics_1",
+        "operationId": "ContractsController_getPerformanceMetrics_v1",
         "parameters": [
           {
             "name": "id",
@@ -4529,9 +4529,9 @@
         "description": "Retrieve a list of performance-metrics with optional filtering, sorting, and pagination."
       }
     },
-    "/api/contracts/{id}/billing-summary": {
+    "/api/v1/contracts/{id}/billing-summary": {
       "get": {
-        "operationId": "ContractsController_getBillingSummary_1",
+        "operationId": "ContractsController_getBillingSummary_v1",
         "parameters": [
           {
             "name": "id",
@@ -4569,9 +4569,9 @@
         "description": "Retrieve a list of billing-summary with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/invoices": {
+    "/api/v1/billing/invoices": {
       "post": {
-        "operationId": "BillingController_createInvoice_1",
+        "operationId": "BillingController_createInvoice_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -4595,7 +4595,7 @@
         "description": "Create a new invoices with the provided data and return the created resource."
       },
       "get": {
-        "operationId": "BillingController_listInvoices_1",
+        "operationId": "BillingController_listInvoices_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -4609,9 +4609,9 @@
         "description": "Retrieve a list of invoices with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/invoices/{id}": {
+    "/api/v1/billing/invoices/{id}": {
       "get": {
-        "operationId": "BillingController_getInvoice_1",
+        "operationId": "BillingController_getInvoice_v1",
         "parameters": [
           {
             "name": "id",
@@ -4634,7 +4634,7 @@
         "description": "Retrieve detailed information for a specific invoices by their unique identifier."
       },
       "put": {
-        "operationId": "BillingController_updateInvoice_1",
+        "operationId": "BillingController_updateInvoice_v1",
         "parameters": [
           {
             "name": "id",
@@ -4667,7 +4667,7 @@
         "description": "Replace all properties of an existing invoices with the provided data."
       },
       "delete": {
-        "operationId": "BillingController_deleteInvoice_1",
+        "operationId": "BillingController_deleteInvoice_v1",
         "parameters": [
           {
             "name": "id",
@@ -4690,9 +4690,9 @@
         "description": "Remove an existing invoices from the system (may be soft delete for audit purposes)."
       }
     },
-    "/api/billing/invoices/{id}/send": {
+    "/api/v1/billing/invoices/{id}/send": {
       "patch": {
-        "operationId": "BillingController_markInvoiceAsSent_1",
+        "operationId": "BillingController_markInvoiceAsSent_v1",
         "parameters": [
           {
             "name": "id",
@@ -4715,9 +4715,9 @@
         "description": "Update specific properties of an existing send without affecting other fields."
       }
     },
-    "/api/billing/calculate": {
+    "/api/v1/billing/calculate": {
       "post": {
-        "operationId": "BillingController_calculateBillingPreview_1",
+        "operationId": "BillingController_calculateBillingPreview_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -4741,9 +4741,9 @@
         "description": "Create a new calculate with the provided data and return the created resource."
       }
     },
-    "/api/billing/invoices/{id}/pdf": {
+    "/api/v1/billing/invoices/{id}/pdf": {
       "post": {
-        "operationId": "BillingController_generateInvoicePdf_1",
+        "operationId": "BillingController_generateInvoicePdf_v1",
         "parameters": [
           {
             "name": "id",
@@ -4766,9 +4766,9 @@
         "description": "Create a new pdf with the provided data and return the created resource."
       }
     },
-    "/api/billing/statistics": {
+    "/api/v1/billing/statistics": {
       "get": {
-        "operationId": "BillingController_getInvoiceStatistics_1",
+        "operationId": "BillingController_getInvoiceStatistics_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -4799,9 +4799,9 @@
         "description": "Retrieve a list of statistics with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/analytics": {
+    "/api/v1/billing/analytics": {
       "get": {
-        "operationId": "BillingController_getAnalytics_1",
+        "operationId": "BillingController_getAnalytics_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -4832,9 +4832,9 @@
         "description": "Retrieve a list of analytics with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/analytics/detailed": {
+    "/api/v1/billing/analytics/detailed": {
       "get": {
-        "operationId": "BillingController_getDetailedAnalytics_1",
+        "operationId": "BillingController_getDetailedAnalytics_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -4873,9 +4873,9 @@
         "description": "Retrieve a list of detailed with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/validate-gstin": {
+    "/api/v1/billing/validate-gstin": {
       "post": {
-        "operationId": "BillingController_validateGstin_1",
+        "operationId": "BillingController_validateGstin_v1",
         "parameters": [],
         "responses": {
           "201": {
@@ -4889,9 +4889,9 @@
         "description": "Create a new validate-gstin with the provided data and return the created resource."
       }
     },
-    "/api/billing/gst-compliance": {
+    "/api/v1/billing/gst-compliance": {
       "post": {
-        "operationId": "BillingController_getGstComplianceInfo_1",
+        "operationId": "BillingController_getGstComplianceInfo_v1",
         "parameters": [],
         "responses": {
           "201": {
@@ -4905,9 +4905,9 @@
         "description": "Create a new gst-compliance with the provided data and return the created resource."
       }
     },
-    "/api/billing/gst-calculate": {
+    "/api/v1/billing/gst-calculate": {
       "post": {
-        "operationId": "BillingController_calculateGstPreview_1",
+        "operationId": "BillingController_calculateGstPreview_v1",
         "parameters": [],
         "responses": {
           "201": {
@@ -4921,9 +4921,9 @@
         "description": "Create a new gst-calculate with the provided data and return the created resource."
       }
     },
-    "/api/billing/contracts/{contractId}/invoice-number-preview": {
+    "/api/v1/billing/contracts/{contractId}/invoice-number-preview": {
       "get": {
-        "operationId": "BillingController_generateInvoiceNumberPreview_1",
+        "operationId": "BillingController_generateInvoiceNumberPreview_v1",
         "parameters": [
           {
             "name": "contractId",
@@ -4946,9 +4946,9 @@
         "description": "Retrieve a list of invoice-number-preview with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/invoices/bulk/send": {
+    "/api/v1/billing/invoices/bulk/send": {
       "patch": {
-        "operationId": "BillingController_bulkMarkAsSent_1",
+        "operationId": "BillingController_bulkMarkAsSent_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -4962,9 +4962,9 @@
         "description": "Update specific properties of an existing send without affecting other fields."
       }
     },
-    "/api/billing/invoices/overdue": {
+    "/api/v1/billing/invoices/overdue": {
       "get": {
-        "operationId": "BillingController_getOverdueInvoices_1",
+        "operationId": "BillingController_getOverdueInvoices_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -4978,9 +4978,9 @@
         "description": "Retrieve a list of overdue with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/monthly-summary": {
+    "/api/v1/billing/monthly-summary": {
       "get": {
-        "operationId": "BillingController_getMonthlyBillingSummary_1",
+        "operationId": "BillingController_getMonthlyBillingSummary_v1",
         "parameters": [
           {
             "name": "year",
@@ -5011,9 +5011,9 @@
         "description": "Retrieve a list of monthly-summary with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/export": {
+    "/api/v1/billing/export": {
       "get": {
-        "operationId": "BillingController_exportInvoices_1",
+        "operationId": "BillingController_exportInvoices_v1",
         "parameters": [
           {
             "name": "format",
@@ -5036,9 +5036,9 @@
         "description": "Retrieve a list of export with optional filtering, sorting, and pagination."
       }
     },
-    "/api/billing/rates": {
+    "/api/v1/billing/rates": {
       "get": {
-        "operationId": "BillingController_getBillingRates_1",
+        "operationId": "BillingController_getBillingRates_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -5052,7 +5052,7 @@
         "description": "Retrieve a list of rates with optional filtering, sorting, and pagination."
       },
       "put": {
-        "operationId": "BillingController_updateBillingRates_1",
+        "operationId": "BillingController_updateBillingRates_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -5066,10 +5066,10 @@
         "description": "Replace all properties of an existing rates with the provided data."
       }
     },
-    "/api/financial-reports/payroll-reports": {
+    "/api/v1/financial-reports/payroll-reports": {
       "get": {
         "description": "Retrieve detailed payroll reports with drill-down capabilities including employee breakdown, department analysis, and monthly trends.",
-        "operationId": "FinancialReportsController_getPayrollReports_1",
+        "operationId": "FinancialReportsController_getPayrollReports_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -5163,10 +5163,10 @@
         ]
       }
     },
-    "/api/financial-reports/billing-reports": {
+    "/api/v1/financial-reports/billing-reports": {
       "get": {
         "description": "Retrieve comprehensive billing reports including revenue analysis, client breakdown, collection rates, and monthly trends.",
-        "operationId": "FinancialReportsController_getBillingReports_1",
+        "operationId": "FinancialReportsController_getBillingReports_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -5260,10 +5260,10 @@
         ]
       }
     },
-    "/api/financial-reports/site-profitability": {
+    "/api/v1/financial-reports/site-profitability": {
       "get": {
         "description": "Analyze profitability of individual sites including revenue, costs, profit margins, and optimization recommendations.",
-        "operationId": "FinancialReportsController_getSiteProfitabilityAnalysis_1",
+        "operationId": "FinancialReportsController_getSiteProfitabilityAnalysis_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -5360,10 +5360,10 @@
         ]
       }
     },
-    "/api/financial-reports/financial-forecasts": {
+    "/api/v1/financial-reports/financial-forecasts": {
       "get": {
         "description": "Generate financial forecasts and budget planning based on historical data and trend analysis.",
-        "operationId": "FinancialReportsController_getFinancialForecasts_1",
+        "operationId": "FinancialReportsController_getFinancialForecasts_v1",
         "parameters": [
           {
             "name": "periods",
@@ -5404,10 +5404,10 @@
         ]
       }
     },
-    "/api/financial-reports/cost-optimization": {
+    "/api/v1/financial-reports/cost-optimization": {
       "get": {
         "description": "Analyze current costs and identify opportunities for optimization with actionable recommendations.",
-        "operationId": "FinancialReportsController_getCostOptimizationInsights_1",
+        "operationId": "FinancialReportsController_getCostOptimizationInsights_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -5435,10 +5435,10 @@
         ]
       }
     },
-    "/api/financial-reports/dashboard": {
+    "/api/v1/financial-reports/dashboard": {
       "get": {
         "description": "Retrieve all financial data for the main dashboard including payroll, billing, profitability, forecasts, and KPIs.",
-        "operationId": "FinancialReportsController_getFinancialDashboardData_1",
+        "operationId": "FinancialReportsController_getFinancialDashboardData_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -5532,10 +5532,10 @@
         ]
       }
     },
-    "/api/financial-reports/export/payroll-report": {
+    "/api/v1/financial-reports/export/payroll-report": {
       "get": {
         "description": "Export detailed payroll report in PDF format for external sharing and compliance.",
-        "operationId": "FinancialReportsController_exportPayrollReport_1",
+        "operationId": "FinancialReportsController_exportPayrollReport_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -5640,10 +5640,10 @@
         ]
       }
     },
-    "/api/financial-reports/export/billing-report": {
+    "/api/v1/financial-reports/export/billing-report": {
       "get": {
         "description": "Export comprehensive billing report in PDF format for client sharing and financial analysis.",
-        "operationId": "FinancialReportsController_exportBillingReport_1",
+        "operationId": "FinancialReportsController_exportBillingReport_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -5748,10 +5748,10 @@
         ]
       }
     },
-    "/api/financial-reports/export/profitability-report": {
+    "/api/v1/financial-reports/export/profitability-report": {
       "get": {
         "description": "Export detailed site profitability analysis in Excel format with charts and recommendations.",
-        "operationId": "FinancialReportsController_exportProfitabilityReport_1",
+        "operationId": "FinancialReportsController_exportProfitabilityReport_v1",
         "parameters": [
           {
             "name": "startDate",
@@ -5856,10 +5856,10 @@
         ]
       }
     },
-    "/api/payroll/runs": {
+    "/api/v1/payroll/runs": {
       "post": {
         "description": "Initialize a new payroll run and calculate salaries for employees based on attendance data",
-        "operationId": "PayrollController_createPayrollRun_1",
+        "operationId": "PayrollController_createPayrollRun_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -5901,7 +5901,7 @@
       },
       "get": {
         "description": "Get paginated list of payroll runs for the current company",
-        "operationId": "PayrollController_listPayrollRuns_1",
+        "operationId": "PayrollController_listPayrollRuns_v1",
         "parameters": [
           {
             "name": "limit",
@@ -5938,10 +5938,10 @@
         ]
       }
     },
-    "/api/payroll/runs/{id}": {
+    "/api/v1/payroll/runs/{id}": {
       "get": {
         "description": "Retrieve detailed information about a specific payroll run including all payroll items",
-        "operationId": "PayrollController_getPayrollRun_1",
+        "operationId": "PayrollController_getPayrollRun_v1",
         "parameters": [
           {
             "name": "id",
@@ -5971,10 +5971,10 @@
         ]
       }
     },
-    "/api/payroll/runs/{id}/summary": {
+    "/api/v1/payroll/runs/{id}/summary": {
       "get": {
         "description": "Get aggregated summary statistics for a payroll run",
-        "operationId": "PayrollController_getPayrollRunSummary_1",
+        "operationId": "PayrollController_getPayrollRunSummary_v1",
         "parameters": [
           {
             "name": "id",
@@ -6004,10 +6004,10 @@
         ]
       }
     },
-    "/api/payroll/employees/{employeeId}/history": {
+    "/api/v1/payroll/employees/{employeeId}/history": {
       "get": {
         "description": "Retrieve payroll history for a specific employee",
-        "operationId": "PayrollController_getEmployeePayrollHistory_1",
+        "operationId": "PayrollController_getEmployeePayrollHistory_v1",
         "parameters": [
           {
             "name": "employeeId",
@@ -6043,10 +6043,10 @@
         ]
       }
     },
-    "/api/payroll/runs/batch": {
+    "/api/v1/payroll/runs/batch": {
       "post": {
         "description": "Create payroll run with advanced batch processing capabilities including dry run and error handling",
-        "operationId": "PayrollController_createPayrollRunBatch_1",
+        "operationId": "PayrollController_createPayrollRunBatch_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -6074,10 +6074,10 @@
         ]
       }
     },
-    "/api/payroll/runs/filtered": {
+    "/api/v1/payroll/runs/filtered": {
       "get": {
         "description": "Get payroll runs with advanced filtering and pagination",
-        "operationId": "PayrollController_getFilteredPayrollRuns_1",
+        "operationId": "PayrollController_getFilteredPayrollRuns_v1",
         "parameters": [
           {
             "name": "status",
@@ -6163,10 +6163,10 @@
         ]
       }
     },
-    "/api/payroll/runs/{id}/approval": {
+    "/api/v1/payroll/runs/{id}/approval": {
       "patch": {
         "description": "Approve, reject, or request changes for a payroll run",
-        "operationId": "PayrollController_approvePayrollRun_1",
+        "operationId": "PayrollController_approvePayrollRun_v1",
         "parameters": [
           {
             "name": "id",
@@ -6203,10 +6203,10 @@
         ]
       }
     },
-    "/api/payroll/runs/{id}/corrections": {
+    "/api/v1/payroll/runs/{id}/corrections": {
       "patch": {
         "description": "Apply corrections to specific payroll items in a payroll run",
-        "operationId": "PayrollController_correctPayrollRun_1",
+        "operationId": "PayrollController_correctPayrollRun_v1",
         "parameters": [
           {
             "name": "id",
@@ -6243,10 +6243,10 @@
         ]
       }
     },
-    "/api/payroll/runs/{id}/export": {
+    "/api/v1/payroll/runs/{id}/export": {
       "post": {
         "description": "Export payroll run in various formats (PDF, Excel, CSV, JSON)",
-        "operationId": "PayrollController_exportPayrollRun_1",
+        "operationId": "PayrollController_exportPayrollRun_v1",
         "parameters": [
           {
             "name": "id",
@@ -6283,10 +6283,10 @@
         ]
       }
     },
-    "/api/payroll/runs/{id}/analytics": {
+    "/api/v1/payroll/runs/{id}/analytics": {
       "get": {
         "description": "Get comprehensive analytics and statistics for a payroll run",
-        "operationId": "PayrollController_getPayrollRunAnalytics_1",
+        "operationId": "PayrollController_getPayrollRunAnalytics_v1",
         "parameters": [
           {
             "name": "id",
@@ -6313,10 +6313,10 @@
         ]
       }
     },
-    "/api/payroll/analytics": {
+    "/api/v1/payroll/analytics": {
       "get": {
         "description": "Get overview analytics for payroll operations dashboard",
-        "operationId": "PayrollController_getPayrollAnalytics_1",
+        "operationId": "PayrollController_getPayrollAnalytics_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -6334,10 +6334,10 @@
         ]
       }
     },
-    "/api/payroll/analytics/detailed": {
+    "/api/v1/payroll/analytics/detailed": {
       "get": {
         "description": "Get comprehensive analytics with trends and breakdowns",
-        "operationId": "PayrollController_getDetailedPayrollAnalytics_1",
+        "operationId": "PayrollController_getDetailedPayrollAnalytics_v1",
         "parameters": [
           {
             "name": "period",
@@ -6364,10 +6364,10 @@
         ]
       }
     },
-    "/api/shifts": {
+    "/api/v1/shifts": {
       "post": {
         "description": "Creates a new shift with optional assignment and recurring pattern support",
-        "operationId": "ShiftsController_create_1",
+        "operationId": "ShiftsController_create_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -6409,7 +6409,7 @@
       },
       "get": {
         "description": "Retrieves paginated list of shifts with advanced filtering options",
-        "operationId": "ShiftsController_findAll_1",
+        "operationId": "ShiftsController_findAll_v1",
         "parameters": [
           {
             "name": "search",
@@ -6686,10 +6686,10 @@
         ]
       }
     },
-    "/api/shifts/bulk": {
+    "/api/v1/shifts/bulk": {
       "post": {
         "description": "Creates multiple shifts from individual data or template-based generation",
-        "operationId": "ShiftsController_createBulk_1",
+        "operationId": "ShiftsController_createBulk_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -6746,10 +6746,10 @@
         ]
       }
     },
-    "/api/shifts/stats": {
+    "/api/v1/shifts/stats": {
       "get": {
         "description": "Retrieves comprehensive shift statistics and analytics",
-        "operationId": "ShiftsController_getStats_1",
+        "operationId": "ShiftsController_getStats_v1",
         "parameters": [
           {
             "name": "dateFrom",
@@ -6793,10 +6793,10 @@
         ]
       }
     },
-    "/api/shifts/coverage-needed": {
+    "/api/v1/shifts/coverage-needed": {
       "get": {
         "description": "Retrieves shifts that are unassigned or need additional coverage",
-        "operationId": "ShiftsController_getShiftsNeedingCoverage_1",
+        "operationId": "ShiftsController_getShiftsNeedingCoverage_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -6824,10 +6824,10 @@
         ]
       }
     },
-    "/api/shifts/assignment/{assignmentId}": {
+    "/api/v1/shifts/assignment/{assignmentId}": {
       "get": {
         "description": "Retrieves all shifts for a specific assignment",
-        "operationId": "ShiftsController_findByAssignment_1",
+        "operationId": "ShiftsController_findByAssignment_v1",
         "parameters": [
           {
             "name": "assignmentId",
@@ -6865,10 +6865,10 @@
         ]
       }
     },
-    "/api/shifts/site/{siteId}": {
+    "/api/v1/shifts/site/{siteId}": {
       "get": {
         "description": "Retrieves all shifts for a specific site with optional date filtering",
-        "operationId": "ShiftsController_findBySite_1",
+        "operationId": "ShiftsController_findBySite_v1",
         "parameters": [
           {
             "name": "siteId",
@@ -6924,10 +6924,10 @@
         ]
       }
     },
-    "/api/shifts/{id}": {
+    "/api/v1/shifts/{id}": {
       "get": {
         "description": "Retrieves a specific shift with full details including relations",
-        "operationId": "ShiftsController_findOne_1",
+        "operationId": "ShiftsController_findOne_v1",
         "parameters": [
           {
             "name": "id",
@@ -6966,7 +6966,7 @@
       },
       "patch": {
         "description": "Updates shift information with modification tracking and conflict detection",
-        "operationId": "ShiftsController_update_1",
+        "operationId": "ShiftsController_update_v1",
         "parameters": [
           {
             "name": "id",
@@ -7021,7 +7021,7 @@
       },
       "delete": {
         "description": "Cancels a shift (soft delete) with notification handling",
-        "operationId": "ShiftsController_remove_1",
+        "operationId": "ShiftsController_remove_v1",
         "parameters": [
           {
             "name": "id",
@@ -7067,10 +7067,10 @@
         ]
       }
     },
-    "/api/shifts/{id}/request-coverage": {
+    "/api/v1/shifts/{id}/request-coverage": {
       "post": {
         "description": "Marks a shift as needing coverage and sends notifications to find replacement",
-        "operationId": "ShiftsController_requestCoverage_1",
+        "operationId": "ShiftsController_requestCoverage_v1",
         "parameters": [
           {
             "name": "id",
@@ -7101,10 +7101,10 @@
         ]
       }
     },
-    "/api/attendance": {
+    "/api/v1/attendance": {
       "post": {
         "description": "Create a new attendance record with validation and verification data",
-        "operationId": "AttendanceController_create_1",
+        "operationId": "AttendanceController_create_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -7146,7 +7146,7 @@
       },
       "get": {
         "description": "Retrieve attendance records with advanced filtering and pagination",
-        "operationId": "AttendanceController_findAll_1",
+        "operationId": "AttendanceController_findAll_v1",
         "parameters": [
           {
             "name": "search",
@@ -7372,10 +7372,10 @@
         ]
       }
     },
-    "/api/attendance/clock-in": {
+    "/api/v1/attendance/clock-in": {
       "post": {
         "description": "Process employee clock-in with location verification and anomaly detection",
-        "operationId": "AttendanceController_clockIn_1",
+        "operationId": "AttendanceController_clockIn_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -7416,10 +7416,10 @@
         ]
       }
     },
-    "/api/attendance/clock-out": {
+    "/api/v1/attendance/clock-out": {
       "post": {
         "description": "Process employee clock-out with validation and overtime calculation",
-        "operationId": "AttendanceController_clockOut_1",
+        "operationId": "AttendanceController_clockOut_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -7460,10 +7460,10 @@
         ]
       }
     },
-    "/api/attendance/stats": {
+    "/api/v1/attendance/stats": {
       "get": {
         "description": "Retrieve attendance statistics and analytics for specified period",
-        "operationId": "AttendanceController_getStats_1",
+        "operationId": "AttendanceController_getStats_v1",
         "parameters": [
           {
             "name": "dateFrom",
@@ -7525,10 +7525,10 @@
         ]
       }
     },
-    "/api/attendance/anomalies": {
+    "/api/v1/attendance/anomalies": {
       "get": {
         "description": "Detect and analyze attendance anomalies with filtering options",
-        "operationId": "AttendanceController_detectAnomalies_1",
+        "operationId": "AttendanceController_detectAnomalies_v1",
         "parameters": [
           {
             "name": "dateFrom",
@@ -7646,10 +7646,10 @@
         ]
       }
     },
-    "/api/attendance/{id}": {
+    "/api/v1/attendance/{id}": {
       "get": {
         "description": "Retrieve a specific attendance record by ID with calculated metrics",
-        "operationId": "AttendanceController_findOne_1",
+        "operationId": "AttendanceController_findOne_v1",
         "parameters": [
           {
             "name": "id",
@@ -7688,7 +7688,7 @@
       },
       "patch": {
         "description": "Update attendance record with modification tracking",
-        "operationId": "AttendanceController_update_1",
+        "operationId": "AttendanceController_update_v1",
         "parameters": [
           {
             "name": "id",
@@ -7739,10 +7739,10 @@
         ]
       }
     },
-    "/api/attendance/{id}/correction": {
+    "/api/v1/attendance/{id}/correction": {
       "post": {
         "description": "Submit a request for attendance record correction with approval workflow",
-        "operationId": "AttendanceController_requestCorrection_1",
+        "operationId": "AttendanceController_requestCorrection_v1",
         "parameters": [
           {
             "name": "id",
@@ -7786,10 +7786,10 @@
         ]
       }
     },
-    "/api/attendance/{id}/correction/{correctionId}/approve": {
+    "/api/v1/attendance/{id}/correction/{correctionId}/approve": {
       "post": {
         "description": "Approve, reject, or request changes for an attendance correction",
-        "operationId": "AttendanceController_processCorrection_1",
+        "operationId": "AttendanceController_processCorrection_v1",
         "parameters": [
           {
             "name": "id",
@@ -7842,10 +7842,10 @@
         ]
       }
     },
-    "/api/attendance/bulk-update": {
+    "/api/v1/attendance/bulk-update": {
       "post": {
         "description": "Perform bulk operations on multiple attendance records",
-        "operationId": "AttendanceController_bulkUpdate_1",
+        "operationId": "AttendanceController_bulkUpdate_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -7876,10 +7876,10 @@
         ]
       }
     },
-    "/api/attendance/employee/{employeeId}/today": {
+    "/api/v1/attendance/employee/{employeeId}/today": {
       "get": {
         "description": "Get attendance records for an employee for today",
-        "operationId": "AttendanceController_getEmployeeTodayAttendance_1",
+        "operationId": "AttendanceController_getEmployeeTodayAttendance_v1",
         "parameters": [
           {
             "name": "employeeId",
@@ -7907,10 +7907,10 @@
         ]
       }
     },
-    "/api/attendance/employee/{employeeId}/current-status": {
+    "/api/v1/attendance/employee/{employeeId}/current-status": {
       "get": {
         "description": "Get current clock-in status and next expected action for employee",
-        "operationId": "AttendanceController_getEmployeeCurrentStatus_1",
+        "operationId": "AttendanceController_getEmployeeCurrentStatus_v1",
         "parameters": [
           {
             "name": "employeeId",
@@ -7938,10 +7938,10 @@
         ]
       }
     },
-    "/api/dashboard/overview": {
+    "/api/v1/dashboard/overview": {
       "get": {
         "description": "Returns comprehensive dashboard data including system metrics, performance indicators, and operational statistics",
-        "operationId": "DashboardController_getOverview_1",
+        "operationId": "DashboardController_getOverview_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -7954,10 +7954,122 @@
         ]
       }
     },
-    "/api/monitoring/health": {
+    "/api/v1/dashboard/kpis": {
+      "get": {
+        "description": "Returns key performance indicators for dashboard",
+        "operationId": "DashboardController_getKPIMetrics_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "KPI metrics retrieved successfully"
+          }
+        },
+        "summary": "Get KPI metrics",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/v1/dashboard/deployments": {
+      "get": {
+        "description": "Returns deployment statistics for dashboard",
+        "operationId": "DashboardController_getDeploymentMetrics_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Deployment metrics retrieved successfully"
+          }
+        },
+        "summary": "Get deployment metrics",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/v1/dashboard/operations": {
+      "get": {
+        "description": "Returns operations overview data",
+        "operationId": "DashboardController_getOperationsOverview_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Operations overview retrieved successfully"
+          }
+        },
+        "summary": "Get operations overview",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/v1/dashboard/guards": {
+      "get": {
+        "description": "Returns guard availability metrics",
+        "operationId": "DashboardController_getGuardAvailability_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Guard availability retrieved successfully"
+          }
+        },
+        "summary": "Get guard availability",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/v1/dashboard/activity": {
+      "get": {
+        "description": "Returns recent activity timeline",
+        "operationId": "DashboardController_getActivityTimeline_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Activity timeline retrieved successfully"
+          }
+        },
+        "summary": "Get activity timeline",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/v1/dashboard/notifications": {
+      "get": {
+        "description": "Returns dashboard notifications",
+        "operationId": "DashboardController_getNotifications_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Notifications retrieved successfully"
+          }
+        },
+        "summary": "Get notifications",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/v1/dashboard/alerts": {
+      "get": {
+        "description": "Returns real-time alerts",
+        "operationId": "DashboardController_getRealTimeAlerts_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Alerts retrieved successfully"
+          }
+        },
+        "summary": "Get real-time alerts",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/v1/monitoring/health": {
       "get": {
         "description": "Returns the current health status of the application including uptime, error rates, and performance metrics",
-        "operationId": "MonitoringController_getHealth_1",
+        "operationId": "MonitoringController_getHealth_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -7970,10 +8082,10 @@
         ]
       }
     },
-    "/api/monitoring/metrics": {
+    "/api/v1/monitoring/metrics": {
       "get": {
         "description": "Returns detailed metrics about API usage, performance, and error rates",
-        "operationId": "MonitoringController_getMetrics_1",
+        "operationId": "MonitoringController_getMetrics_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -7986,10 +8098,10 @@
         ]
       }
     },
-    "/api/monitoring/stats": {
+    "/api/v1/monitoring/stats": {
       "get": {
         "description": "Returns statistical analysis of API usage patterns and trends",
-        "operationId": "MonitoringController_getStats_1",
+        "operationId": "MonitoringController_getStats_v1",
         "parameters": [
           {
             "name": "period",
@@ -8017,10 +8129,10 @@
         ]
       }
     },
-    "/api/monitoring/performance": {
+    "/api/v1/monitoring/performance": {
       "get": {
         "description": "Returns performance metrics including response times, slow requests, and performance trends",
-        "operationId": "MonitoringController_getPerformance_1",
+        "operationId": "MonitoringController_getPerformance_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -8033,10 +8145,10 @@
         ]
       }
     },
-    "/api/monitoring/errors": {
+    "/api/v1/monitoring/errors": {
       "get": {
         "description": "Returns error statistics and recent error patterns for debugging and monitoring",
-        "operationId": "MonitoringController_getErrors_1",
+        "operationId": "MonitoringController_getErrors_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -8049,10 +8161,10 @@
         ]
       }
     },
-    "/api/deployment/sites": {
+    "/api/v1/deployment/sites": {
       "get": {
         "description": "Retrieve comprehensive deployment details for all active sites including staffing levels and operational status",
-        "operationId": "DeploymentController_getSiteDetails_1",
+        "operationId": "DeploymentController_getSiteDetails_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -8080,10 +8192,10 @@
         ]
       }
     },
-    "/api/deployment/conflicts": {
+    "/api/v1/deployment/conflicts": {
       "get": {
         "description": "Retrieve active assignment conflicts that require resolution",
-        "operationId": "DeploymentController_getAssignmentConflicts_1",
+        "operationId": "DeploymentController_getAssignmentConflicts_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -8111,10 +8223,10 @@
         ]
       }
     },
-    "/api/deployment/efficiency": {
+    "/api/v1/deployment/efficiency": {
       "get": {
         "description": "Retrieve deployment efficiency statistics, trends, and optimization opportunities",
-        "operationId": "DeploymentController_getEfficiencyMetrics_1",
+        "operationId": "DeploymentController_getEfficiencyMetrics_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -8139,10 +8251,10 @@
         ]
       }
     },
-    "/api/deployment/analytics": {
+    "/api/v1/deployment/analytics": {
       "get": {
         "description": "Retrieve deployment analytics data for specified timeframe",
-        "operationId": "DeploymentController_getAnalytics_1",
+        "operationId": "DeploymentController_getAnalytics_v1",
         "parameters": [
           {
             "name": "timeframe",
@@ -8182,10 +8294,10 @@
         ]
       }
     },
-    "/api/deployment/recommendations/{siteId}": {
+    "/api/v1/deployment/recommendations/{siteId}": {
       "get": {
         "description": "Get optimal guard assignment recommendations for a specific site",
-        "operationId": "DeploymentController_getAssignmentRecommendations_1",
+        "operationId": "DeploymentController_getAssignmentRecommendations_v1",
         "parameters": [
           {
             "name": "siteId",
@@ -8220,10 +8332,10 @@
         ]
       }
     },
-    "/api/deployment/sites/{siteId}/health": {
+    "/api/v1/deployment/sites/{siteId}/health": {
       "get": {
         "description": "Retrieve comprehensive health metrics for a specific site",
-        "operationId": "DeploymentController_getSiteHealth_1",
+        "operationId": "DeploymentController_getSiteHealth_v1",
         "parameters": [
           {
             "name": "siteId",
@@ -8258,10 +8370,10 @@
         ]
       }
     },
-    "/api/deployment/quick-assign": {
+    "/api/v1/deployment/quick-assign": {
       "post": {
         "description": "Quickly assign an available guard to a site, with automatic matching if guard not specified",
-        "operationId": "DeploymentController_quickAssign_1",
+        "operationId": "DeploymentController_quickAssign_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -8289,10 +8401,10 @@
         ]
       }
     },
-    "/api/deployment/emergency-replacement": {
+    "/api/v1/deployment/emergency-replacement": {
       "post": {
         "description": "Request emergency guard replacement for a site",
-        "operationId": "DeploymentController_requestEmergencyReplacement_1",
+        "operationId": "DeploymentController_requestEmergencyReplacement_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -8320,10 +8432,10 @@
         ]
       }
     },
-    "/api/deployment/bulk-assign": {
+    "/api/v1/deployment/bulk-assign": {
       "post": {
         "description": "Process multiple guard assignments in a single operation",
-        "operationId": "DeploymentController_bulkAssign_1",
+        "operationId": "DeploymentController_bulkAssign_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -8351,10 +8463,10 @@
         ]
       }
     },
-    "/api/deployment/optimize": {
+    "/api/v1/deployment/optimize": {
       "post": {
         "description": "Generate optimized deployment schedule based on constraints and priorities",
-        "operationId": "DeploymentController_optimizeDeployments_1",
+        "operationId": "DeploymentController_optimizeDeployments_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -8382,10 +8494,10 @@
         ]
       }
     },
-    "/api/deployment/sites/{siteId}/requirements": {
+    "/api/v1/deployment/sites/{siteId}/requirements": {
       "patch": {
         "description": "Update staffing requirements and preferences for a specific site",
-        "operationId": "DeploymentController_updateSiteRequirements_1",
+        "operationId": "DeploymentController_updateSiteRequirements_v1",
         "parameters": [
           {
             "name": "siteId",
@@ -8423,10 +8535,10 @@
         ]
       }
     },
-    "/api/deployment/conflicts/{conflictId}/resolve": {
+    "/api/v1/deployment/conflicts/{conflictId}/resolve": {
       "post": {
         "description": "Resolve a specific assignment conflict with the provided resolution strategy",
-        "operationId": "DeploymentController_resolveConflict_1",
+        "operationId": "DeploymentController_resolveConflict_v1",
         "parameters": [
           {
             "name": "conflictId",
@@ -8464,10 +8576,10 @@
         ]
       }
     },
-    "/api/client-portal/dashboard": {
+    "/api/v1/client-portal/dashboard": {
       "get": {
         "description": "Retrieve real-time dashboard with site overview, guard deployment, and key metrics",
-        "operationId": "ClientPortalController_getDashboard_1",
+        "operationId": "ClientPortalController_getDashboard_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -8523,10 +8635,10 @@
         ]
       }
     },
-    "/api/client-portal/guard-monitoring": {
+    "/api/v1/client-portal/guard-monitoring": {
       "get": {
         "description": "Monitor deployed guards in real-time with status, location, and performance metrics",
-        "operationId": "ClientPortalController_getGuardMonitoring_1",
+        "operationId": "ClientPortalController_getGuardMonitoring_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -8599,10 +8711,10 @@
         ]
       }
     },
-    "/api/client-portal/guard-replacement": {
+    "/api/v1/client-portal/guard-replacement": {
       "post": {
         "description": "Submit a request for guard replacement with urgency and requirements",
-        "operationId": "ClientPortalController_requestGuardReplacement_1",
+        "operationId": "ClientPortalController_requestGuardReplacement_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -8639,10 +8751,10 @@
         ]
       }
     },
-    "/api/client-portal/attendance": {
+    "/api/v1/client-portal/attendance": {
       "get": {
         "description": "View attendance records, real-time status, and site-specific attendance data",
-        "operationId": "ClientPortalController_getAttendance_1",
+        "operationId": "ClientPortalController_getAttendance_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -8738,10 +8850,10 @@
         ]
       }
     },
-    "/api/client-portal/attendance/trends": {
+    "/api/v1/client-portal/attendance/trends": {
       "get": {
         "description": "Analyze attendance trends, patterns, and site-wise comparisons",
-        "operationId": "ClientPortalController_getAttendanceTrends_1",
+        "operationId": "ClientPortalController_getAttendanceTrends_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -8837,10 +8949,10 @@
         ]
       }
     },
-    "/api/client-portal/billing": {
+    "/api/v1/client-portal/billing": {
       "get": {
         "description": "Access invoices, billing history, payment tracking, and service charges breakdown",
-        "operationId": "ClientPortalController_getBilling_1",
+        "operationId": "ClientPortalController_getBilling_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -8933,10 +9045,10 @@
         ]
       }
     },
-    "/api/client-portal/invoices/{invoiceId}/download": {
+    "/api/v1/client-portal/invoices/{invoiceId}/download": {
       "post": {
         "description": "Generate and download invoice in PDF format",
-        "operationId": "ClientPortalController_downloadInvoice_1",
+        "operationId": "ClientPortalController_downloadInvoice_v1",
         "parameters": [
           {
             "name": "invoiceId",
@@ -8980,10 +9092,10 @@
         ]
       }
     },
-    "/api/client-portal/reports": {
+    "/api/v1/client-portal/reports": {
       "get": {
         "description": "Access comprehensive reports including site performance, deployment analytics, and service compliance",
-        "operationId": "ClientPortalController_getReports_1",
+        "operationId": "ClientPortalController_getReports_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -9082,10 +9194,10 @@
         ]
       }
     },
-    "/api/client-portal/reports/download": {
+    "/api/v1/client-portal/reports/download": {
       "post": {
         "description": "Generate and download reports in specified format (PDF, Excel, CSV)",
-        "operationId": "ClientPortalController_downloadReport_1",
+        "operationId": "ClientPortalController_downloadReport_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -9120,10 +9232,10 @@
         ]
       }
     },
-    "/api/client-portal/communication": {
+    "/api/v1/client-portal/communication": {
       "get": {
         "description": "View incident reports, complaints, service requests, and communication statistics",
-        "operationId": "ClientPortalController_getCommunicationData_1",
+        "operationId": "ClientPortalController_getCommunicationData_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -9158,10 +9270,10 @@
         ]
       }
     },
-    "/api/client-portal/complaints": {
+    "/api/v1/client-portal/complaints": {
       "post": {
         "description": "Raise complaints and issues with detailed information and attachments",
-        "operationId": "ClientPortalController_submitComplaint_1",
+        "operationId": "ClientPortalController_submitComplaint_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -9199,10 +9311,10 @@
         ]
       }
     },
-    "/api/client-portal/service-requests": {
+    "/api/v1/client-portal/service-requests": {
       "post": {
         "description": "Request additional services, modifications, or support with priority levels",
-        "operationId": "ClientPortalController_submitServiceRequest_1",
+        "operationId": "ClientPortalController_submitServiceRequest_v1",
         "parameters": [
           {
             "name": "clientId",
@@ -9319,15 +9431,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Authentication response data",
-            "properties": {
-              "user": {
-                "$ref": "#/components/schemas/UserDataDto"
-              },
-              "tokens": {
-                "$ref": "#/components/schemas/TokensDto"
-              }
-            }
+            "description": "Authentication response data"
           },
           "message": {
             "type": "string",

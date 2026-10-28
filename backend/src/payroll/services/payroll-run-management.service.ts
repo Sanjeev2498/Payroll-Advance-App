@@ -499,7 +499,7 @@ export class PayrollRunManagementService {
       run_number: payrollRun.run_number,
       payPeriod: {
         start: payrollRun.pay_period_start,
-        end: payrollRun.payPeriodEnd,
+        end: payrollRun.pay_period_end,
       },
       status: payrollRun.status,
       employeeCount: new Set(items.map(item => item.employee_id)).size,

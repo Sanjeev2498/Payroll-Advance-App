@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -28,7 +29,7 @@ export class AuthService {
       const user = await this.prisma.user.findUnique({
         where: { email },
         include: {
-          company: {
+          companies: {
             select: {
               id: true,
               name: true,
@@ -42,11 +43,11 @@ export class AuthService {
         return null;
       }
 
-      if (!user.isActive) {
+      if (!user.is_active) {
         throw new ForbiddenException('Account is deactivated');
       }
 
-      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      const isPasswordValid = await bcrypt.compare(password, user.password_hash);
       if (!isPasswordValid) {
         return null;
       }
@@ -54,18 +55,24 @@ export class AuthService {
       return {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.first_name,
+        lastName: user.last_name,
         role: user.role,
-        companyId: user.companyId,
-        isActive: user.isActive,
+        companyId: user.company_id,
+        isActive: user.is_active,
       };
     } catch (error) {
+      // Re-throw business logic exceptions (account deactivation)
       if (error instanceof ForbiddenException) {
         throw error;
       }
+      
+      // Database errors should throw InternalServerErrorException, not return null
+      // Note: Authentication failures (user not found, wrong password) intentionally
+      // return null to allow login() to throw generic "Invalid credentials" error,
+      // preventing user enumeration attacks
       console.error('Database error in validateUser:', error);
-      return null;
+      throw new InternalServerErrorException('Authentication service unavailable');
     }
   }
 
@@ -80,12 +87,12 @@ export class AuthService {
     const [, userWithCompany] = await Promise.all([
       this.prisma.user.update({
         where: { id: user.id },
-        data: { lastLoginAt: new Date() },
+        data: { last_login_at: new Date() },
       }),
       this.prisma.user.findUnique({
         where: { id: user.id },
         include: {
-          company: {
+          companies: {
             select: {
               id: true,
               name: true,
@@ -110,7 +117,7 @@ export class AuthService {
           companyId: user.companyId,
           // Add tenant fields for frontend compatibility
           tenantId: user.companyId,
-          tenantName: userWithCompany?.company?.name || 'Unknown Company',
+          tenantName: userWithCompany?.companies?.name || 'Unknown Company',
           status: 'ACTIVE', // Add status field expected by frontend
           createdAt: new Date().toISOString(), // Add placeholder dates
           updatedAt: new Date().toISOString(),
@@ -137,7 +144,7 @@ export class AuthService {
         where: {
           id: payload.sub,
           email: payload.email,
-          isActive: true,
+          is_active: true,
         },
       });
 
@@ -148,11 +155,11 @@ export class AuthService {
       const authenticatedUser: AuthenticatedUser = {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.first_name,
+        lastName: user.last_name,
         role: user.role,
-        companyId: user.companyId,
-        isActive: user.isActive,
+        companyId: user.company_id,
+        isActive: user.is_active,
       };
 
       return this.generateTokens(authenticatedUser);
@@ -185,7 +192,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
     if (!isCurrentPasswordValid) {
       throw new UnauthorizedException('Current password is incorrect');
     }
@@ -198,7 +205,7 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash: hashedNewPassword },
+      data: { password_hash: hashedNewPassword },
     });
 
     return {

@@ -20,18 +20,18 @@ export class DataTransformService {
   transformEmployeeForRole(employee: any, userRole: string, isOwnData: boolean = false): EmployeeRoleResponse {
     const response: EmployeeRoleResponse = {
       id: employee.id,
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      employeeNumber: employee.employeeNumber,
+      firstName: employee.first_name || employee.firstName,
+      lastName: employee.last_name || employee.lastName,
+      employeeNumber: employee.employee_number || employee.employeeNumber,
       skills: employee.skills || [],
-      employmentStatus: employee.employmentStatus,
-      hireDate: employee.hireDate,
-      terminationDate: employee.terminationDate,
+      employmentStatus: employee.employment_status || employee.employmentStatus,
+      hireDate: employee.hire_date || employee.hireDate,
+      terminationDate: employee.termination_date || employee.terminationDate,
       canViewSensitive: canRoleView(userRole, DataAccessLevel.SENSITIVE),
       canViewRestricted: canRoleView(userRole, DataAccessLevel.RESTRICTED),
       canViewFinancial: canRoleView(userRole, DataAccessLevel.FINANCIAL),
-      createdAt: employee.createdAt,
-      updatedAt: employee.updatedAt,
+      createdAt: employee.created_at || employee.createdAt,
+      updatedAt: employee.updated_at || employee.updatedAt,
     };
 
     // Handle email

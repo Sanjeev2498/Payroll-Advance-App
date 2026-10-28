@@ -1,4 +1,4 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+﻿import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -24,6 +24,9 @@ import { MonitoringModule } from './monitoring/monitoring.module';
 import { TenantContextMiddleware } from './common/tenant-context.middleware';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { MetricsMiddleware } from './common/middleware/metrics.middleware';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { TenantGuard } from './common/tenant.guard';
+import { PermissionsGuard } from './auth/guards/permissions.guard';
 
 @Module({
   imports: [
@@ -50,24 +53,25 @@ import { MetricsMiddleware } from './common/middleware/metrics.middleware';
     MonitoringModule, // ✅ NEW - API Observability
     DeploymentModule, // ✅ WORKING  
     ClientPortalModule, // ✅ WORKING
-    // SupervisorPortalModule, // ❌ DI ERROR - temporarily disabled to fix API issues
+    // SupervisorPortalModule, // ❌ DI ERROR - Still has Prisma model naming issues, needs separate fix
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // Temporarily disable guards to get basic functionality working
-    // TODO: Re-enable guards after fixing dependency injection issue
+    // ROLLBACK: Security guards commented out due to test failures (37 failed tests)
+    // Phase 3 caused database connection issues: "Cannot use a pool after calling end on the pool"
+    // TODO: Investigate guard dependency injection issues before re-enabling
     // {
     //   provide: APP_GUARD,
-    //   useClass: JwtAuthGuard,
+    //   useClass: JwtAuthGuard, // First: handles JWT validation
     // },
     // {
     //   provide: APP_GUARD,
-    //   useClass: TenantGuard,
+    //   useClass: TenantGuard, // Second: sets tenant context
     // },
     // {
     //   provide: APP_GUARD,
-    //   useClass: PermissionsGuard,
+    //   useClass: PermissionsGuard, // Last: validates permissions
     // },
   ],
 })
@@ -81,3 +85,6 @@ export class AppModule implements NestModule {
     consumer.apply(TenantContextMiddleware).forRoutes('*');
   }
 }
+
+
+

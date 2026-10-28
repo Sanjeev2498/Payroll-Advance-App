@@ -60,6 +60,7 @@ export interface Site {
   
   // Relations
   contract?: Contract  // FIXED: Changed from client to contract
+  client?: Client      // Add client for backward compatibility where sites show client info
 }
 
 export interface Employee {
@@ -77,6 +78,16 @@ export interface Employee {
   hireDate: string
   createdAt: string
   updatedAt: string
+  
+  // Add snake_case aliases for backend compatibility
+  company_id?: string
+  employee_number?: string
+  first_name?: string
+  last_name?: string
+  employment_status?: 'ACTIVE' | 'INACTIVE' | 'TERMINATED'
+  hire_date?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Assignment {

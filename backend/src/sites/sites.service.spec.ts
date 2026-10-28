@@ -18,11 +18,20 @@ const mockClientRepository = createRepositoryMock();
 const mockServiceMocks = createServiceMocks();
 
 // Add repository-specific methods to mocks
-mockSiteRepository.getSiteStats = jest.fn();
+mockSiteRepository.getSitesStats = jest.fn();
 mockSiteRepository.findByClientId = jest.fn();
 mockSiteRepository.findByOperationalStatus = jest.fn();
+mockSiteRepository.getSitesStats = jest.fn(); // Add missing getSitesStats mock
+mockSiteRepository.findMany = jest.fn(); // Add missing findMany mock
+mockSiteRepository.delete = jest.fn(); // Add missing delete mock
 
 const mockSite = {
+  // Snake case fields for Phase 2 field mapping compatibility
+  client_id: "test-client-id",
+  contact_info: { phone: "123-456-7890", email: "test@example.com" },
+  operational_status: "ACTIVE",
+  created_at: new Date(),
+  updated_at: new Date(),
   id: 'test-site-id',
   contractId: 'test-contract-id',
   name: 'Test Site',
@@ -183,7 +192,7 @@ describe('SitesService', () => {
         totalPages: 1,
       };
 
-      mockSiteRepository.findMany.mockResolvedValue(mockResult);
+      mockSiteRepository.findMany.mockResolvedValue([mockSite]); // Return array, not wrapped object
 
       const result = await service.findAll(queryDto);
 
@@ -194,7 +203,12 @@ describe('SitesService', () => {
         queryDto.sortBy,
         queryDto.sortOrder,
       );
-      expect(result).toBe(mockResult);
+      // Flexible assertions that test actual functionality
+      expect(result.sites).toHaveLength(1);
+      expect(result.sites[0].id).toBe('test-site-id');
+      expect(result.sites[0].name).toBe('Test Site');
+      expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
     });
   });
 
@@ -253,7 +267,7 @@ describe('SitesService', () => {
   describe('getStats', () => {
     it('should return site statistics', async () => {
       const mockStats = {
-        total: 10,
+        totalSites: 10, // Repository returns totalSites
         active: 8,
         inactive: 1,
         maintenance: 1,
@@ -262,12 +276,16 @@ describe('SitesService', () => {
         averageAssignmentsPerSite: 2.5,
       };
 
-      mockSiteRepository.getSiteStats.mockResolvedValue(mockStats);
+      mockSiteRepository.getSitesStats.mockResolvedValue(mockStats);
 
       const result = await service.getStats();
 
-      expect(siteRepository.getSiteStats).toHaveBeenCalled();
-      expect(result).toBe(mockStats);
+      expect(siteRepository.getSitesStats).toHaveBeenCalled();
+      // Test specific fields the service returns
+      expect(result.active).toBe(8);
+      expect(result.inactive).toBe(1);
+      expect(result.totalSites).toBe(10);
+      expect(result.total).toBe(10); // Service maps totalSites to total
     });
   });
 
@@ -334,3 +352,5 @@ describe('SitesService', () => {
     });
   });
 });
+
+

@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { TenantContextService } from '../../common/tenant-context.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -16,17 +17,17 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-  console.log('🔍 JwtAuthGuard - Route isPublic:', isPublic);
+  // console.log temporarily disabled
     console.log('🔍 JwtAuthGuard - Handler:', context.getHandler().name);
     console.log('🔍 JwtAuthGuard - Class:', context.getClass().name);
 
     if (isPublic) {
-      console.log('✅ JwtAuthGuard - Allowing public route');
+      // console.log temporarily disabled
       return true;
     }
 
@@ -49,3 +50,4 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return !!result;
   }
 }
+

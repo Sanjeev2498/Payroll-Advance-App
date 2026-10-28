@@ -209,6 +209,113 @@ export class SiteRepository extends TenantAwareRepository {
   }
 
   /**
+   * Find many sites with pagination and filtering (for sites.service.ts findAll compatibility)
+   */
+  async findMany(
+    filters: SiteSearchFilters,
+    page: number = 1,
+    limit: number = 20,
+    sortBy: string = 'name',
+    sortOrder: 'asc' | 'desc' = 'asc'
+  ): Promise<sites[]> {
+    this.logOperation('READ', 'sites', `findMany page:${page}`);
+
+    const skip = (page - 1) * limit;
+    const orderBy: Record<string, string> = {};
+    orderBy[sortBy] = sortOrder;
+
+    const whereCondition: any = {
+      contracts: {
+        clients: this.getTenantFilter(), // Tenant isolation
+      },
+    };
+
+    // Add filters
+    if (filters.search) {
+      whereCondition.OR = [
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { address: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (filters.clientId) {
+      whereCondition.contracts.clients.id = filters.clientId;
+    }
+
+    if (filters.operationalStatus) {
+      whereCondition.operational_status = filters.operationalStatus;
+    }
+
+    return this.findWithTenant(() =>
+      this.prisma.sites.findMany({
+        where: whereCondition,
+        include: {
+          contracts: {
+            include: {
+              clients: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              assignments: true,
+              shifts: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy,
+      }),
+    );
+  }
+
+  /**
+   * Soft delete site by ID (for sites.service.ts remove compatibility)
+   */
+  async delete(id: string): Promise<sites> {
+    this.logOperation('DELETE', 'sites', id);
+
+    // First verify the site exists and belongs to the current tenant
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new Error(`sites with ID ${id} not found`);
+    }
+
+    // Soft delete by updating status
+    return this.writeWithTenant(() =>
+      this.prisma.sites.update({
+        where: { id },
+        data: {
+          operational_status: 'INACTIVE',
+          updated_at: new Date(),
+        },
+        include: {
+          contracts: {
+            include: {
+              clients: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              assignments: true,
+              shifts: true,
+            },
+          },
+        },
+      }),
+    );
+  }
+  /**
    * Get site statistics for the current tenant
    */
   async getSitesStats(): Promise<{
@@ -300,3 +407,4 @@ export class SiteRepository extends TenantAwareRepository {
     };
   }
 }
+

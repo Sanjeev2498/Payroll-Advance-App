@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Post, Body } from '@nestjs/common';
+import { Controller, Get, Query, Post, Body, Version, VERSION_NEUTRAL } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Public } from './auth/decorators/public.decorator';
 import { PrismaService } from './prisma/prisma.service';
@@ -7,15 +7,15 @@ import { PrismaService } from './prisma/prisma.service';
 const calculateDashboardStats = async (prisma: any, companyId: string) => {
   try {
     const stats = await prisma.employee.groupBy({
-      by: ['employmentStatus'],
+      by: ['employment_status'],
       where: { companyId },
       _count: true
     });
 
     const totalEmployees = stats.reduce((acc, stat) => acc + stat._count, 0);
-    const presentEmployees = stats.find(s => s.employmentStatus === 'ACTIVE')?._count || 0;
-    const onLeaveEmployees = stats.find(s => s.employmentStatus === 'ON_LEAVE')?._count || 0;
-    const inactiveEmployees = stats.find(s => s.employmentStatus === 'INACTIVE')?._count || 0;
+    const presentEmployees = stats.find(s => s.employment_status === 'ACTIVE')?._count || 0;
+    const onLeaveEmployees = stats.find(s => s.employment_status === 'ON_LEAVE')?._count || 0;
+    const inactiveEmployees = stats.find(s => s.employment_status === 'INACTIVE')?._count || 0;
     
     // Calculate attendance rate (for dashboard purposes, assume ACTIVE employees are present)
     const attendanceRate = totalEmployees > 0 ? Math.round((presentEmployees / totalEmployees) * 100) : 100;
@@ -160,8 +160,8 @@ export class AppController {
         siteName: 'Main Entrance',
         employees: employees.map(emp => ({
           employeeId: emp.id,
-          employeeNumber: emp.employeeNumber,
-          name: `${emp.firstName} ${emp.lastName}`,
+          employeeNumber: emp.employee_number,
+          name: `${emp.first_name} ${emp.last_name}`,
           role: 'Security Guard',
           email: emp.email,
           phone: emp.phone,
@@ -170,10 +170,10 @@ export class AppController {
             endTime: '17:00',
             status: 'SCHEDULED'
           },
-          attendanceStatus: emp.employmentStatus === 'ACTIVE' ? 'PRESENT' : 'ABSENT',
-          clockIn: emp.employmentStatus === 'ACTIVE' ? '09:00' : null,
+          attendanceStatus: emp.employment_status === 'ACTIVE' ? 'PRESENT' : 'ABSENT',
+          clockIn: emp.employment_status === 'ACTIVE' ? '09:00' : null,
           clockOut: null,
-          employmentStatus: emp.employmentStatus
+          employmentStatus: emp.employment_status
         }))
       }
     };
@@ -432,7 +432,7 @@ export class AppController {
       include: {
         employees: {
           where: {
-            employmentStatus: 'ACTIVE'
+            employment_status: 'ACTIVE'
           }
         }
       }
@@ -449,17 +449,17 @@ export class AppController {
         siteName: 'Main Entrance',
         requiredGuards: 3,
         assignedGuards: company.employees.length,
-        onDutyGuards: company.employees.filter(emp => emp.employmentStatus === 'ACTIVE').length,
+        onDutyGuards: company.employees.filter(emp => emp.employment_status === 'ACTIVE').length,
         coverageStatus: 'FULLY_COVERED',
         guards: company.employees.map(emp => ({
           guardId: emp.id,
-          guardName: `${emp.firstName} ${emp.lastName}`,
-          status: emp.employmentStatus === 'ACTIVE' ? 'ON_DUTY' : 'OFF_DUTY',
+          guardName: `${emp.first_name} ${emp.last_name}`,
+          status: emp.employment_status === 'ACTIVE' ? 'ON_DUTY' : 'OFF_DUTY',
           shiftStart: '08:00',
           shiftEnd: '20:00',
           lastCheckIn: new Date().toISOString(),
           contactNumber: emp.phone || 'N/A',
-          attendanceStatus: emp.employmentStatus
+          attendanceStatus: emp.employment_status
         }))
       }
     ];
@@ -527,16 +527,16 @@ export class AppController {
 
     const events = employees.map((emp, index) => ({
       id: `event-${emp.id}-${Date.now()}`,
-      type: emp.employmentStatus === 'ACTIVE' ? 'CLOCK_IN' : 
-            emp.employmentStatus === 'ON_LEAVE' ? 'ON_LEAVE' :
-            emp.employmentStatus === 'INACTIVE' ? 'NO_SHOW' : 'CLOCK_OUT',
-      employeeName: `${emp.firstName} ${emp.lastName}`,
+      type: emp.employment_status === 'ACTIVE' ? 'CLOCK_IN' : 
+            emp.employment_status === 'ON_LEAVE' ? 'ON_LEAVE' :
+            emp.employment_status === 'INACTIVE' ? 'NO_SHOW' : 'CLOCK_OUT',
+      employeeName: `${emp.first_name} ${emp.last_name}`,
       employeeId: emp.id,
       siteName: 'Main Site', // Would get from assignments in real implementation
       timestamp: new Date(Date.now() - (index * 300000)).toISOString(), // Stagger events
-      severity: emp.employmentStatus === 'ON_LEAVE' ? 'MEDIUM' :
-               emp.employmentStatus === 'INACTIVE' ? 'HIGH' : 'LOW',
-      metadata: emp.employmentStatus === 'ON_LEAVE' ? { reason: 'On Leave' } : {}
+      severity: emp.employment_status === 'ON_LEAVE' ? 'MEDIUM' :
+               emp.employment_status === 'INACTIVE' ? 'HIGH' : 'LOW',
+      metadata: emp.employment_status === 'ON_LEAVE' ? { reason: 'On Leave' } : {}
     }));
     
     return {

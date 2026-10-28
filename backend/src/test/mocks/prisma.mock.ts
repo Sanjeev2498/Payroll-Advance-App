@@ -241,7 +241,7 @@ export const createRepositoryMock = () => ({
   findByContractStatus: jest.fn(),
   
   // Site-specific methods
-  getSiteStats: jest.fn(),
+  getSitesStats: jest.fn(),
   findByClientId: jest.fn(),
   findByOperationalStatus: jest.fn(),
   

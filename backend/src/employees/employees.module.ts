@@ -3,7 +3,7 @@ import { EmployeesService } from './employees.service';
 import { EmployeesController } from './employees.controller';
 import { EmployeePortalController } from './employee-portal.controller';
 import { EmployeePortalService } from './employee-portal.service';
-import { EmployeeRepository } from '../common/repositories/employee.repository';
+import { EmployeeRepository } from './repositories/employee.repository';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CommonModule } from '../common/common.module';
 

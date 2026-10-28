@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -296,18 +296,18 @@ export class AssignmentsService {
 
     try {
       // Get available employees based on criteria
-      const availableEmployees = await this.employeesService.findAvailable(
+      const availableEmployees = (await this.employeesService.findAvailable(
         requestDto.startDate,
         requestDto.endDate,
         requestDto.requiredSkills,
-      );
+      ) as any) || [];
 
       // Apply additional filters
       let filteredEmployees = availableEmployees;
 
       if (requestDto.maxHourlyRate) {
         filteredEmployees = filteredEmployees.filter(employee => {
-          const metadata = (employee.metadata as any) || {};
+          const metadata = ((employee as any)?.metadata) || {};
           const hourlyRate = metadata.hourlyRate || 0;
           return hourlyRate <= requestDto.maxHourlyRate!;
         });
@@ -315,7 +315,7 @@ export class AssignmentsService {
 
       if (requestDto.minPerformanceRating) {
         filteredEmployees = filteredEmployees.filter(employee => {
-          const metadata = (employee.metadata as any) || {};
+          const metadata = ((employee as any)?.metadata) || {};
           const performance = metadata.performanceMetrics || {};
           return (performance.overallRating || 0) >= requestDto.minPerformanceRating!;
         });
@@ -458,7 +458,7 @@ export class AssignmentsService {
     for (const employee of employees) {
       const employeeSkills = employee.skills || [];
       const employeeCertifications = (employee.certifications as any) || [];
-      const metadata = (employee.metadata as any) || {};
+      const metadata = ((employee as any)?.metadata) || {};
 
       // Calculate skill matching
       const skillMatching = this.calculateSkillMatching(employeeSkills, requestDto.requiredSkills || []);

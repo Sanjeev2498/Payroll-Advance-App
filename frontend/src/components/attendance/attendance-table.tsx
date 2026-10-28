@@ -305,7 +305,9 @@ export const AttendanceTable: React.FC<AttendanceTableProps> = ({
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{site?.name}</span>
-                    <span className="text-xs text-gray-500">{site?.client?.name}</span>
+                    <span className="text-xs text-gray-500">
+                      {site?.client?.name || (site as any)?.contracts?.client?.name || 'No client'}
+                    </span>
                   </div>
                 </TableCell>
 

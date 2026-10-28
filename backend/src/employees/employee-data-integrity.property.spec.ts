@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../common/tenant-context.service';
 import { DataTransformService } from '../common/services/data-transform.service';
 import { EncryptionUtil } from '../common/utils/encryption.util';
-import { EmployeeRepository } from '../common/repositories/employee.repository';
+import { EmployeeRepository } from './repositories/employee.repository';
 import { EmployeesService } from './employees.service';
 import { EmploymentType } from './dto';
 import { getErrorMessage, getErrorStack, formatError } from '../common/utils/error.util';

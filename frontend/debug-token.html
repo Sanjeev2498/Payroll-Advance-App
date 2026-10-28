@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug JWT Token</title>
+</head>
+<body>
+    <h1>Debug JWT Token</h1>
+    <div>
+        <h2>Cookie Token:</h2>
+        <div id="cookie-token"></div>
+    </div>
+    <div>
+        <h2>Decoded Token:</h2>
+        <pre id="decoded-token"></pre>
+    </div>
+    <div>
+        <h2>LocalStorage Auth:</h2>
+        <pre id="localstorage-auth"></pre>
+    </div>
+    
+    <script>
+        function decodeJWT(token) {
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) return 'Invalid JWT format';
+                
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+                
+                return {
+                    header,
+                    payload,
+                    isExpired: payload.exp && payload.exp < Math.floor(Date.now() / 1000)
+                };
+            } catch (error) {
+                return 'Error decoding token: ' + error.message;
+            }
+        }
+        
+        // Get token from cookie
+        const cookies = document.cookie.split(';');
+        let authToken = null;
+        
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'auth-token') {
+                authToken = value;
+                break;
+            }
+        }
+        
+        document.getElementById('cookie-token').textContent = authToken || 'No auth-token cookie found';
+        
+        if (authToken) {
+            const decoded = decodeJWT(authToken);
+            document.getElementById('decoded-token').textContent = JSON.stringify(decoded, null, 2);
+        }
+        
+        // Get localStorage auth data
+        const authStorage = localStorage.getItem('auth-storage');
+        document.getElementById('localstorage-auth').textContent = authStorage || 'No auth-storage found';
+    </script>
+</body>
+</html>

@@ -83,10 +83,20 @@ export default function SitesManagementPage() {
     }
   }
 
+  // Helper function to get client name from site
+  const getClientName = (site: Site): string => {
+    // Handle both direct client relation and contract.client relation
+    if (site.client?.name) return site.client.name
+    if ((site as any).contracts?.client?.name) return (site as any).contracts.client.name
+    if (site.contract?.client?.name) return site.contract.client.name
+    return 'No client assigned'
+  }
+
   const filteredSites = (sites || []).filter(site => {
+    const clientName = getClientName(site)
     const matchesSearch = !searchTerm || 
       site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (site.client?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+      clientName.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesStatus = statusFilter === 'ALL' || site.operationalStatus === statusFilter
     
@@ -223,7 +233,7 @@ export default function SitesManagementPage() {
                       <div className="space-y-1">
                         <CardTitle className="text-lg">{site.name}</CardTitle>
                         <CardDescription>
-                          {site.client?.name || 'No client assigned'}
+                          {getClientName(site)}
                         </CardDescription>
                       </div>
                       <Badge className={getStatusColor(site.operationalStatus)}>

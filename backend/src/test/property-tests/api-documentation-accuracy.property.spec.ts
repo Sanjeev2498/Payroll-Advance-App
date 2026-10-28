@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, HttpStatus } from '@nestjs/common';
+import { INestApplication, ValidationPipe, HttpStatus, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder, OpenAPIObject } from '@nestjs/swagger';
 import { AppModule } from '../../app.module';
 import { ApiDocsGenerator } from '../../common/utils/api-docs-generator';
@@ -60,9 +60,8 @@ describe('API Documentation Accuracy Property Tests', () => {
 
     app.setGlobalPrefix('api');
     app.enableVersioning({
-      type: 1, // VersioningType.URI
+      type: VersioningType.URI,
       defaultVersion: '1',
-      prefix: 'v',
     });
 
     // Generate comprehensive Swagger documentation
@@ -657,12 +656,12 @@ describe('API Documentation Accuracy Property Tests', () => {
         
         // Should have JWT bearer auth
         expect(securitySchemes?.['JWT-auth']).toBeDefined();
-        expect(securitySchemes?.['JWT-auth'].type).toBe('http');
-        expect(securitySchemes?.['JWT-auth'].scheme).toBe('bearer');
+        expect((securitySchemes?.['JWT-auth'] as any).type).toBe('http');
+        expect((securitySchemes?.['JWT-auth'] as any).scheme).toBe('bearer');
         
         // Should have API key auth
         expect(securitySchemes?.['api-key']).toBeDefined();
-        expect(securitySchemes?.['api-key'].type).toBe('apiKey');
+        expect((securitySchemes?.['api-key'] as any).type).toBe('apiKey');
       });
 
       it('should validate all endpoints have proper tags and descriptions', () => {

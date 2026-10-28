@@ -657,12 +657,17 @@ describe('Property 22: Payroll Dashboard Accuracy', () => {
           const newRun = {
             id: 'new-kpi-run',
             run_number: 'KPI-NEW-001',
+            runNumber: 'KPI-NEW-001', // Add camelCase version
             status: PayrollStatus.COMPLETED,
             total_amount: new Decimal(newRunAmount),
+            totalAmount: newRunAmount, // Add camelCase version  
             employee_count: employees.length,
+            employeeCount: employees.length, // Add camelCase version
             created_at: new Date(),
             pay_period_start: new Date('2024-01-01'),
+            payPeriodStart: new Date('2024-01-01'), // Add camelCase version
             pay_period_end: new Date('2024-01-31'),
+            payPeriodEnd: new Date('2024-01-31'), // Add camelCase version
           };
 
           // Update mock data to include new run

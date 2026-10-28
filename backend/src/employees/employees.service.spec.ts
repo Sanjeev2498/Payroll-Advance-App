@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { EmployeesService } from './employees.service';
-import { EmployeeRepository } from '../common/repositories/employee.repository';
+import { EmployeeRepository } from './repositories/employee.repository';
 import { TenantContextService } from '../common/tenant-context.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { DataTransformService } from '../common/services/data-transform.service';
@@ -44,19 +44,24 @@ describe('EmployeesService', () => {
     const mockEmployeeRepository = {
       create: jest.fn().mockResolvedValue(mockEmployee),
       findById: jest.fn().mockResolvedValue(mockEmployee),
+      findOne: jest.fn().mockResolvedValue(mockEmployee),
       findMany: jest.fn().mockResolvedValue([mockEmployee]),
       update: jest.fn().mockResolvedValue(mockEmployee),
       delete: jest.fn().mockResolvedValue({ ...mockEmployee, employmentStatus: EmploymentStatus.TERMINATED }),
+      count: jest.fn().mockResolvedValue(1),
+      findByEmployeeNumber: jest.fn().mockResolvedValue(null),
       findBySkills: jest.fn().mockResolvedValue([mockEmployee]),
-      searchEmployees: jest.fn().mockResolvedValue([mockEmployee]),
       getStats: jest.fn().mockResolvedValue({
         total: 10,
         active: 8,
         inactive: 1,
         onLeave: 1,
         terminated: 0,
+        certificationsExpiringSoon: 0,
+        complianceIssues: 0,
+        averagePerformanceRating: 0,
       }),
-      findAvailable: jest.fn().mockResolvedValue([mockEmployee]),
+      findExpiringCertifications: jest.fn().mockResolvedValue([mockEmployee]),
     };
 
     const mockPrismaService = {
@@ -121,7 +126,7 @@ describe('EmployeesService', () => {
     }).compile();
 
     service = module.get<EmployeesService>(EmployeesService);
-    employeeRepository = module.get<EmployeeRepository>(EmployeeRepository);
+    employeeRepository = module.get<EmployeeRepository>(EmployeeRepository) as jest.Mocked<EmployeeRepository>;
     prismaService = module.get(PrismaService);
     tenantContext = await module.resolve(TenantContextService);
     dataTransformService = module.get(DataTransformService);

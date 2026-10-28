@@ -119,6 +119,15 @@ export default function SiteOperationsPage() {
     }
   }
 
+  // Helper function to get client name from site
+  const getClientName = (site: Site): string => {
+    // Handle both direct client relation and contract.client relation
+    if (site.client?.name) return site.client.name
+    if ((site as any).contracts?.client?.name) return (site as any).contracts.client.name
+    if (site.contract?.client?.name) return site.contract.client.name
+    return 'No client assigned'
+  }
+
   if (loading) {
     return (
       <div className="space-y-6 bg-gray-100 min-h-full">
@@ -186,7 +195,7 @@ export default function SiteOperationsPage() {
           <div>
             <h1 className="text-3xl font-bold">{site.name}</h1>
             <p className="text-muted-foreground">
-              Site Operations Management - {site.client?.name || 'No client assigned'}
+              Site Operations Management - {getClientName(site)}
             </p>
           </div>
         </div>

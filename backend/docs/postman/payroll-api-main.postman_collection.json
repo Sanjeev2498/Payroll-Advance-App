@@ -38,8 +38,8 @@
       "description": "App related endpoints",
       "item": [
         {
-          "name": "Get api",
-          "description": "Retrieve a list of api with optional filtering, sorting, and pagination.",
+          "name": "Get v1",
+          "description": "Retrieve a list of v1 with optional filtering, sorting, and pagination.",
           "request": {
             "method": "GET",
             "header": [
@@ -50,12 +50,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api",
+              "raw": "{{base_url}}/api/v1",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "api"
+                "api",
+                "v1"
               ]
             }
           },
@@ -106,12 +107,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/health",
+              "raw": "{{base_url}}/api/v1/health",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "health"
               ]
             }
@@ -163,12 +165,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/health/database",
+              "raw": "{{base_url}}/api/v1/health/database",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "health",
                 "database"
               ]
@@ -221,12 +224,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/supervisor-portal/dashboard",
+              "raw": "{{base_url}}/api/v1/supervisor-portal/dashboard",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "supervisor-portal",
                 "dashboard"
               ]
@@ -279,12 +283,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/supervisor-portal/muster-roll",
+              "raw": "{{base_url}}/api/v1/supervisor-portal/muster-roll",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "supervisor-portal",
                 "muster-roll"
               ]
@@ -337,12 +342,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/supervisor-portal/sites/health",
+              "raw": "{{base_url}}/api/v1/supervisor-portal/sites/health",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "supervisor-portal",
                 "sites",
                 "health"
@@ -396,12 +402,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/supervisor-portal/attendance/update",
+              "raw": "{{base_url}}/api/v1/supervisor-portal/attendance/update",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "supervisor-portal",
                 "attendance",
                 "update"
@@ -465,12 +472,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/supervisor-portal/attendance/audit-trail",
+              "raw": "{{base_url}}/api/v1/supervisor-portal/attendance/audit-trail",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "supervisor-portal",
                 "attendance",
                 "audit-trail"
@@ -524,12 +532,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/communication/incidents",
+              "raw": "{{base_url}}/api/v1/client-portal/communication/incidents",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "communication",
                 "incidents"
@@ -583,12 +592,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/communication/complaints",
+              "raw": "{{base_url}}/api/v1/client-portal/communication/complaints",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "communication",
                 "complaints"
@@ -642,12 +652,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/communication/requests",
+              "raw": "{{base_url}}/api/v1/client-portal/communication/requests",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "communication",
                 "requests"
@@ -701,12 +712,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/guards",
+              "raw": "{{base_url}}/api/v1/client-portal/guards",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "guards"
               ]
@@ -759,12 +771,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/real-time-events",
+              "raw": "{{base_url}}/api/v1/attendance/real-time-events",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "real-time-events"
               ]
@@ -823,12 +836,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/stats",
+              "raw": "{{base_url}}/api/v1/employees/stats",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "stats"
               ]
@@ -891,12 +905,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees",
+              "raw": "{{base_url}}/api/v1/employees",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees"
               ]
             },
@@ -977,12 +992,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees",
+              "raw": "{{base_url}}/api/v1/employees",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees"
               ],
               "query": [
@@ -1116,12 +1132,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/search",
+              "raw": "{{base_url}}/api/v1/employees/search",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "search"
               ],
@@ -1216,12 +1233,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/by-skills",
+              "raw": "{{base_url}}/api/v1/employees/by-skills",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "by-skills"
               ],
@@ -1291,12 +1309,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/available",
+              "raw": "{{base_url}}/api/v1/employees/available",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "available"
               ],
@@ -1376,12 +1395,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/expiring-certifications",
+              "raw": "{{base_url}}/api/v1/employees/expiring-certifications",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "expiring-certifications"
               ],
@@ -1451,12 +1471,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/{id}",
+              "raw": "{{base_url}}/api/v1/employees/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "{id}"
               ]
@@ -1519,12 +1540,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/{id}",
+              "raw": "{{base_url}}/api/v1/employees/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "{id}"
               ]
@@ -1596,12 +1618,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/{id}",
+              "raw": "{{base_url}}/api/v1/employees/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "{id}"
               ]
@@ -1664,12 +1687,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/{id}/documents",
+              "raw": "{{base_url}}/api/v1/employees/{id}/documents",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "{id}",
                 "documents"
@@ -1750,12 +1774,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employees/{id}/documents",
+              "raw": "{{base_url}}/api/v1/employees/{id}/documents",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employees",
                 "{id}",
                 "documents"
@@ -1844,12 +1869,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients",
+              "raw": "{{base_url}}/api/v1/clients",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients"
               ],
               "query": [
@@ -1958,12 +1984,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients",
+              "raw": "{{base_url}}/api/v1/clients",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients"
               ]
             },
@@ -2044,12 +2071,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/stats",
+              "raw": "{{base_url}}/api/v1/clients/stats",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "stats"
               ]
@@ -2112,12 +2140,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/expiring",
+              "raw": "{{base_url}}/api/v1/clients/expiring",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "expiring"
               ],
@@ -2187,12 +2216,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/by-status/{status}",
+              "raw": "{{base_url}}/api/v1/clients/by-status/{status}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "by-status",
                 "{status}"
@@ -2256,12 +2286,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}",
+              "raw": "{{base_url}}/api/v1/clients/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}"
               ]
@@ -2324,12 +2355,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}",
+              "raw": "{{base_url}}/api/v1/clients/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}"
               ]
@@ -2401,12 +2433,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}",
+              "raw": "{{base_url}}/api/v1/clients/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}"
               ]
@@ -2469,12 +2502,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}/performance",
+              "raw": "{{base_url}}/api/v1/clients/{id}/performance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}",
                 "performance"
@@ -2538,12 +2572,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}/renewal",
+              "raw": "{{base_url}}/api/v1/clients/{id}/renewal",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}",
                 "renewal"
@@ -2607,12 +2642,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}/onboarding",
+              "raw": "{{base_url}}/api/v1/clients/{id}/onboarding",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}",
                 "onboarding"
@@ -2676,12 +2712,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}/dashboard",
+              "raw": "{{base_url}}/api/v1/clients/{id}/dashboard",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}",
                 "dashboard"
@@ -2745,12 +2782,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}/notes",
+              "raw": "{{base_url}}/api/v1/clients/{id}/notes",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}",
                 "notes"
@@ -2823,12 +2861,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/clients/{id}/follow-up",
+              "raw": "{{base_url}}/api/v1/clients/{id}/follow-up",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "clients",
                 "{id}",
                 "follow-up"
@@ -2917,12 +2956,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/auth/login",
+              "raw": "{{base_url}}/api/v1/auth/login",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "login"
               ]
@@ -2994,12 +3034,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/auth/refresh",
+              "raw": "{{base_url}}/api/v1/auth/refresh",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "refresh"
               ]
@@ -3071,12 +3112,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/auth/logout",
+              "raw": "{{base_url}}/api/v1/auth/logout",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "logout"
               ]
@@ -3149,12 +3191,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/auth/change-password",
+              "raw": "{{base_url}}/api/v1/auth/change-password",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "change-password"
               ]
@@ -3236,12 +3279,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/auth/profile",
+              "raw": "{{base_url}}/api/v1/auth/profile",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "profile"
               ]
@@ -3304,12 +3348,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/auth/health",
+              "raw": "{{base_url}}/api/v1/auth/health",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "health"
               ]
@@ -3368,12 +3413,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users",
+              "raw": "{{base_url}}/api/v1/users",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users"
               ]
             },
@@ -3444,12 +3490,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users",
+              "raw": "{{base_url}}/api/v1/users",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users"
               ]
             }
@@ -3517,12 +3564,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/create-with-temp-password",
+              "raw": "{{base_url}}/api/v1/users/create-with-temp-password",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "create-with-temp-password"
               ]
@@ -3585,12 +3633,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/register",
+              "raw": "{{base_url}}/api/v1/users/register",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "register"
               ]
@@ -3662,12 +3711,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/stats",
+              "raw": "{{base_url}}/api/v1/users/stats",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "stats"
               ]
@@ -3720,12 +3770,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/profile",
+              "raw": "{{base_url}}/api/v1/users/profile",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "profile"
               ]
@@ -3778,12 +3829,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/{id}",
+              "raw": "{{base_url}}/api/v1/users/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "{id}"
               ]
@@ -3836,12 +3888,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/{id}",
+              "raw": "{{base_url}}/api/v1/users/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "{id}"
               ]
@@ -3903,12 +3956,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/{id}",
+              "raw": "{{base_url}}/api/v1/users/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "{id}"
               ]
@@ -3961,12 +4015,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/profile/{id}",
+              "raw": "{{base_url}}/api/v1/users/profile/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "profile",
                 "{id}"
@@ -4029,12 +4084,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/{id}/password",
+              "raw": "{{base_url}}/api/v1/users/{id}/password",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "{id}",
                 "password"
@@ -4097,12 +4153,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/{id}/reset-password",
+              "raw": "{{base_url}}/api/v1/users/{id}/reset-password",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "{id}",
                 "reset-password"
@@ -4166,12 +4223,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/{id}/deactivate",
+              "raw": "{{base_url}}/api/v1/users/{id}/deactivate",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "{id}",
                 "deactivate"
@@ -4225,12 +4283,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/users/{id}/reactivate",
+              "raw": "{{base_url}}/api/v1/users/{id}/reactivate",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "users",
                 "{id}",
                 "reactivate"
@@ -4290,12 +4349,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites",
+              "raw": "{{base_url}}/api/v1/sites",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites"
               ]
             },
@@ -4366,12 +4426,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites",
+              "raw": "{{base_url}}/api/v1/sites",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites"
               ],
               "query": [
@@ -4490,12 +4551,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/stats",
+              "raw": "{{base_url}}/api/v1/sites/stats",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "stats"
               ]
@@ -4548,12 +4610,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/by-client/{clientId}",
+              "raw": "{{base_url}}/api/v1/sites/by-client/{clientId}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "by-client",
                 "{clientId}"
@@ -4607,12 +4670,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/by-status/{status}",
+              "raw": "{{base_url}}/api/v1/sites/by-status/{status}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "by-status",
                 "{status}"
@@ -4666,12 +4730,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/{id}",
+              "raw": "{{base_url}}/api/v1/sites/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "{id}"
               ]
@@ -4724,12 +4789,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/{id}",
+              "raw": "{{base_url}}/api/v1/sites/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "{id}"
               ]
@@ -4791,12 +4857,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/{id}",
+              "raw": "{{base_url}}/api/v1/sites/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "{id}"
               ]
@@ -4849,12 +4916,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/{id}/employees",
+              "raw": "{{base_url}}/api/v1/sites/{id}/employees",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "{id}",
                 "employees"
@@ -4908,12 +4976,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/{id}/attendance",
+              "raw": "{{base_url}}/api/v1/sites/{id}/attendance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "{id}",
                 "attendance"
@@ -4974,12 +5043,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/{id}/assignments",
+              "raw": "{{base_url}}/api/v1/sites/{id}/assignments",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "{id}",
                 "assignments"
@@ -5033,12 +5103,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/{id}/shifts",
+              "raw": "{{base_url}}/api/v1/sites/{id}/shifts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "{id}",
                 "shifts"
@@ -5099,12 +5170,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/sites/{id}/performance",
+              "raw": "{{base_url}}/api/v1/sites/{id}/performance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "sites",
                 "{id}",
                 "performance"
@@ -5164,12 +5236,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/dashboard",
+              "raw": "{{base_url}}/api/v1/employee-portal/dashboard",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "dashboard"
               ]
@@ -5232,12 +5305,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/attendance",
+              "raw": "{{base_url}}/api/v1/employee-portal/attendance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "attendance"
               ],
@@ -5317,12 +5391,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/shifts",
+              "raw": "{{base_url}}/api/v1/employee-portal/shifts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "shifts"
               ],
@@ -5402,12 +5477,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/payroll",
+              "raw": "{{base_url}}/api/v1/employee-portal/payroll",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "payroll"
               ],
@@ -5482,12 +5558,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/payroll/{payrollId}/download",
+              "raw": "{{base_url}}/api/v1/employee-portal/payroll/{payrollId}/download",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "payroll",
                 "{payrollId}",
@@ -5552,12 +5629,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/documents",
+              "raw": "{{base_url}}/api/v1/employee-portal/documents",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "documents"
               ]
@@ -5620,12 +5698,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/notifications",
+              "raw": "{{base_url}}/api/v1/employee-portal/notifications",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "notifications"
               ],
@@ -5695,12 +5774,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/notifications/{notificationId}/mark-read",
+              "raw": "{{base_url}}/api/v1/employee-portal/notifications/{notificationId}/mark-read",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "notifications",
                 "{notificationId}",
@@ -5775,12 +5855,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/profile",
+              "raw": "{{base_url}}/api/v1/employee-portal/profile",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "profile"
               ]
@@ -5843,12 +5924,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/profile",
+              "raw": "{{base_url}}/api/v1/employee-portal/profile",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "profile"
               ]
@@ -5920,12 +6002,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/clock-in",
+              "raw": "{{base_url}}/api/v1/employee-portal/clock-in",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "clock-in"
               ]
@@ -6007,12 +6090,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/employee-portal/clock-out",
+              "raw": "{{base_url}}/api/v1/employee-portal/clock-out",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "employee-portal",
                 "clock-out"
               ]
@@ -6100,12 +6184,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments",
+              "raw": "{{base_url}}/api/v1/assignments",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments"
               ]
             },
@@ -6186,12 +6271,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments",
+              "raw": "{{base_url}}/api/v1/assignments",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments"
               ],
               "query": [
@@ -6365,12 +6451,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments/stats",
+              "raw": "{{base_url}}/api/v1/assignments/stats",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments",
                 "stats"
               ]
@@ -6433,12 +6520,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments/recommend",
+              "raw": "{{base_url}}/api/v1/assignments/recommend",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments",
                 "recommend"
               ]
@@ -6520,12 +6608,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments/conflicts",
+              "raw": "{{base_url}}/api/v1/assignments/conflicts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments",
                 "conflicts"
               ]
@@ -6607,12 +6696,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments/by-employee/{employeeId}",
+              "raw": "{{base_url}}/api/v1/assignments/by-employee/{employeeId}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments",
                 "by-employee",
                 "{employeeId}"
@@ -6676,12 +6766,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments/by-site/{siteId}",
+              "raw": "{{base_url}}/api/v1/assignments/by-site/{siteId}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments",
                 "by-site",
                 "{siteId}"
@@ -6745,12 +6836,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments/{id}",
+              "raw": "{{base_url}}/api/v1/assignments/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments",
                 "{id}"
               ]
@@ -6813,12 +6905,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments/{id}",
+              "raw": "{{base_url}}/api/v1/assignments/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments",
                 "{id}"
               ]
@@ -6890,12 +6983,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/assignments/{id}",
+              "raw": "{{base_url}}/api/v1/assignments/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "assignments",
                 "{id}"
               ]
@@ -6964,12 +7058,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts",
+              "raw": "{{base_url}}/api/v1/contracts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts"
               ]
             },
@@ -7050,12 +7145,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts",
+              "raw": "{{base_url}}/api/v1/contracts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts"
               ],
               "query": [
@@ -7139,12 +7235,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}",
+              "raw": "{{base_url}}/api/v1/contracts/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}"
               ]
@@ -7207,12 +7304,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}",
+              "raw": "{{base_url}}/api/v1/contracts/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}"
               ]
@@ -7284,12 +7382,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}",
+              "raw": "{{base_url}}/api/v1/contracts/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}"
               ]
@@ -7352,12 +7451,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}/amendments",
+              "raw": "{{base_url}}/api/v1/contracts/{id}/amendments",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}",
                 "amendments"
@@ -7431,12 +7531,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}/amendments/{amendmentId}/approve",
+              "raw": "{{base_url}}/api/v1/contracts/{id}/amendments/{amendmentId}/approve",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}",
                 "amendments",
@@ -7511,12 +7612,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}/renewals",
+              "raw": "{{base_url}}/api/v1/contracts/{id}/renewals",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}",
                 "renewals"
@@ -7590,12 +7692,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}/renewals/{renewalId}/approve",
+              "raw": "{{base_url}}/api/v1/contracts/{id}/renewals/{renewalId}/approve",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}",
                 "renewals",
@@ -7670,12 +7773,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}/sla-reports",
+              "raw": "{{base_url}}/api/v1/contracts/{id}/sla-reports",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}",
                 "sla-reports"
@@ -7749,12 +7853,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}/sla-compliance",
+              "raw": "{{base_url}}/api/v1/contracts/{id}/sla-compliance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}",
                 "sla-compliance"
@@ -7850,12 +7955,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}/performance-metrics",
+              "raw": "{{base_url}}/api/v1/contracts/{id}/performance-metrics",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}",
                 "performance-metrics"
@@ -7931,12 +8037,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/contracts/{id}/billing-summary",
+              "raw": "{{base_url}}/api/v1/contracts/{id}/billing-summary",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "contracts",
                 "{id}",
                 "billing-summary"
@@ -8013,12 +8120,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices",
+              "raw": "{{base_url}}/api/v1/billing/invoices",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices"
               ]
@@ -8090,12 +8198,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices",
+              "raw": "{{base_url}}/api/v1/billing/invoices",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices"
               ]
@@ -8148,12 +8257,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices/{id}",
+              "raw": "{{base_url}}/api/v1/billing/invoices/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices",
                 "{id}"
@@ -8207,12 +8317,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices/{id}",
+              "raw": "{{base_url}}/api/v1/billing/invoices/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices",
                 "{id}"
@@ -8275,12 +8386,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices/{id}",
+              "raw": "{{base_url}}/api/v1/billing/invoices/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices",
                 "{id}"
@@ -8334,12 +8446,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices/{id}/send",
+              "raw": "{{base_url}}/api/v1/billing/invoices/{id}/send",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices",
                 "{id}",
@@ -8394,12 +8507,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/calculate",
+              "raw": "{{base_url}}/api/v1/billing/calculate",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "calculate"
               ]
@@ -8471,12 +8585,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices/{id}/pdf",
+              "raw": "{{base_url}}/api/v1/billing/invoices/{id}/pdf",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices",
                 "{id}",
@@ -8541,12 +8656,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/statistics",
+              "raw": "{{base_url}}/api/v1/billing/statistics",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "statistics"
               ],
@@ -8609,12 +8725,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/analytics",
+              "raw": "{{base_url}}/api/v1/billing/analytics",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "analytics"
               ],
@@ -8677,12 +8794,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/analytics/detailed",
+              "raw": "{{base_url}}/api/v1/billing/analytics/detailed",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "analytics",
                 "detailed"
@@ -8750,12 +8868,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/validate-gstin",
+              "raw": "{{base_url}}/api/v1/billing/validate-gstin",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "validate-gstin"
               ]
@@ -8818,12 +8937,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/gst-compliance",
+              "raw": "{{base_url}}/api/v1/billing/gst-compliance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "gst-compliance"
               ]
@@ -8886,12 +9006,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/gst-calculate",
+              "raw": "{{base_url}}/api/v1/billing/gst-calculate",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "gst-calculate"
               ]
@@ -8954,12 +9075,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/contracts/{contractId}/invoice-number-preview",
+              "raw": "{{base_url}}/api/v1/billing/contracts/{contractId}/invoice-number-preview",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "contracts",
                 "{contractId}",
@@ -9014,12 +9136,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices/bulk/send",
+              "raw": "{{base_url}}/api/v1/billing/invoices/bulk/send",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices",
                 "bulk",
@@ -9074,12 +9197,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/invoices/overdue",
+              "raw": "{{base_url}}/api/v1/billing/invoices/overdue",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "invoices",
                 "overdue"
@@ -9133,12 +9257,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/monthly-summary",
+              "raw": "{{base_url}}/api/v1/billing/monthly-summary",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "monthly-summary"
               ],
@@ -9201,12 +9326,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/export",
+              "raw": "{{base_url}}/api/v1/billing/export",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "export"
               ],
@@ -9265,12 +9391,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/rates",
+              "raw": "{{base_url}}/api/v1/billing/rates",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "rates"
               ]
@@ -9323,12 +9450,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/billing/rates",
+              "raw": "{{base_url}}/api/v1/billing/rates",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "billing",
                 "rates"
               ]
@@ -9387,12 +9515,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/payroll-reports",
+              "raw": "{{base_url}}/api/v1/financial-reports/payroll-reports",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "payroll-reports"
               ],
@@ -9487,12 +9616,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/billing-reports",
+              "raw": "{{base_url}}/api/v1/financial-reports/billing-reports",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "billing-reports"
               ],
@@ -9587,12 +9717,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/site-profitability",
+              "raw": "{{base_url}}/api/v1/financial-reports/site-profitability",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "site-profitability"
               ],
@@ -9687,12 +9818,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/financial-forecasts",
+              "raw": "{{base_url}}/api/v1/financial-reports/financial-forecasts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "financial-forecasts"
               ],
@@ -9762,12 +9894,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/cost-optimization",
+              "raw": "{{base_url}}/api/v1/financial-reports/cost-optimization",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "cost-optimization"
               ]
@@ -9830,12 +9963,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/dashboard",
+              "raw": "{{base_url}}/api/v1/financial-reports/dashboard",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "dashboard"
               ],
@@ -9930,12 +10064,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/export/payroll-report",
+              "raw": "{{base_url}}/api/v1/financial-reports/export/payroll-report",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "export",
                 "payroll-report"
@@ -10031,12 +10166,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/export/billing-report",
+              "raw": "{{base_url}}/api/v1/financial-reports/export/billing-report",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "export",
                 "billing-report"
@@ -10132,12 +10268,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/financial-reports/export/profitability-report",
+              "raw": "{{base_url}}/api/v1/financial-reports/export/profitability-report",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "financial-reports",
                 "export",
                 "profitability-report"
@@ -10239,12 +10376,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs",
+              "raw": "{{base_url}}/api/v1/payroll/runs",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs"
               ]
@@ -10326,12 +10464,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs",
+              "raw": "{{base_url}}/api/v1/payroll/runs",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs"
               ],
@@ -10406,12 +10545,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs/{id}",
+              "raw": "{{base_url}}/api/v1/payroll/runs/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs",
                 "{id}"
@@ -10475,12 +10615,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs/{id}/summary",
+              "raw": "{{base_url}}/api/v1/payroll/runs/{id}/summary",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs",
                 "{id}",
@@ -10545,12 +10686,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/employees/{employeeId}/history",
+              "raw": "{{base_url}}/api/v1/payroll/employees/{employeeId}/history",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "employees",
                 "{employeeId}",
@@ -10622,12 +10764,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs/batch",
+              "raw": "{{base_url}}/api/v1/payroll/runs/batch",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs",
                 "batch"
@@ -10710,12 +10853,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs/filtered",
+              "raw": "{{base_url}}/api/v1/payroll/runs/filtered",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs",
                 "filtered"
@@ -10811,12 +10955,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs/{id}/approval",
+              "raw": "{{base_url}}/api/v1/payroll/runs/{id}/approval",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs",
                 "{id}",
@@ -10890,12 +11035,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs/{id}/corrections",
+              "raw": "{{base_url}}/api/v1/payroll/runs/{id}/corrections",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs",
                 "{id}",
@@ -10969,12 +11115,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs/{id}/export",
+              "raw": "{{base_url}}/api/v1/payroll/runs/{id}/export",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs",
                 "{id}",
@@ -11058,12 +11205,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/runs/{id}/analytics",
+              "raw": "{{base_url}}/api/v1/payroll/runs/{id}/analytics",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "runs",
                 "{id}",
@@ -11128,12 +11276,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/analytics",
+              "raw": "{{base_url}}/api/v1/payroll/analytics",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "analytics"
               ]
@@ -11196,12 +11345,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/payroll/analytics/detailed",
+              "raw": "{{base_url}}/api/v1/payroll/analytics/detailed",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "payroll",
                 "analytics",
                 "detailed"
@@ -11277,12 +11427,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts",
+              "raw": "{{base_url}}/api/v1/shifts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts"
               ]
             },
@@ -11363,12 +11514,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts",
+              "raw": "{{base_url}}/api/v1/shifts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts"
               ],
               "query": [
@@ -11552,12 +11704,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/bulk",
+              "raw": "{{base_url}}/api/v1/shifts/bulk",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "bulk"
               ]
@@ -11639,12 +11792,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/stats",
+              "raw": "{{base_url}}/api/v1/shifts/stats",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "stats"
               ],
@@ -11719,12 +11873,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/coverage-needed",
+              "raw": "{{base_url}}/api/v1/shifts/coverage-needed",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "coverage-needed"
               ]
@@ -11787,12 +11942,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/assignment/{assignmentId}",
+              "raw": "{{base_url}}/api/v1/shifts/assignment/{assignmentId}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "assignment",
                 "{assignmentId}"
@@ -11856,12 +12012,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/site/{siteId}",
+              "raw": "{{base_url}}/api/v1/shifts/site/{siteId}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "site",
                 "{siteId}"
@@ -11937,12 +12094,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/{id}",
+              "raw": "{{base_url}}/api/v1/shifts/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "{id}"
               ]
@@ -12005,12 +12163,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/{id}",
+              "raw": "{{base_url}}/api/v1/shifts/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "{id}"
               ]
@@ -12082,12 +12241,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/{id}",
+              "raw": "{{base_url}}/api/v1/shifts/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "{id}"
               ],
@@ -12156,12 +12316,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/shifts/{id}/request-coverage",
+              "raw": "{{base_url}}/api/v1/shifts/{id}/request-coverage",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "shifts",
                 "{id}",
                 "request-coverage"
@@ -12241,12 +12402,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance",
+              "raw": "{{base_url}}/api/v1/attendance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance"
               ]
             },
@@ -12327,12 +12489,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance",
+              "raw": "{{base_url}}/api/v1/attendance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance"
               ],
               "query": [
@@ -12486,12 +12649,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/clock-in",
+              "raw": "{{base_url}}/api/v1/attendance/clock-in",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "clock-in"
               ]
@@ -12573,12 +12737,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/clock-out",
+              "raw": "{{base_url}}/api/v1/attendance/clock-out",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "clock-out"
               ]
@@ -12660,12 +12825,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/stats",
+              "raw": "{{base_url}}/api/v1/attendance/stats",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "stats"
               ],
@@ -12750,12 +12916,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/anomalies",
+              "raw": "{{base_url}}/api/v1/attendance/anomalies",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "anomalies"
               ],
@@ -12860,12 +13027,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/{id}",
+              "raw": "{{base_url}}/api/v1/attendance/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "{id}"
               ]
@@ -12928,12 +13096,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/{id}",
+              "raw": "{{base_url}}/api/v1/attendance/{id}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "{id}"
               ]
@@ -13005,12 +13174,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/{id}/correction",
+              "raw": "{{base_url}}/api/v1/attendance/{id}/correction",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "{id}",
                 "correction"
@@ -13093,12 +13263,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/{id}/correction/{correctionId}/approve",
+              "raw": "{{base_url}}/api/v1/attendance/{id}/correction/{correctionId}/approve",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "{id}",
                 "correction",
@@ -13183,12 +13354,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/bulk-update",
+              "raw": "{{base_url}}/api/v1/attendance/bulk-update",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "bulk-update"
               ]
@@ -13270,12 +13442,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/employee/{employeeId}/today",
+              "raw": "{{base_url}}/api/v1/attendance/employee/{employeeId}/today",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "employee",
                 "{employeeId}",
@@ -13340,12 +13513,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/attendance/employee/{employeeId}/current-status",
+              "raw": "{{base_url}}/api/v1/attendance/employee/{employeeId}/current-status",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "attendance",
                 "employee",
                 "{employeeId}",
@@ -13416,14 +13590,428 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/dashboard/overview",
+              "raw": "{{base_url}}/api/v1/dashboard/overview",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "dashboard",
                 "overview"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Basic response validation",
+                  "pm.test(\"Status code is successful\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required headers\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "// Error handling test",
+                  "pm.test(\"Error responses have proper format\", function () {",
+                  "    if (pm.response.code >= 400) {",
+                  "        const responseJson = pm.response.json();",
+                  "        pm.expect(responseJson.success).to.be.false;",
+                  "        pm.expect(responseJson.error).to.be.an(\"object\");",
+                  "        pm.expect(responseJson.error.code).to.be.a(\"string\");",
+                  "        pm.expect(responseJson.error.message).to.be.a(\"string\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get KPI metrics",
+          "description": "Returns key performance indicators for dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/kpis",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "kpis"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Basic response validation",
+                  "pm.test(\"Status code is successful\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required headers\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "// Error handling test",
+                  "pm.test(\"Error responses have proper format\", function () {",
+                  "    if (pm.response.code >= 400) {",
+                  "        const responseJson = pm.response.json();",
+                  "        pm.expect(responseJson.success).to.be.false;",
+                  "        pm.expect(responseJson.error).to.be.an(\"object\");",
+                  "        pm.expect(responseJson.error.code).to.be.a(\"string\");",
+                  "        pm.expect(responseJson.error.message).to.be.a(\"string\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get deployment metrics",
+          "description": "Returns deployment statistics for dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/deployments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "deployments"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Basic response validation",
+                  "pm.test(\"Status code is successful\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required headers\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "// Error handling test",
+                  "pm.test(\"Error responses have proper format\", function () {",
+                  "    if (pm.response.code >= 400) {",
+                  "        const responseJson = pm.response.json();",
+                  "        pm.expect(responseJson.success).to.be.false;",
+                  "        pm.expect(responseJson.error).to.be.an(\"object\");",
+                  "        pm.expect(responseJson.error.code).to.be.a(\"string\");",
+                  "        pm.expect(responseJson.error.message).to.be.a(\"string\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get operations overview",
+          "description": "Returns operations overview data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/operations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "operations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Basic response validation",
+                  "pm.test(\"Status code is successful\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required headers\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "// Error handling test",
+                  "pm.test(\"Error responses have proper format\", function () {",
+                  "    if (pm.response.code >= 400) {",
+                  "        const responseJson = pm.response.json();",
+                  "        pm.expect(responseJson.success).to.be.false;",
+                  "        pm.expect(responseJson.error).to.be.an(\"object\");",
+                  "        pm.expect(responseJson.error.code).to.be.a(\"string\");",
+                  "        pm.expect(responseJson.error.message).to.be.a(\"string\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get guard availability",
+          "description": "Returns guard availability metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/guards",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "guards"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Basic response validation",
+                  "pm.test(\"Status code is successful\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required headers\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "// Error handling test",
+                  "pm.test(\"Error responses have proper format\", function () {",
+                  "    if (pm.response.code >= 400) {",
+                  "        const responseJson = pm.response.json();",
+                  "        pm.expect(responseJson.success).to.be.false;",
+                  "        pm.expect(responseJson.error).to.be.an(\"object\");",
+                  "        pm.expect(responseJson.error.code).to.be.a(\"string\");",
+                  "        pm.expect(responseJson.error.message).to.be.a(\"string\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get activity timeline",
+          "description": "Returns recent activity timeline",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/activity",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "activity"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Basic response validation",
+                  "pm.test(\"Status code is successful\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required headers\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "// Error handling test",
+                  "pm.test(\"Error responses have proper format\", function () {",
+                  "    if (pm.response.code >= 400) {",
+                  "        const responseJson = pm.response.json();",
+                  "        pm.expect(responseJson.success).to.be.false;",
+                  "        pm.expect(responseJson.error).to.be.an(\"object\");",
+                  "        pm.expect(responseJson.error.code).to.be.a(\"string\");",
+                  "        pm.expect(responseJson.error.message).to.be.a(\"string\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get notifications",
+          "description": "Returns dashboard notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "notifications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Basic response validation",
+                  "pm.test(\"Status code is successful\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required headers\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "// Error handling test",
+                  "pm.test(\"Error responses have proper format\", function () {",
+                  "    if (pm.response.code >= 400) {",
+                  "        const responseJson = pm.response.json();",
+                  "        pm.expect(responseJson.success).to.be.false;",
+                  "        pm.expect(responseJson.error).to.be.an(\"object\");",
+                  "        pm.expect(responseJson.error.code).to.be.a(\"string\");",
+                  "        pm.expect(responseJson.error.message).to.be.a(\"string\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get real-time alerts",
+          "description": "Returns real-time alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/alerts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "alerts"
               ]
             }
           },
@@ -13480,12 +14068,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/monitoring/health",
+              "raw": "{{base_url}}/api/v1/monitoring/health",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "monitoring",
                 "health"
               ]
@@ -13538,12 +14127,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/monitoring/metrics",
+              "raw": "{{base_url}}/api/v1/monitoring/metrics",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "monitoring",
                 "metrics"
               ]
@@ -13596,12 +14186,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/monitoring/stats",
+              "raw": "{{base_url}}/api/v1/monitoring/stats",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "monitoring",
                 "stats"
               ],
@@ -13661,12 +14252,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/monitoring/performance",
+              "raw": "{{base_url}}/api/v1/monitoring/performance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "monitoring",
                 "performance"
               ]
@@ -13719,12 +14311,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/monitoring/errors",
+              "raw": "{{base_url}}/api/v1/monitoring/errors",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "monitoring",
                 "errors"
               ]
@@ -13783,12 +14376,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/sites",
+              "raw": "{{base_url}}/api/v1/deployment/sites",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "sites"
               ]
@@ -13851,12 +14445,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/conflicts",
+              "raw": "{{base_url}}/api/v1/deployment/conflicts",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "conflicts"
               ]
@@ -13919,12 +14514,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/efficiency",
+              "raw": "{{base_url}}/api/v1/deployment/efficiency",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "efficiency"
               ]
@@ -13987,12 +14583,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/analytics",
+              "raw": "{{base_url}}/api/v1/deployment/analytics",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "analytics"
               ],
@@ -14062,12 +14659,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/recommendations/{siteId}",
+              "raw": "{{base_url}}/api/v1/deployment/recommendations/{siteId}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "recommendations",
                 "{siteId}"
@@ -14131,12 +14729,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/sites/{siteId}/health",
+              "raw": "{{base_url}}/api/v1/deployment/sites/{siteId}/health",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "sites",
                 "{siteId}",
@@ -14201,12 +14800,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/quick-assign",
+              "raw": "{{base_url}}/api/v1/deployment/quick-assign",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "quick-assign"
               ]
@@ -14288,12 +14888,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/emergency-replacement",
+              "raw": "{{base_url}}/api/v1/deployment/emergency-replacement",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "emergency-replacement"
               ]
@@ -14375,12 +14976,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/bulk-assign",
+              "raw": "{{base_url}}/api/v1/deployment/bulk-assign",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "bulk-assign"
               ]
@@ -14462,12 +15064,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/optimize",
+              "raw": "{{base_url}}/api/v1/deployment/optimize",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "optimize"
               ]
@@ -14549,12 +15152,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/sites/{siteId}/requirements",
+              "raw": "{{base_url}}/api/v1/deployment/sites/{siteId}/requirements",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "sites",
                 "{siteId}",
@@ -14628,12 +15232,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deployment/conflicts/{conflictId}/resolve",
+              "raw": "{{base_url}}/api/v1/deployment/conflicts/{conflictId}/resolve",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "deployment",
                 "conflicts",
                 "{conflictId}",
@@ -14723,12 +15328,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/dashboard",
+              "raw": "{{base_url}}/api/v1/client-portal/dashboard",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "dashboard"
               ],
@@ -14808,12 +15414,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/guard-monitoring",
+              "raw": "{{base_url}}/api/v1/client-portal/guard-monitoring",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "guard-monitoring"
               ],
@@ -14898,12 +15505,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/guard-replacement",
+              "raw": "{{base_url}}/api/v1/client-portal/guard-replacement",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "guard-replacement"
               ],
@@ -14991,12 +15599,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/attendance",
+              "raw": "{{base_url}}/api/v1/client-portal/attendance",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "attendance"
               ],
@@ -15096,12 +15705,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/attendance/trends",
+              "raw": "{{base_url}}/api/v1/client-portal/attendance/trends",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "attendance",
                 "trends"
@@ -15202,12 +15812,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/billing",
+              "raw": "{{base_url}}/api/v1/client-portal/billing",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "billing"
               ],
@@ -15302,12 +15913,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/invoices/{invoiceId}/download",
+              "raw": "{{base_url}}/api/v1/client-portal/invoices/{invoiceId}/download",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "invoices",
                 "{invoiceId}",
@@ -15389,12 +16001,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/reports",
+              "raw": "{{base_url}}/api/v1/client-portal/reports",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "reports"
               ],
@@ -15489,12 +16102,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/reports/download",
+              "raw": "{{base_url}}/api/v1/client-portal/reports/download",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "reports",
                 "download"
@@ -15577,12 +16191,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/communication",
+              "raw": "{{base_url}}/api/v1/client-portal/communication",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "communication"
               ],
@@ -15652,12 +16267,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/complaints",
+              "raw": "{{base_url}}/api/v1/client-portal/complaints",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "complaints"
               ],
@@ -15746,12 +16362,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/client-portal/service-requests",
+              "raw": "{{base_url}}/api/v1/client-portal/service-requests",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "client-portal",
                 "service-requests"
               ],

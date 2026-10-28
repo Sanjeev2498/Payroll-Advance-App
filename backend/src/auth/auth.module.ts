@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { Reflector } from '@nestjs/core';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UserManagementController } from './controllers/user-management.controller';
@@ -47,6 +48,7 @@ import { RbacModule } from './rbac/rbac.module';
     // ClientUserAuthController, // TODO: Fix - depends on non-existent ClientUser table
   ],
   providers: [
+    Reflector, // Add Reflector to providers
     AuthService, 
     UserManagementService,
     // ClientUserAuthService, // TODO: Fix - depends on non-existent ClientUser table

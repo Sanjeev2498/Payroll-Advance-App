@@ -11,6 +11,15 @@ interface SiteDetailsDialogProps {
 }
 
 export function SiteDetailsDialog({ site, open, onOpenChange, onSiteUpdated }: SiteDetailsDialogProps) {
+  // Helper function to get client name from site
+  const getClientName = (site: Site): string => {
+    // Handle both direct client relation and contract.client relation
+    if (site.client?.name) return site.client.name
+    if ((site as any).contracts?.client?.name) return (site as any).contracts.client.name
+    if (site.contract?.client?.name) return site.contract.client.name
+    return 'No client assigned'
+  }
+
   if (!site) return null
 
   return (
@@ -22,7 +31,7 @@ export function SiteDetailsDialog({ site, open, onOpenChange, onSiteUpdated }: S
         <div className="space-y-4">
           <div>
             <h3 className="font-semibold">Client</h3>
-            <p className="text-muted-foreground">{site.client?.name || 'No client assigned'}</p>
+            <p className="text-muted-foreground">{getClientName(site)}</p>
           </div>
           <div>
             <h3 className="font-semibold">Status</h3>

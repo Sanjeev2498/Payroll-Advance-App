@@ -173,7 +173,7 @@ export class SitesService {
     }
   }
 
-  /**
+    /**
    * Find all sites with advanced filtering and pagination
    */
   async findAll(queryDto: SiteQueryDto) {
@@ -188,20 +188,39 @@ export class SitesService {
     const filters = {
       search: queryDto.search,
       clientId: queryDto.clientId,
-      operational_status: queryDto.operationalStatus,
+      operationalStatus: queryDto.operationalStatus,
     };
 
     try {
+      // Use the proper findMany method with pagination and filtering
       const result = await this.siteRepository.findMany(
         filters,
-        queryDto.page,
-        queryDto.limit,
-        queryDto.sortBy as keyof Site,
-        queryDto.sortOrder,
+        queryDto.page || 1,
+        queryDto.limit || 20,
+        queryDto.sortBy || 'name', 
+        queryDto.sortOrder || 'asc'
       );
 
-      this.logger.log(`Found ${result.total} sites`);
-      return result;
+      // Safety check for undefined result
+      const sites = result || [];
+      this.logger.log(`Found ${sites.length} sites`);
+      
+      return {
+        sites: sites.map((site) => ({
+          id: site.id,
+          name: site.name,
+          clientId: site.client_id, // Use consistent snake_case from database
+          address: site.address,
+          contactInfo: site.contact_info, // Use consistent snake_case from database
+          operationalStatus: site.operational_status, // Use consistent snake_case from database  
+          createdAt: site.created_at, // Use consistent snake_case from database
+          updatedAt: site.updated_at, // Use consistent snake_case from database
+        })),
+        total: sites.length,
+        page: queryDto.page || 1,
+        limit: queryDto.limit || 20,
+        totalPages: Math.ceil(sites.length / (queryDto.limit || 20)),
+      };
     } catch (error) {
       const errorInfo = formatError(error);
       this.logger.error(`${errorInfo.message}`, errorInfo.stack);
@@ -349,9 +368,12 @@ export class SitesService {
     this.logger.log('Fetching site statistics');
 
     try {
-      const stats = await this.siteRepository.getSiteStats();
+      const stats = await this.siteRepository.getSitesStats();
       this.logger.log('Successfully fetched site statistics', stats);
-      return stats;
+      return {
+        ...stats,
+        total: stats.totalSites, // Map totalSites to total for DTO compatibility
+      };
     } catch (error) {
       const errorInfo = formatError(error);
       this.logger.error(`${errorInfo.message}`, errorInfo.stack);
@@ -1261,3 +1283,5 @@ export class SitesService {
     };
   }
 }
+
+

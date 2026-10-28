@@ -8,10 +8,12 @@ import {
   Delete,
   Query,
   HttpStatus,
+  HttpCode,
   UseGuards,
   Logger,
   ParseUUIDPipe,
   ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -69,20 +71,23 @@ export class ClientsController {
     status: HttpStatus.CONFLICT,
     description: 'Client with this email already exists',
   })
-  async create(@Body() createClientDto: CreateClientDto): Promise<ClientResponseDto> {
+  async create(@Body() createClientDto: CreateClientDto): Promise<{ status: string; data: ClientResponseDto }> {
     this.logger.log('POST /clients - Creating new client');
     const client = await this.clientsService.create(createClientDto);
     return {
-      id: client.id,
+      status: 'ok',
+      data: {
+        id: client.id,
 
-      name: client.name,
-      contactEmail: client.contact_email,
-      contactInfo: client.contact_info,
-      organizationType: client.organization_type,
-      industry: client.industry,
-      companySize: client.company_size,
-      createdAt: client.created_at,
-      updatedAt: client.updated_at,
+        name: client.name,
+        contactEmail: client.contact_email,
+        contactInfo: client.contact_info,
+        organizationType: client.organization_type,
+        industry: client.industry,
+        companySize: client.company_size,
+        createdAt: client.created_at,
+        updatedAt: client.updated_at,
+      }
     };
   }
 
@@ -122,13 +127,13 @@ export class ClientsController {
     description: 'List of clients with pagination metadata',
     type: ClientListResponseDto,
   })
-  async findAll(@Query() queryDto: ClientQueryDto): Promise<ClientListResponseDto> {
+  async findAll(@Query() queryDto: ClientQueryDto): Promise<{ data: ClientResponseDto[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
     this.logger.log('GET /clients - Fetching clients list');
     const result = await this.clientsService.findAll(queryDto);
 
     // Map the result to proper response format
     return {
-      clients: result.clients.map((client) => ({
+      data: result.clients.map((client) => ({
         id: client.id,
   
         name: client.name,
@@ -147,10 +152,12 @@ export class ClientsController {
           clientUsers: client._count?.clientUsers,
         },
       })),
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-      totalPages: result.totalPages,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: result.totalPages
+      }
     };
   }
 
@@ -262,22 +269,30 @@ export class ClientsController {
     status: HttpStatus.NOT_FOUND,
     description: 'Client not found',
   })
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ClientResponseDto> {
+  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<{ status: string; data: ClientResponseDto }> {
     this.logger.log(`GET /clients/${id} - Fetching client details`);
     const client = await this.clientsService.findOne(id);
+    
+    if (!client) {
+      throw new NotFoundException(`Client with id ${id} not found`);
+    }
+    
     return {
-      id: client.id,
+      status: 'ok',
+      data: {
+        id: client.id,
 
-      name: client.name,
-      contactEmail: client.contact_email,
-      contactInfo: client.contact_info,
-      organizationType: client.organization_type,
-      industry: client.industry,
-      companySize: client.company_size,
-      // tags: client.tags, // Field doesn't exist in schema
-      // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
-      createdAt: client.created_at,
-      updatedAt: client.updated_at,
+        name: client.name,
+        contactEmail: client.contact_email,
+        contactInfo: client.contact_info,
+        organizationType: client.organization_type,
+        industry: client.industry,
+        companySize: client.company_size,
+        // tags: client.tags, // Field doesn't exist in schema
+        // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
+        createdAt: client.created_at,
+        updatedAt: client.updated_at,
+      }
     };
   }
 
@@ -305,58 +320,58 @@ export class ClientsController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateClientDto: UpdateClientDto,
-  ): Promise<ClientResponseDto> {
+  ): Promise<{ status: string; data: ClientResponseDto }> {
     this.logger.log(`PATCH /clients/${id} - Updating client`);
     const client = await this.clientsService.update(id, updateClientDto);
+    
+    if (!client) {
+      throw new NotFoundException(`Client with id ${id} not found`);
+    }
+    
     return {
-      id: client.id,
+      status: 'ok',
+      data: {
+        id: client.id,
 
-      name: client.name,
-      contactEmail: client.contact_email,
-      contactInfo: client.contact_info,
-      organizationType: client.organization_type,
-      industry: client.industry,
-      companySize: client.company_size,
-      // tags: client.tags, // Field doesn't exist in schema
-      // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
-      createdAt: client.created_at,
-      updatedAt: client.updated_at,
+        name: client.name,
+        contactEmail: client.contact_email,
+        contactInfo: client.contact_info,
+        organizationType: client.organization_type,
+        industry: client.industry,
+        companySize: client.company_size,
+        // tags: client.tags, // Field doesn't exist in schema
+        // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
+        createdAt: client.created_at,
+        updatedAt: client.updated_at,
+      }
     };
   }
 
   @Delete(':id')
   @RequirePermissions(ClientPermissions.DELETE_CLIENT)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete client',
     description: 'Soft delete a client by setting contract status to TERMINATED',
   })
   @ApiParam({ name: 'id', description: 'Client UUID' })
   @ApiResponse({
-    status: HttpStatus.OK,
+    status: HttpStatus.NO_CONTENT,
     description: 'Client successfully deleted (terminated)',
-    type: ClientResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Client not found',
   })
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<ClientResponseDto> {
+  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`DELETE /clients/${id} - Soft deleting client`);
     const client = await this.clientsService.remove(id);
-    return {
-      id: client.id,
-
-      name: client.name,
-      contactEmail: client.contact_email,
-      contactInfo: client.contact_info,
-      organizationType: client.organization_type,
-      industry: client.industry,
-      companySize: client.company_size,
-      // tags: client.tags, // Field doesn't exist in schema
-      // accountManagerId: client.accountManagerId, // Field doesn't exist in schema
-      createdAt: client.created_at,
-      updatedAt: client.updated_at,
-    };
+    
+    if (!client) {
+      throw new NotFoundException(`Client with id ${id} not found`);
+    }
+    
+    // Return nothing (204 No Content)
   }
 
   @Get(':id/performance')

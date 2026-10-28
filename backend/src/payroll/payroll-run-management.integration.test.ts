@@ -31,12 +31,42 @@ describe('PayrollRunManagementService Integration', () => {
     // Create a shared mock TenantContextService
     const mockTenantContextService = {
       tenantId: null,
-      setContext: function(tenantId: string) { this.tenantId = tenantId; },
+      userId: null,
+      userRole: null,
+      isContextSet: false,
+      setContext: function(tenantId: string, userId?: string, userRole?: string) { 
+        this.tenantId = tenantId; 
+        this.userId = userId;
+        this.userRole = userRole;
+        this.isContextSet = true;
+      },
       getTenantId: function() { 
         return this.tenantId || testCompanyId; // Default to testCompanyId
       },
+      getUserId: function() { return this.userId; },
+      getUserRole: function() { return this.userRole; },
       hasContext: () => true,
-    };
+      clearContext: function() { 
+        this.tenantId = null; 
+        this.userId = null;
+        this.userRole = null;
+        this.isContextSet = false;
+      },
+      getContextSnapshot: function() { return `tenant:${this.tenantId},user:${this.userId},role:${this.userRole}`; },
+      ensureContext: function() { if (!this.isContextSet) throw new Error('Context not set'); },
+      getContext: function() { 
+        return { 
+          tenantId: this.tenantId, 
+          userId: this.userId, 
+          userRole: this.userRole, 
+          isContextSet: this.isContextSet 
+        }; 
+      },
+      validateTenantAccess: function(requiredTenantId: string) { return this.tenantId === requiredTenantId; },
+      isAdmin: function() { return this.userRole === 'SUPER_ADMIN' || this.userRole === 'COMPANY_ADMIN'; },
+      hasRole: function(role: string) { return this.userRole === role; },
+      hasAnyRole: function(roles: string[]) { return this.userRole ? roles.includes(this.userRole) : false; },
+    } as any;
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [

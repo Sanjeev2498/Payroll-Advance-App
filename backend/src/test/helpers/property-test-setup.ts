@@ -15,7 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { SiteRepository } from '../../common/repositories/site.repository';
 import { ClientRepository } from '../../common/repositories/client.repository';
-import { EmployeeRepository } from '../../common/repositories/employee.repository';
+import { EmployeeRepository } from '../../employees/repositories/employee.repository';
 import { InvoiceService } from '../../billing/services/invoice.service';
 import { GstCalculationService } from '../../billing/services/gst-calculation.service';
 import { InvoiceCalculationService } from '../../billing/services/invoice-calculation.service';
@@ -680,56 +680,9 @@ export class PropertyTestSetup {
       transformForClient: jest.fn((data) => data),
     };
 
-    // Mock repository services
-    const mockSiteRepository = {
-      findMany: jest.fn().mockResolvedValue({
-        sites: [],
-        total: 0,
-        page: 1,
-        limit: 20,
-        totalPages: 0,
-      }),
-      findAll: jest.fn().mockResolvedValue([]),
-      findById: jest.fn().mockResolvedValue(null),
-      findOne: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockImplementation((data) => ({ id: uuidv4(), ...data })),
-      update: jest.fn().mockImplementation((id, data) => ({ id, ...data })),
-      delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-    };
-
-    const mockClientRepository = {
-      findMany: jest.fn().mockResolvedValue({
-        clients: [],
-        total: 0,
-        page: 1,
-        limit: 20,
-        totalPages: 0,
-      }),
-      findAll: jest.fn().mockResolvedValue([]),
-      findById: jest.fn().mockResolvedValue(null),
-      findOne: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockImplementation((data) => ({ id: uuidv4(), ...data })),
-      update: jest.fn().mockImplementation((id, data) => ({ id, ...data })),
-      delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-    };
-
-    const mockEmployeeRepository = {
-      findMany: jest.fn().mockResolvedValue({
-        employees: [],
-        total: 0,
-        page: 1,
-        limit: 20,
-        totalPages: 0,
-      }),
-      findAll: jest.fn().mockResolvedValue([]),
-      findById: jest.fn().mockResolvedValue(null),
-      findOne: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockImplementation((data) => ({ id: uuidv4(), ...data })),
-      update: jest.fn().mockImplementation((id, data) => ({ id, ...data })),
-      delete: jest.fn().mockResolvedValue({ id: 'deleted' }),
-    };
-
     // Mock billing services
+    // NOTE: Repository mocks (mockSiteRepository, mockClientRepository, mockEmployeeRepository) 
+    // are created by createRepositoryMocks() and returned in the repositoryMocks object below
     const mockInvoiceService = {
       generateInvoice: jest.fn().mockResolvedValue({ id: uuidv4(), amount: 1000 }),
       calculateAmount: jest.fn().mockReturnValue(1000),
