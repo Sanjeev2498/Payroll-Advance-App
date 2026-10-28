@@ -8,10 +8,21 @@ yarn-error.log*
 dist/
 build/
 
-# Environment variables - ALL ENV FILES
+# Environment variables - Block all .env files EXCEPT .env.example
 .env
-.env.*
-*.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+.env.staging.local
+
+# BUT allow .env.example files (they have placeholders, not secrets)
+!.env.example
+!**/.env.example
 
 # Logs
 logs
