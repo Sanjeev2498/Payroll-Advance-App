@@ -1,0 +1,78 @@
+﻿# Docker Compose for Production Environment
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres-production:
+    image: postgres:14-alpine
+    container_name: payroll-postgres-production
+    environment:
+      POSTGRES_USER: payroll_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-production_password_CHANGE_ME}
+      POSTGRES_DB: payroll_system_production
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-production-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payroll_user -d payroll_system_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  # Redis Cache
+  redis-production:
+    image: redis:7-alpine
+    container_name: payroll-redis-production
+    command: redis-server --requirepass ${REDIS_PASSWORD:-production_redis_password_CHANGE_ME}
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis-production-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  # Backend API
+  backend-production:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: payroll-backend-production
+    environment:
+      DATABASE_URL: "postgresql://payroll_user:${POSTGRES_PASSWORD:-production_password_CHANGE_ME}@postgres-production:5432/payroll_system_production?schema=public"
+      NODE_ENV: "production"
+      PORT: 3001
+      JWT_SECRET: "${JWT_SECRET:-CHANGE_THIS_IN_PRODUCTION}"
+      JWT_EXPIRES_IN: "15m"
+      JWT_REFRESH_EXPIRES_IN: "7d"
+      REDIS_HOST: "redis-production"
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-production_redis_password_CHANGE_ME}"
+      BCRYPT_ROUNDS: 12
+      CORS_ORIGIN: "${CORS_ORIGIN:-https://your-production-domain.com}"
+      LOG_LEVEL: "info"
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres-production:
+        condition: service_healthy
+      redis-production:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres-production-data:
+  redis-production-data:
